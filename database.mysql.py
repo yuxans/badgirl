@@ -21,12 +21,17 @@
 import MySQLdb
 import threading, thread, ConfigParser, sys
 import moobot
+from moobot import Debug
 
 parser=ConfigParser.ConfigParser()
 parser.read(moobot.MooBot.config_files)
 
 try:
+	dbport = int(parser.get("database", "port")) or 3306
+	dbencoding = parser.get("database", "encoding")
 	dbhostname = parser.get("database", "hostname")
+	dbport = int(parser.get("database", "port")) or 3306
+	dbencoding = parser.get("database", "encoding")
 	dbname = parser.get("database", "name")
 	dbuser = parser.get("database", "username")
 	dbpass = parser.get("database", "password")
@@ -51,12 +56,15 @@ notify.set()
 countLock = thread.allocate_lock()
 
 type = "mysql"
-
+del conn
 print "initializing DB connections & locks"
 for j in range(num_connections):
-	botdbs.append(MySQLdb.connect(host = dbhostname, user = dbuser, db = dbname, passwd=dbpass))
+	conn = MySQLdb.connect(host = dbhostname, port = dbport, user = dbuser, db = dbname, passwd=dbpass,
+		unicode = dbencoding, unicode_errors = "replace")
+	conn.cursor().execute("SET CHARACTER SET " + dbencoding)
+	botdbs.append(conn)
 	dblocks.append(thread.allocate_lock())
-
+del conn
 
 def doSQL(SQL):
 	""" executes the sql statement SQL and returns a list of tuples
@@ -67,17 +75,13 @@ def doSQL(SQL):
 	results = []
 	try:
 		cur = botdbs[connection_num].cursor()
-		cur.execute(SQL)
-		if SQL.split()[0].lower() == "select":
-			row = cur.fetchone()
-			while row != None:
-				results.append(row)
-				row = cur.fetchone()
+		cur.execute(SQL.encode(dbencoding, "backslashreplace"))
+		results = cur.fetchall() or []
 	except Exception, message:
-		print moobot.RED + "There was an error with the database"+\
-			" when executing " + moobot.BLUE + SQL + moobot.NORMAL
-		print moobot.RED + "Exception occurred: " + moobot.BLUE + \
-			str(message) + moobot.NORMAL
+		Debug(moobot.RED + "There was an error with the database"+\
+			" when executing " + moobot.BLUE + SQL + moobot.NORMAL)
+		Debug(moobot.RED + "Exception occurred: " + moobot.BLUE + \
+			str(message) + moobot.NORMAL)
 
 	releaseConnection(connection_num)
 	return results
