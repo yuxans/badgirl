@@ -40,7 +40,8 @@ class nslookup(MooBotModule):
 				hostname = "Host not found"
 		else:
 			try:
-				hostname = socket.gethostbyname(host)
+				host = socket.gethostbyname_ex(host)
+				hostname = host[0] + ": " + " / ".join(host[1]) + " " + " / ".join(host[2])
 			except:
 				hostname = "Host not found"
 
