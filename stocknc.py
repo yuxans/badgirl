@@ -127,11 +127,13 @@ class stockQuote(MooBotModule):
 					result += ",------( %s )" % self.data_list[0] + self.__newline
 					i = 1
 					while i < self.__data_length - 1:
-						if i % 4 != 0:
-							if i % 2 != 0:
-								result += self.data_list[i].ljust(6)
-							else:
-								result += self.data_list[i].rjust(8) + "     "
+						column = i % 4
+						if column == 1:
+							result += self.data_list[i].ljust(6)
+						elif column == 2:
+							result += self.data_list[i].rjust(8) + "     "
+						elif column == 3:
+							result += self.data_list[i].ljust(6)
 						else:
 							result += self.data_list[i].rjust(8) + self.__newline
 						i += 1
