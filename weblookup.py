@@ -19,8 +19,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-# TODO. debfile
-
 import httplib
 from moobot_module import MooBotModule
 handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
@@ -485,7 +483,6 @@ class debpackage(MooBotModule, HTMLParser2.HTMLParser):
 			self.li += 1
 			self.after_br = False
 			if self.li <= self.__max_hit:
-				# TODO. fix break calculating method
 				if len(self.list) >= self.block:
 					self.list += "\n%s:" % self.package
 					self.block += self.block_size
@@ -586,7 +583,7 @@ class debfile(MooBotModule, HTMLParser2.HTMLParser):
 					self.hit += 1
 					if self.hit == self.__max_hit:
 						self.over = True
-					else:
+					elif not data == "":
 						self.list += "=%d=> " % self.hit
 						self.list += data
 				else:
