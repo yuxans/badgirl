@@ -76,8 +76,7 @@ class google(MooBotModule):
 		self.return_to_sender(args)
 		
 		search_terms = args["text"].split(" ")[3:]
-#		search_request = "/ie?q="	# using ie instead of search makes
-		search_request = "/ie?ie=gbk&q="
+		search_request = "/ie?hl=zh-CN&oe=GBK&ie=GBK&q="
 									# the resulting output so much nicer
 		search_request += string.join(search_terms, "+")
 		connect = httplib.HTTPConnection('www.google.com', 80)
