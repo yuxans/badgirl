@@ -16,13 +16,15 @@
 #
 # Joel Rosdahl <joel@rosdahl.net>
 #
-# $Id: ircbot.py,v 1.2 2002/06/24 22:33:24 bradmont Exp $
+# $Id: ircbot.py,v 1.6 2003/02/13 15:33:54 ddipaolo Exp $
 
 """ircbot -- Simple IRC bot library.
 
 This module contains a single-server IRC bot class that can be used to
 write simpler bots.
 """
+
+VERSION = (0, 7, 0)
 
 import sys
 import string
@@ -69,6 +71,7 @@ class SingleServerIRCBot(SimpleIRCClient):
 
 		self._nickname = nickname
 		self._realname = realname
+#FIXME		self._nickmask = "%s!%s@%s" % (
 		for i in ["disconnect", "join", "kick", "mode",
 				  "namreply", "nick", "part", "quit"]:
 			self.connection.add_global_handler(i,
@@ -210,7 +213,7 @@ class SingleServerIRCBot(SimpleIRCClient):
 		Used when answering a CTCP VERSION request.
 		"""
 		#return "ircbot.py by Joel Rosdahl <joel@rosdahl.net>"
-		return "MooBot version 0.6.1 by Danny DiPaolo and Brad Stewart"
+		return "MooBot version %d.%d.%d by Danny DiPaolo and Brad Stewart" % VERSION
 
 	def jump_server(self):
 		"""Connect to a new server, possible disconnecting from the current.
@@ -427,3 +430,5 @@ class Channel:
 			return self.modes["k"]
 		else:
 			return None
+
+# vim:ts=4:sw=4:tw=78

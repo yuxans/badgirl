@@ -35,7 +35,7 @@ class eightball(MooBotModule):
 		"""
 		self.debug("eightball", args["text"])
 		import string
-		from irclib import nm_to_n, Event
+		from irclib import Event
 	
 		args["text"] = stripTextHeader(args["text"])
 	
@@ -53,26 +53,19 @@ class eightball(MooBotModule):
 			# They didn't put anything
 			line = 'Ahhhhhhhhhhhhhhhhhhhh!'
 	
-		return  Event("privmsg", "", args["channel"], [ line ])
+		return  Event("privmsg", "", self.return_to_sender(args), [ line ])
 
 
 def makeline(type):
 	"""eightball.  usage:  Moobot:  eightball <question>?"""
-	import string, database, random
+	import database
 
 	if database.type == "mysql":
-		line = database.doSQL("select data from data where type=\"" + \
-			   type + "\" order by rand() limit 1")[0][0]
+		line = database.doSQL("select data from data where type='" + \
+			   type + "' order by rand() limit 1")[0][0]
 	elif database.type == "pgsql":
-		random.seed()
-		offset = random.randint(0, database.doSQL("select count(data)" + \
-				 " from data where type = '" + type + "'")[0][0]-1)
-		lines = database.doSQL("select data from data where type = '" + \
-				type + "' order by data limit 1 offset " + str(offset) )
-		if len(lines) > 0 and len (lines[0]) > 0:
-			line = lines[0][0]
-		else:
-			line = "could not get " + type + " " + str(offset)
+		line = database.doSQL("select data from data where type='" + \
+			   type + "' order by random() limit 1")[0][0]
 
 	return line
 

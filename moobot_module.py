@@ -39,9 +39,6 @@ full explanation of what the module does, as well as an example of how to use
 it and explanations of syntax conventions.  These should be sort of the man
 pages of the modules"""
 
-	def __init__(self):
-		pass
-	
 	def handler(self, **args):
 		"""This is the function that actually processes data and returns an
 Event.  Should be overridden for every module."""
@@ -56,7 +53,7 @@ Event.  Should be overridden for every module."""
 		from irclib import nm_to_n
 		if args["type"] == "privmsg": target = nm_to_n(args["source"])
 		else: target = args["channel"]
-		return target
+		return target.lower()
 	
 	def sqlEscape(self, text):
 		""" escapes \ and 's in strings for SQL """

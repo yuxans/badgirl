@@ -41,7 +41,7 @@ class lart(MooBotModule):
 
 		line = makeline("lart", text)
 		from irclib import Event
-		return  Event("action", "", args["channel"], [ line ])
+		return  Event("action", "", self.return_to_sender(args), [ line ])
 
 class praise(MooBotModule):
 	def __init__(self):
@@ -60,7 +60,7 @@ class praise(MooBotModule):
 
 		line = makeline("praise", text)
 		from irclib import Event
-		return  Event("action", "", args["channel"], [ line ])
+		return  Event("action", "", self.return_to_sender(args), [ line ])
 
 class add(MooBotModule):
 	def __init__(self):
@@ -91,21 +91,14 @@ class add(MooBotModule):
 	
 def makeline(type, target):
 	"""Larts.  usage:  Moobot:  lart <user>"""
-	import string, database, random
-	target = target[string.find(target, " ")+1:]
-	target = target[string.find(target, " ")+1:]
+	import string, database, re
+	target = re.sub("^[^ ]* *(lart|praise|punish)\s+", "", target)
 	targets = string.split(target, " for ")
 
 	if database.type == "mysql":
-		line = database.doSQL("select data from data where type=\"" + type + "\" order by rand() limit 1")[0][0]
+		line = database.doSQL("select data from data where type='" + type + "' order by rand() limit 1")[0][0]
 	elif database.type=="pgsql":
-                random.seed()
-                offset = random.randint(0, database.doSQL("select count(data) from data where type = '" + type + "'")[0][0]-1)
-                lines = database.doSQL("select data from data where type = '" + type + "' order by data limit 1 offset " + str(offset) )
-		if len(lines) > 0 and len (lines[0]) > 0:
-                	line = lines[0][0]
-		else:
-			line = "could not get " + type + " " + str(offset)
+		line = database.doSQL("select data from data where type='" + type + "' order by random() limit 1")[0][0]
 	line = string.replace(line, "WHO", targets[0])
 	for reason in range(1, len(targets)):
 		line = line + " for " + targets[reason]
