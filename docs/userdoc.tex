@@ -11,48 +11,118 @@
 
 	\section{Meta}
 		\subsection{Who Should Read This?}
-			This document is intended primarily for anyone who is running/admining a moobot, though the information herein will also be of use to anyone who frequents a channel inhabited by a moobot.
+			This document is intended primarily for anyone who is
+			running/admining a moobot, though the information herein will also
+			be of use to anyone who frequents a channel inhabited by a moobot.
 		\subsection{What Is Covered?}
-			My intent in writing this is to give people not familiar with what moobot is and how it works a heads up on how to run, use and administer it.  The included moduels, permission system, and module interface are discussed.
+			My intent in writing this is to give people not familiar with what
+			moobot is and how it works a heads up on how to run, use and
+			administer it.  The included moduels, permission system, and
+			module interface are discussed.
 		\subsection{What's Not covered?}
-			This isn't intended to be an installation/setup howto, for that check the (as yet unwritten) installation manual, which should be available in the same place you got this document.
+			This isn't intended to be an installation/setup howto, for that
+			check the installation manual, which should be available in the
+			same place you got this document.
 		\subsection{Latest Version}
-			The latest version of this document can be retrieved from the moobot project site at http://moobot.sourceforge.net.
-
+			The latest version of this document can be retrieved from the
+			moobot project site at http://moobot.sourceforge.net.
 	\section{Introduction}
 		\subsection{Who We Are}
-			The two primary developers on this project, Brad Stewart and Danny DiPaolo, are college students who also happen to be IRC addicts.  Though we are responsible for the core development, others help by writing modules, reporting bugs, and all that good stuff.  If you ever want to chat, one or both of us can usually be found on irc.openprojects.net in \#moobot or \#grasshoppers.  We go by Bradmont and Strike, respectively.
+			The two primary developers on this project, Brad Stewart and Danny
+			DiPaolo, are a college student and a recent college graduate
+			(respectively) who are Python fanatics and IRC fans. 
+
+			Though we are responsible for the core development, others help by
+			writing modules, reporting bugs, and all that good stuff.  If you
+			ever want to chat, one or both of us can usually be found on
+			irc.oftc.net in \#moobot or \#grasshoppers.  We go by Bradmont and
+			Strike, respectively.
 		\subsection{Why We Are Doing This}
-			As I've already mentioned, we're IRC addicts.  At one point, the previous host of the IRC bot that lived in a channel we both frequent (a blootbot) took down his server, and the bot with it.  At this point, I stepped in, downloaded the latest blootbot release, and suffered through its install and configuration.  
+			As I've already mentioned, we're IRC fans.  At one point, the
+			previous host of the IRC bot that lived in a channel we both
+			frequent (a blootbot) took down his server, and the bot with it.
+			At this point, Brad stepped in, downloaded the latest blootbot
+			release, and suffered through its install and configuration.  
 			
-			Running this bot was a bit of a hastle, with semi-frequent breakages, functions that didn't work, and all sorts of other joys.  Because it's written in perl, debugging any errors I found was no easy task.  Anyway, to make a long story even longer, one day we got to talking about the problems with the blootbot, and thought it might be fun to create our own.  We registered a project on sourceforge, and then quite happily let it sit, untouched, for five months.
+			Running this bot was a bit of a hastle, with semi-frequent
+			breakages, functions that didn't work, and all sorts of other
+			joys.  Because it's written in perl, debugging any errors he found
+			was no easy task.  Anyway, to make a long story even longer, one
+			day we got to talking about the problems with the blootbot, and
+			thought it might be fun to create our own.  We registered a
+			project on sourceforge, and then quite happily let it sit,
+			untouched, for five months.
 
-			So eventually, during one Christmas vacation, we got back to talking about the moobot, and did a bit of playing.  We stumbled upon a nice library, irclib, written by Joel Rosdahl.  This provided all the networking/protocol code for us, as well as a basic ircbot class, from which we built the initial revision of moobot.  Though the current moobot uses this library set as its base, we have plans to redo the whole foundation of the bot, but that's going to take awhile.
+			So eventually, during one Christmas vacation, we got back to
+			talking about the moobot, and did a bit of playing.  We stumbled
+			upon a nice library, irclib, written by Joel Rosdahl.  This
+			provided all the networking/protocol code for us, as well as a
+			basic ircbot class, from which we built the initial revision of
+			moobot.  Though the current moobot uses this library set as its
+			base, we have plans to redo the whole foundation of the bot, but
+			that's going to take awhile. (Ed. note from Strike:  the more I
+			look at it, the more I realize irclib is pretty good as is, but we
+			shouldn't rely on the ircbot class)
 
-			Anyway, after about 3 days straight hacking, we had a reasonably usable bot, which has evolved since then into what it is today.  Enjoy. :-)
+			Anyway, after about 3 days straight hacking, we had a reasonably
+			usable bot, which has evolved since then into what it is today.
+			Enjoy. :-)
 		\subsection{WTF is moobot?}
-			You've probably inferred this from that intro, but it's an IRC bot written in Python (the language of the gods, thank you very much Guido).  It's intended to be similar to blootbot (from a user's standpoint), but much more uniform, normal, and managable.
+			You've probably inferred this from that intro, but it's an IRC bot
+			written in Python (the language of the gods, thank you very much
+			Guido).  It's intended to be similar to blootbot (from a user's
+			standpoint), but much more uniform, normal, and manageable.
 
 	\section{Privileges/Grants System}
-		Because I'd be unable to write the rest of this document without constantly referring to the privs systm, I'll cover that first.
+		Because I'd be unable to write the rest of this document without
+		constantly referring to the privs systm, I'll cover that first.
 
-		Moobot has a (reasonably) advanced privilege system, to control everything from joining/parting channels to ignoring troublesome users.  A privilege is granted to a nick/hostmask (eg, Bradmont!bradmont@*.cc.shawcable.net) and anyone who matches that hostmask gets the priv.  For this reason, be very selective about what hostmasks you give a privilege to.
+		Moobot has a (reasonably) decent privilege system, to control
+		everything from joining/parting channels to ignoring troublesome
+		users.  A privilege is granted to a nick/hostmask (eg,
+		Bradmont!bradmont@*.cc.shawcable.net) and anyone who matches that
+		hostmask gets the priv.  For this reason, be very selective about what
+		hostmasks you give a privilege to.
 
 		The current privileges are:
 		\begin{itemize}
-			\item[all\_priv]  This counts as every privilege (except notalk\_priv).  You likely only want to give this priv to yourself, and possibly others who you absolutely trust to have full power over the bot.
-			\item[grant\_priv]  grant\_priv allows a person to grant other privileges they have (including grant\_priv) to anyone else.  You will also want to be careful with this one.
-			\item[delete\_priv]  delete\_priv gives a user the ability to delete any factoid in the database, whether they created it or not.
-			\item[lock\_priv] This priv lets a user lock or unlock any factoid in the database (normally you can only lock factoids that match your nick, and unlock ones you've locked)
-			\item[notalk\_priv] notalk\_priv causes the bot to totally ignore everything a given user says.
-			\item[join\_priv]  Users with join\_priv can tell the bot to join channels.
-			\item[part\_priv]  Users with part\_priv can tell the bot to part channels.
-			\item[nick\_priv]  This priv lets the grantee tell the bot to change it's nick.
-			\item[kick\_priv]  kick\_priv gives a user the power to have the bot kick someone from a channel (provided the bot is opped in that channel, of course).
-			\item[add\_lart\_priv] With this priv, a user can add larts, praises and dunnos to the database.
-			\item[poll\_priv]  This priv allows users to create, alter and delete polls.
-			\item[reset\_stats\_priv]  With this priv, a user can reset a user's stats (eg, hehstats, lolstats, karma).
-			\item[faketell\_priv] Normally, when you get the bot to tell (user) about (factoid), the bot will do so, and send the message in a format like ``Bradmont wanted you to know:  foo is bar.''  with this priv, you can use the alternate ``faketell,'' which will remove the ``Bradmont wanted you to know:'' from the beginning of the message, making it look sort of like the bot is talking of its own accord.
+			\item[all\_priv]  This counts as every privilege (except
+			notalk\_priv).  You likely only want to give this priv to
+			yourself, and possibly others who you absolutely trust to have
+			full power over the bot.
+			\item[grant\_priv]  grant\_priv allows a person to grant other
+			privileges they have (including grant\_priv) to anyone else.  You
+			will also want to be careful with this one.
+			\item[delete\_priv]  delete\_priv gives a user the ability to
+			delete any factoid in the database, whether they created it or
+			not.
+			\item[lock\_priv] This priv lets a user lock or unlock any factoid
+			in the database (normally you can only lock factoids that match
+			your nick, and unlock ones you've locked)
+			\item[notalk\_priv] notalk\_priv causes the bot to totally ignore
+			everything a given user says.
+			\item[join\_priv]  Users with join\_priv can tell the bot to join
+			channels.
+			\item[part\_priv]  Users with part\_priv can tell the bot to part
+			channels.
+			\item[nick\_priv]  This priv lets the grantee tell the bot to
+			change it's nick.
+			\item[kick\_priv]  kick\_priv gives a user the power to have the
+			bot kick someone from a channel (provided the bot is opped in that
+			channel, of course).
+			\item[add\_lart\_priv] With this priv, a user can add larts,
+			praises and dunnos to the database.
+			\item[poll\_priv]  This priv allows users to create, alter and
+			delete polls.
+			\item[reset\_stats\_priv]  With this priv, a user can reset a
+			user's stats (eg, hehstats, lolstats, karma).
+			\item[faketell\_priv] Normally, when you get the bot to tell
+			(user) about (factoid), the bot will do so, and send the message
+			in a format like ``Bradmont wanted you to know:  foo is bar.''
+			with this priv, you can use the alternate ``faketell,'' which will
+			remove the ``Bradmont wanted you to know:'' from the beginning of
+			the message, making it look sort of like the bot is talking of its
+			own accord.
 		\end{itemize}
 
 	\section{IRC Functions}
@@ -64,7 +134,12 @@
 		have to write.
 	
 		\subsection{Join/Part}
-			To have the bot join or part a channel, give it the command ``join \#channel'', eg, ``moobot: join \#grasshoppers''.  This can be done in public or via a privmsg directly to the bot.  Parting works exactly the same, ``moobot: part \#channel''.  To do these two actions, you need join\_priv and part\_priv, respectively (or all\_priv, of course).
+			To have the bot join or part a channel, give it the command ``join
+			\#channel'', eg, ``moobot: join \#grasshoppers''.  This can be
+			done in public or via a privmsg directly to the bot.  Parting
+			works exactly the same, ``moobot: part \#channel''.  To do these
+			two actions, you need join\_priv and part\_priv, respectively (or
+			all\_priv, of course).
 		\subsection{Kicking}
 			Ever want to kick someone but you didn't have ops?  Well, now you
 			can!  You just have to have your bot with ops in that channel.
@@ -281,6 +356,16 @@
 				<Bradmont> moobot: stockquote rhat
 				<moobot> The current price of RHAT is 5.95
 			\end{verbatim}
+		\subsection{.deb Lookup}
+			Queries packages.debian.org for information on package names
+			passed in.  You can specify a branch if you like, but it's not
+			required. Example:
+			\begin{verbatim}
+				<Strike> moobot: deblookup foo apt moobot
+				<moobot> no package found for: foo (all) ;; apt 0.5.4 (stable)
+				;; apt 0.5.4 (testing) ;; apt 0.5.4 (unstable) ;; moobot
+				0.6.1-1 (testing) ;; moobot 0.6.1-1 (unstable) ;; 
+			\end{verbatim}
 	
 	\subsection{Miscellaneous}
 		\subsection{Run-Time Module Reloading}
@@ -297,8 +382,9 @@
 			simply use ``moobot: reload''.  Only users with all\_priv may
 			use these functions.
 
-			MooBot does not currently have the ability to load new modules
-			at run-time, but it's coming.
+			MooBot also has the ability to load new modules at run-time.  Just
+			plop them in the search path and load them using ``moobot: load
+			<modulename>''.
 
 	\section{Customizing/Writing Modules}
 		See the Module Author Guide included with this distribution.
@@ -306,7 +392,7 @@
 	\section{Bugs}
 		Probably the easiest way to contact us with bug reports is to simply
 		hop on IRC and join us in \texttt{\#moobot} on
-		\texttt{irc.openprojects.net} and if we are around, tell us what
+		ltexttt{irc.ofrc.net} and if we are around, tell us what
 		problems you are having and we might even test it right then and there.
 \end{document}
 

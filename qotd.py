@@ -26,8 +26,7 @@ class getqotd(MooBotModule):
 
 	def handler(self, **args):
 		""" Get a quote of the day """
-	
-		import os, string, os.path
+		import os, os.path
 	
 		if os.path.exists("/usr/games/fortune"):
 			fortune = os.popen("/usr/games/fortune")

@@ -123,6 +123,15 @@ CREATE TABLE "factoids" (
 );
 
 --
+-- Name: seentype Type: TABLE Owner: bradmont
+--
+
+CREATE TABLE "seentype" (
+        "type" character varying(20) NOT NULL,
+        Constraint "seentype_pkey" Primary Key ("type")
+);
+
+--
 -- TOC Entry ID 10 (OID 48376)
 --
 -- Name: seen Type: TABLE Owner: bradmont
@@ -133,6 +142,7 @@ CREATE TABLE "seen" (
 	"hostmask" character varying(150),
 	"time" numeric(11,0),
 	"message" text,
+	"type" character varying(20) NOT NULL,
 	Constraint "seen_pkey" Primary Key ("nick")
 );
 
@@ -147,7 +157,49 @@ CREATE TABLE "webstats" (
 	"count" numeric(10,0) NOT NULL,
 	"quote" text,
 	"quote_time" numeric(11,0),
-	"channel" character varying(255)
+	"channel" character varying(255),
+	"type" character varying(30) default 'privmsg'
+);
+
+--
+-- Name: aliastype Type: TABLE Owner: bradmont
+--
+
+CREATE TABLE "aliastype" (
+        "type" character varying(20) NOT NULL,
+        Constraint "aliastype_pkey" Primary Key ("type")
+);
+
+--
+-- Name: alias Type: TABLE Owner: bradmont
+--
+
+CREATE TABLE "alias" (
+        "nick" character varying(31) NOT NULL,
+        "realnick" character varying(31) NOT NULL,
+        "type" character varying(20) NOT NULL
+);
+CREATE UNIQUE INDEX alias_nick_key ON alias USING btree (nick);
+
+--
+-- Name: aliasregex Type: TABLE Owner: bradmont
+--
+
+CREATE TABLE "aliasregex" (
+        "regex" character varying(64) NOT NULL,
+        "realnick" character varying(31) NOT NULL
+);
+CREATE UNIQUE INDEX aliasregex_regex_key ON aliasregex USING btree (regex);
+
+--
+-- Name: urls Type: TABLE Owner: bradmont
+--
+
+CREATE TABLE "url" (
+	"nick" character varying(64) NOT NULL,
+	"time" timestamp NOT NULL,
+	"string" text NOT NULL,
+	"url_id" serial
 );
 
 --
@@ -222,3 +274,33 @@ CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER DELETE ON "poll"  FROM "poll_votes" 
 
 CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER UPDATE ON "poll"  FROM "poll_votes" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_noaction_upd" ('<unnamed>', 'poll_votes', 'poll', 'UNSPECIFIED', 'poll_num', 'poll_num');
 
+
+CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER INSERT OR UPDATE ON "alias"  FROM "aliastype" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_check_ins" ('<unnamed>', 'alias', 'aliastype', 'UNSPECIFIED', 'type', 'type');
+
+CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER DELETE ON "aliastype"  FROM "alias" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_noaction_del" ('<unnamed>', 'alias', 'aliastype', 'UNSPECIFIED', 'type', 'type');
+
+CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER UPDATE ON "aliastype"  FROM "alias" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_noaction_upd" ('<unnamed>', 'alias', 'aliastype', 'UNSPECIFIED', 'type', 'type');
+
+
+CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER INSERT OR UPDATE ON "seen"  FROM "seentype" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_check_ins" ('<unnamed>', 'seen', 'seentype', 'UNSPECIFIED', 'type', 'type');
+
+CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER DELETE ON "seentype"  FROM "seen" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_noaction_del" ('<unnamed>', 'seen', 'seentype', 'UNSPECIFIED', 'type', 'type');
+
+CREATE CONSTRAINT TRIGGER "<unnamed>" AFTER UPDATE ON "seentype"  FROM "seen" NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE PROCEDURE "RI_FKey_noaction_upd" ('<unnamed>', 'seen', 'seentype', 'UNSPECIFIED', 'type', 'type');
+
+
+COPY "aliastype" FROM stdin;
+regex
+nickchange
+confirmed
+cached
+\.
+
+COPY "seentype" FROM stdin;
+privmsg
+action
+nick
+join
+part
+quit
+\.
