@@ -62,8 +62,14 @@ class whois(MooBotModule):
 				if m:
 					k = m.group(1)
 					if not dones.has_key(k):
-						dones[k] = 1
-						data += "\r\n" + unicode(dataelement, 'hz').encode('gbk')
+						dones[k] = True
+						data += "\r\n" + dataelement
+			try:
+				while True:
+					data = data.decode('hz').encode('gbk')
+			except Exception:
+				pass
+			data = data.decode("gbk")
 		else:
 			data = "Sorry, I can only query IP ADDRESS for you."
 
