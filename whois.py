@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright (C) 2004 by FKtPp
+# Copyright (C) 2004 by baa
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,7 +31,7 @@ class whois(MooBotModule):
 	def handler(self, **args):
 		"""TODO. only query from Asia Pacific Network Infomation Center, need fix"""
 		import socket, string, re
-	
+
 		HOST = 'whois.apnic.net'
 		PORT = 43
 		alldata = ''
@@ -53,14 +54,18 @@ class whois(MooBotModule):
 
 			data = ''
 			dataelement = ''
+			desc = 0
 			pt = re.compile('^inetnum:|^netname:|^country:|^descr:')
 			pt2 = re.compile('^descr:')
 
 			for dataelement in alldata:
-				if pt.match(dataelement):
-					data += "\r\n" + dataelement
 				if pt2.match(dataelement):
-					break
+					if desc:
+						break
+					else:
+						desc = 1
+				if pt.match(dataelement):
+					data += "\r\n" + unicode(dataelement, 'hz').encode('gbk')
 		else:
 			data = "Sorry, I can only query IP ADDRESS for you."
 
@@ -68,3 +73,4 @@ class whois(MooBotModule):
 		target = self.return_to_sender(args)
 		result = Event("privmsg", "", target, [ data ])
 		return result
+
