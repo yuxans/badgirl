@@ -17,7 +17,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-from moobot import MooBot, Debug, Handler
+from moobot import MooBot, Debug, DebugErr, Handler
 
 class MooBotModule:
 	"""Base class for all MooBot modules"""
@@ -63,6 +63,9 @@ Event.  Should be overridden for every module."""
 		text = string.replace(text, "'", "\\'")
 		return text
 			
+	def Debug(self, *args):
+		apply(DebugErr, args)
+
 	def debug(self, *args):
 		apply(Debug, args)
 

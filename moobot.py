@@ -35,7 +35,7 @@ import string, thread, threading
 from utilities import *
 from os import environ
 from ircbot import SingleServerIRCBot, IRCDict, Channel
-from irclib import irc_lower, Debug
+from irclib import irc_lower, Debug, DebugErr
 from handler import Handler
 import string, thread, threading
 
@@ -45,7 +45,7 @@ class MooBot(SingleServerIRCBot):
 	config_files = [environ['HOME']+'/.moobot.conf', 'moobot.conf',
             '/etc/moobot.conf']
 
-	def __init__(self, channels=[], nickname="", realname="", server="", port=6667, module_list=[], encoding=""):
+	def __init__(self, channels=[], nickname="", password="", realname="", server="", port=6667, module_list=[], encoding=""):
 		"""MooBot initializer - gets values from config files and uses those
 		unless passed values directly"""
 		Debug("possible config files: " + ", ".join(self.config_files))
@@ -281,6 +281,7 @@ class MooBot(SingleServerIRCBot):
 		# and stick the rest in "others"
 		nick=""; username=""; realname=""; server=""
 		port=6667; channels=[]; others={}
+		module_list = {}
 		encoding = "utf-8"
 		try:
 			nick = config.get('connection', 'nick')
@@ -296,8 +297,8 @@ class MooBot(SingleServerIRCBot):
 			Debug("ERROR: Non-numeric port in config files.")
 		except NoSectionError:
 			Debug("ERROR: [connection] section missing from config files.")
-		except NoOptionError:
-			Debug("ERROR: missing vital option")
+		except NoOptionError, err:
+			Debug("ERROR: missing vital option", repr(err))
 		for section in config.sections():
 			if section != "connection":
 				# These will all be returned, don't need to be in others
@@ -306,6 +307,7 @@ class MooBot(SingleServerIRCBot):
 		return {'nick': nick, 'username': username,
 			'realname': realname, 'server': server, 'port': port,
 			'channels': channels, 'module_list': module_list, 'encoding': encoding,
+			'password': password,
 			'others': others}
 	
 	def load_module(self, event):
