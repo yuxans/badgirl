@@ -64,8 +64,9 @@ TODO:
 
 
 import UserDict, sys, codecs, sha, types, signal
-import xml.sax as sax
-import xml.sax.saxutils as saxutils
+import _xmlplus.sax as sax
+from _xmlplus.sax.xmlreader import InputSource
+import _xmlplus.sax.saxutils as saxutils
 import cPickle as pickle
 import cStringIO as StringIO
 
@@ -203,7 +204,7 @@ class ChannelBase:
         Fetch a channel representation from a URL and populate
         the channel.
         """
-        dh = RSSParser(self)
+        dh = RSSParser(self, self.encoding)
         p = sax.sax2exts.make_parser()
         p.setContentHandler(dh)
         p.setFeature(sax.handler.feature_namespaces, 1)
@@ -220,11 +221,28 @@ class ChannelBase:
 
     def parseFile(self, file):
         """Parse a file and populate the channel."""
-        dh = RSSParser(self)
+        dh = RSSParser(self, self.encoding)
         p = sax.sax2exts.make_parser()
         p.setContentHandler(dh)
         p.setFeature(sax.handler.feature_namespaces, 1)
         p.parseFile(file)
+        return dh
+
+    def parseString(self, s):
+        """Parse a string and populate the channel."""
+        try:
+            from cStringIO import StringIO
+        except ImportError:
+            from StringIO import StringIO
+
+        dh = RSSParser(self, self.encoding)
+        p = sax.sax2exts.make_parser()
+        p.setContentHandler(dh)
+        p.setFeature(sax.handler.feature_namespaces, 1)
+
+        inpsrc = InputSource()
+        inpsrc.setByteStream(StringIO(s))
+        p.parse(inpsrc)
         return dh
 
     def __str__(self):
@@ -615,7 +633,10 @@ class RSSParser(sax.handler.ContentHandler):
             self.channel.setMD(name, metadata)
 
     def characters(self, content):
-        self._tmp_buf = self._tmp_buf + content.encode(self.encoding)
+        if self.encoding:
+            self._tmp_buf = self._tmp_buf + content.encode(self.encoding)
+        else:
+            self._tmp_buf += content
 
 
 def _make_hash(data):
