@@ -75,7 +75,7 @@ class vote(MooBotModule):
 			return Event("privmsg", "", target, [ "You already voted in that poll." ])
 	
 		#next we check to make sure the poll option exists.
-		option_key = escape_slashes(option_key)
+		option_key = self.sqlEscape(option_key)
 		if database.doSQL("select count(option_key) from poll_options where poll_num =" + poll_num + " and option_key = '" + option_key + "'")[0][0] == 0:
 			return Event("privmsg", "", target, [ "No such poll option." ])
 	
@@ -103,7 +103,7 @@ class add_poll(MooBotModule):
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
 		poll_question = string.join(args["text"].split()[3:])
-		poll_question = escape_slashes(poll_question)
+		poll_question = self.sqlEscape(poll_question)
 		database.doSQL("Insert into poll(question) values('" + poll_question + "')")
 		poll_num = database.doSQL("select poll_num from poll where question = '" + poll_question + "'")[0][0]
 		return Event("privmsg", "", target, [ "Poll added. as number " + str(poll_num) + "." ])
@@ -131,12 +131,12 @@ class add_poll_option(MooBotModule):
 		
 		poll_num = args["text"].split()[3]
 		option = string.join(args["text"].split()[4:])
-		option_key = escape_slashes(option.split(":")[0])
-		option_text = escape_slashes(string.join(option.split(":")[1:]))
+		option_key = self.sqlEscape(option.split(":")[0])
+		option_text = self.sqlEscape(string.join(option.split(":")[1:]))
 		if database.doSQL("select count(poll_num) from poll where poll_num =" + poll_num )[0][0] == 0:
 			return Event("privmsg", "", target, [ "No such poll." ])
 	
-		print "Insert into poll_options(poll_num, option_key, option_text) values(" + poll_num + ", \"" + option_key + "\", \"" + option_text + "\")"
+		self.debug("Insert into poll_options(poll_num, option_key, option_text) values(" + poll_num + ", \"" + option_key + "\", \"" + option_text + "\")")
 		database.doSQL("Insert into poll_options(poll_num, option_key, option_text) values(" + poll_num + ", '" + option_key + "', '" + option_text + "')")
 		return Event("privmsg", "", target, [ "Option added." ])
 	
@@ -162,15 +162,6 @@ class list_polls(MooBotModule):
 			msg += str(int(tuple[1])) + " - " + tuple[0] + " (" + str(tuple[2]) + " votes)\n"
 		return Event("privmsg", "", target, [msg])
 	
-def escape_slashes(str):
-       	"Simply replaces single and double-slashes with escaped versions"
-       	import string
-       	str = string.replace(str, "\\", "\\\\")
-       	str = string.replace(str, "\"", "\\\"")
-       	str = string.replace(str, "'", "\\'")
-       	return str
-	
-		
 class remove_poll(MooBotModule):
 	def __init__(self):
 		self.regex = "^(remove|delete) poll \d+$"
@@ -216,7 +207,7 @@ class remove_poll_option(MooBotModule):
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
 		option_key = string.join(args["text"].split()[4:])
-		poll_num = escape_slashes(args["text"].split()[3])
+		poll_num = self.sqlEscape(args["text"].split()[3])
 	
 		database.doSQL("delete from poll_options where poll_num = " + poll_num + " and option_key = '" + option_key + "'")
 		return Event("privmsg", "", target, [ "Option deleted." ])

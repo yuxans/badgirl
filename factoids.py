@@ -29,14 +29,6 @@ from moobot_module import MooBotModule
 class factoidClass(MooBotModule):
 	"""Base class for all factoid classes, encapsulates a lot of common
 	functions into one base class"""
-	def escape_slashes(self, str):
-		"Simply replaces single and double-slashes with escaped versions"
-		import string
-		str = string.replace(str, "\\", "\\\\")
-		str = string.replace(str, "\"", "\\\"")
-		str = string.replace(str, "'", "\\'")
-		return str
-
 	def strip_words(self, str, num):
 		"Strips a certain number of words from the beginning of a string"
 		import string
@@ -141,7 +133,7 @@ class lookup(factoidClass):
 
 		# {{{ Print the factoid lookup message
 		# }}}
-		#print "Looking up factoid with text:", args["text"]
+		#self.debug("Looking up factoid with text:", args["text"])
 
 		factoid_key = args["text"]
 		factoid_key = self.strip_words(factoid_key, 1) # removes "moobot: "
@@ -156,14 +148,14 @@ class lookup(factoidClass):
 							# a shortened factoid
 			regex = re.compile("^section \d+$")
 			check = string.join(args["text"].split(" ")[1:3])
-			print check
+			self.debug(check)
 			if regex.match(check) != None:
 				part = int(check.split(" ")[1])
 				factoid_key = self.strip_words(factoid_key, 2)
 				
 		# {{{ Replace \\ and \ with escaped slashes so that we don't accidentally escape something
 		# we don't want to later on (like \" -> ") }}}
-		factoid_key = self.escape_slashes(factoid_key)
+		factoid_key = self.sqlEscape(factoid_key)
 		# {{{ Strip trailing ?'s and !'s (so asking for "moobot: foo?!?!?!???" is the same as
 		# just asking for "moobot: foo" }}}
 		factoid_key = self.strip_punctuation(factoid_key)
@@ -213,8 +205,8 @@ class lookup(factoidClass):
 			text = self.parse_sar(text)
 			# {{{ Replace $who and $nick with the person requesting the factoid
 			# }}}
-			text = string.replace(text, "$who", nm_to_n(args["source"]))
-			text = string.replace(text, "$nick", nm_to_n(args["source"]))
+			text = text.replace("$who", nm_to_n(args["source"]))
+			text = text.replace("$nick", nm_to_n(args["source"]))
 			# {{{ If the new string (after previous replacements) begins with "<action>"
 			# or "<reply>" (case insensitive), then we strip them and possibly
 			# change the eventtype if necessary.  Otherwise, we simply say "foo is bar"
@@ -274,7 +266,7 @@ class delete(factoidClass):
 		factoid_key = self.strip_words(args["text"], 2)
 		# {{{ Escape slashes within the factoid so they don't accidentally escape things
 		# we don't want them to escape later on }}}
-		factoid_key = self.escape_slashes(factoid_key)
+		factoid_key = self.sqlEscape(factoid_key)
 		# {{{ If we got this via a /msg, /msg back, otherwise back to the channel it goes
 		# }}}
 		target = self.return_to_sender(args)
@@ -295,8 +287,8 @@ class delete(factoidClass):
 		author = database.doSQL("select created_by from factoids where lower(factoid_key) = '" + factoid_key.lower() + "'")
 		created_by = author[0][0]
 
-		print "created_by = ", created_by
-		print "requester = ", requester
+		self.debug("created_by = ", created_by)
+		self.debug("requester = ", requester)
 
 		# {{{ If the factoid is locked, or the person doesn't have the right to delete
 		# things anyway, tell them they can't.  ... unless they created it. }}}
@@ -343,7 +335,7 @@ class add(factoidClass):
 
 		# {{{ Print out the factoid we are adding
 		# }}}
-		#print "Adding factoid with text:", args["text"]
+		# self.debug("Adding factoid with text:", args["text"])
 
 		target = self.return_to_sender(args)
 
@@ -382,15 +374,15 @@ class add(factoidClass):
 		# {{{ Prepare the factoid for insertion
 		# }}}
 		factoid_key = self.strip_punctuation(factoid_key)
-		factoid_key = self.escape_slashes(factoid_key)
-		factoid_value = self.escape_slashes(factoid_value)
+		factoid_key = self.sqlEscape(factoid_key)
+		factoid_value = self.sqlEscape(factoid_value)
 
 		# {{{ Check and make sure the factoid isn't there
 		# }}}
 		if database.type == "mysql":
 			record = database.doSQL("select count(factoid_key) from factoids where factoid_key='" + factoid_key + "'")
 		elif database.type == "pgsql":
-#			print "select count(factoid_key) from factoids where factoid_key ~* '^" + factoid_key + "$'"
+#			self.debug("select count(factoid_key) from factoids where factoid_key ~* '^" + factoid_key + "$'")
 			record = database.doSQL("select count(factoid_key) from factoids where lower(factoid_key) = '" + factoid_key.lower() + "'")
 		if record[0][0] != 0:
 			if globals().has_key('warning'):
@@ -443,7 +435,7 @@ class list_keys(factoidClass):
 		
 		# {{{ Printing out SQL query to show what is being looked up
 		# }}}
-		#print "select "+ type + " from factoids where "+ type + " like \"%" + search_string + "%\""
+		#self.debug("select "+ type + " from factoids where "+ type + " like \"%" + search_string + "%\"")
 
 		# {{{ Add a nifty little preface to the list showing what was searched and how many match and
 		# (if applicable, how many we are showing) }}}
@@ -487,8 +479,8 @@ class replace(factoidClass):
 
 		# {{{ Prepare the stuff for SQL by escaping slashes
 		# }}}
-		factoid_key = self.escape_slashes(factoid_key)
-		factoid_value = self.escape_slashes(factoid_value)
+		factoid_key = self.sqlEscape(factoid_key)
+		factoid_value = self.sqlEscape(factoid_value)
 		if database.doSQL("select count(factoid_key) from factoids where lower(factoid_key) = '" + factoid_key.lower() + "'")[0][0] != 0:
 			locked_by = database.doSQL("select locked_by from factoids where lower(factoid_key) = '" + factoid_key.lower() + "'")[0][0]
 			created_by = database.doSQL("select created_by from factoids where lower(factoid_key) = '" + factoid_key.lower() + "'")[0][0]
@@ -534,8 +526,8 @@ class lock(factoidClass):
 		# {{{ Every word after the first two is the factoid key
 		# }}}
 		factoid_key = self.strip_words(args["text"], 2)
-		factoid_key = self.escape_slashes(factoid_key)
-		#print action + "ing:", factoid_key
+		factoid_key = self.sqlEscape(factoid_key)
+		#self.debug(action + "ing:", factoid_key)
 
 		if action == "lock":
 			# {{{ We allow people to lock their own factoid, or, if they have lock_priv, whatever they want
@@ -554,7 +546,7 @@ class lock(factoidClass):
 			if len(locked_by) == 0 or len(locked_by[0]) == 0 or locked_by[0][0] == None:
 				return Event("privmsg", "", target, [ "Factoid \"" + factoid_key + "\" is not locked." ])
 			elif locked_by[0][0] != args["source"] and not priv.checkPriv(args["source"], "lock_priv"):
-				print locked_by[0][0], args["source"], priv.checkPriv(args["source"], "lock_priv")
+				self.debug(locked_by[0][0], args["source"], priv.checkPriv(args["source"], "lock_priv"))
 				return Event("privmsg", "", target, [ "No." ])
 			else:
 				database.doSQL("update factoids set locked_by = NULL where lower(factoid_key) = '" + factoid_key.lower() + "'")
@@ -598,13 +590,13 @@ class info(factoidClass):
 		else:
 			locked_time_str = time.asctime(time.localtime(locked_time))
 		
-		reply = factoid + ": created by " + str(created_by) + " on " + created_time_str
+		reply = factoid + ": created by " + self.str(created_by) + " on " + created_time_str
 		if (modified_by is not None):
-			reply += ".  Last modified by " + str(modified_by) + " on " + modified_time_str
-		reply += ".  Last requested by " + str(requested_by) + " on " + requested_time_str + \
+			reply += ".  Last modified by " + self.str(modified_by) + " on " + modified_time_str
+		reply += ".  Last requested by " + self.str(requested_by) + " on " + requested_time_str + \
 			", requested a total of " + str(requested_count) + " times."
 		if (locked_by is not None and locked_time != None):
-			reply += "  Locked by " + str(locked_by) + " on " + time.ctime(locked_time) + "."
+			reply += "  Locked by " + self.str(locked_by) + " on " + time.ctime(locked_time) + "."
 
 		return Event("privmsg", "", target, [reply])
 
@@ -661,7 +653,7 @@ class augment(factoidClass):
 		else:
 			orig_req_by = "'" + orig_req_by + "'"
 			orig_req_time = "'" + str(orig_req_time) + "'"
-		new_factoid = self.escape_slashes(orig_factoid + ", or " + to_add)
+		new_factoid = self.sqlEscape(orig_factoid + ", or " + to_add)
 		# Delete the factoid
 		delete_query = "delete from factoids where lower(factoid_key) = '" \
 			+ factoid_key.lower() + "'"
@@ -798,7 +790,7 @@ class alter(factoidClass):
 
 			# Make a regex object for the first pattern
 			try:
-				str = self.escape_slashes(parts[1])
+				str = self.sqlEscape(parts[1])
 				if case_sensitive:
 					regex = re.compile(str)
 				else:
@@ -816,7 +808,7 @@ class alter(factoidClass):
 				
 					
 		# When all the regexes are applied, store the factoid again
-		factoid = self.escape_slashes(factoid)
+		factoid = self.sqlEscape(factoid)
 		insert_query = "update factoids set factoid_value = '" + factoid + "'" \
 			+ " where lower(factoid_key) = '" + factoid_key.lower() + "'"
 		database.doSQL(insert_query)
