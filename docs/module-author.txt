@@ -1,0 +1,161 @@
+Moobot Module Author Guide 
+by Daniel DiPaolo 
+
+-- Introduction 
+This guide gives a brief introduction on the guidelines for writing a module
+for Moobot as well as offering some tips.
+
+-- Prerequisites 
+You more or less have to have a working Moobot installation to test out
+modules.  You technically can write them without having a Moobot running, but
+testing is not as simple that way.  Plus, since Moobot modules are dynamically
+reloadable, once you start working on your module you can simply reload it
+every time it changes instead of restarting the bot.
+
+That said, you obviously need Python working, and you need the
+moobot_module.py file to import the base module class.  It is included with
+the moobot installation as a standard.
+
+-- Example: the ``hi'' module 
+This is quite simply the dumbest Moobot module of the whole bunch, but it
+serves its purpose in demonstrating the basic requirements of Moobot modules.
+The contents of hi.py are shown below:
+
+#!/usr/bin/env python
+
+"""hi.py - dummy function that says Hi """
+
+from moobot_module import MooBotModule
+
+class hi(MooBotModule):
+	def   init  (self):
+		self.regex="^hi$"
+
+	def handler(self, **args):
+		"""A dummy handler we used for testing -- this is the first handler
+		we wrote"""
+		from irclib import Event
+		return Event("privmsg", "", self.return_to_sender(args), [ "howdy" ])
+
+Now let's look at each of the components.
+
+--- File docstring 
+This isn't required for modules, but it is always nice to use even if it isn't
+very wordy or descriptive.  We have one here just for the sake of encouraging
+the usage of document docstrings.
+
+--- import statements 
+Though you don't necessarily have to use 'from moobot_module import
+MooBotModule', you do have to include MooBotModule somehow.  This is
+the class that all modules inherit from.  It contains some nice functions that
+we will discuss later.  For now all you need to know is that you have to have
+it.
+
+--- Class definition(s) 
+The class definition(s) don't have to match the filename, but if you are going
+to make a single module, the filename and the class name should both describe
+that module (briefly) and you probably want to name them the same, like in our
+example here.
+
+However, note that you do have to derive your class from the MooBotModule base
+class.  Right now there is no specific type-checking making sure that this is
+the case (so, technically, as long as your module conforms to the appropriate
+structure discussed below and shown in the base module class), but please be
+nice and use the base module class.
+
+---  __init__  
+All this function has to do right now is set self.regex  to the
+regular expression you wish your Moobot to use this module for.  We only want
+our Moobot to respond to someone that says "hi" and nothing else, so we set
+our regular expression to "^hi$", meaning it must start and end with ``hi''
+(note: this does not include the bot name).  Any Python regular expression may
+be used for this, as it uses the built-in re module that comes with
+Python.
+
+--- handler  
+This is the main component of all modules, and this is the function that gets
+called when the module is found within the list of handlers registered with
+Moobot (discussed in the next section).  The arguments for this function
+must be as shown in the example: (self, **args) .  Of course,
+the 'self' refers to the explicit scoping that Python uses within its
+class methods.  The '**args' refers to the arguments that the module
+gets passed from Moobot during operation.  Presently, these consist of:
+
+	 args["source"] -	Full nick and hostmask of the person that
+	said whatever item that Moobot is processing.  Example:
+	  moobot!moobot@moobot.sourceforge.net 
+
+	 args["text"] -		Full text that was said to cause this
+	module to be activated.  This   always  includes the bot's nickname
+	even if the shorthand form of addressing is used to address him.  The
+	bot's name is always pre-pended like - "moobot: "
+	
+	 args["type"] -		Either ``pubmsg'' or ``privmsg''.  It is
+	``pubmsg'' if the message was read in a channel that the Moobot is in, and
+	it is ``privmsg'' if the message was sent to Moobot directly.
+	
+	 args["channel"] -	Set to the channel that the message was
+	set in if the message was a public message (a ``pubmsg''), and probably
+	set to ``'' for private messages (``privmsg''s), but I'm too lazy to check
+	it out - feel free to send a patch for this document correcting this.
+
+All handler() functions are expected to return Events, which
+can be imported from irclib .
+
+--- Event description 
+There are four components to an Event.  The first component is the
+type, which is basically always either a ``privmsg'' or an ``action'',
+corresponding to whether the event is to be spoken or ``acted out'' (as much
+as things can be acted out on IRC).  The second component is the source,
+which might as well always be set to ``'', as the event handler code within
+Moobot ignores it and sets it to the appropriate nickmask for your Moobot.
+The third argument is the   target  for the Event.  This should be set to
+either a channel or a nick.  This is usually set by the output of the
+return_to_sender function described in a later section, though it can be set
+by any means you wish.  The last component is the actual message.  Actually it
+is a list of messages which will be said (or performed, for actions) in
+sequence.  Usually modules are encouraged to just output one line to the
+channel to avoid flooding.
+
+In our example, we return a ``privmsg'' (which is somewhat misleading because
+messages to a channel are ``privmsg''s also), to either the person who said it
+to us or to the channel it was said in, and we simply say ``howdy''.  Fairly
+simple, no?
+
+--- Other functions 
+Of course, if it makes sense for your module you may include other functions
+within your module classes if you like, but make sure you follow the Python
+syntax convention of explicit scoping and refer to all other class methods
+using the explicit   self  argument.
+
+-- Functions built in to all Moobot modules 
+--- return_to_sender  
+This is a very useful function (so useful, we included it in the base module,
+imagine that), and it can be seen in the listing of hi.py above. 
+This function basically takes a dict (which, for pretty much all intents and
+purposes should be 'args' most of the time).  If the message is a private
+message, returns the nick of the person who said the message.  Otherwise, it
+returns a string with the name of the channel that the message was said in.
+This is pretty much almost always the behavior desired - answer messages said
+in the channel by replying in the channel, and answer private messages with
+private messages in turn.
+
+-- How Moobot uses modules 
+Modules are registered with the Moobot object before the   start() 
+method of the Moobot is called.  To register a module with Moobot, you simply
+use the add_handler() method of your initialized Moobot object.  The
+lines used to add the hi module are shown below:
+
+		import hi
+		bot.add handler(hi, "hi")
+
+This code assumes that the initialized Moobot object is bot.  The
+first argument to add_handler() is the module instance, hi.
+So it is important to import the module first before trying to add Moobot
+modules (the classes within your module file) with the add_handler() 
+function.  The second argument is the name of the class that contains the code
+for a module and the regex it looks for.
+
+The order of modules is the order in which the regular expressions are
+checked.
+

@@ -1,0 +1,187 @@
+\documentclass{article}
+
+\author{Daniel DiPaolo}
+\title{Moobot Installation Guide}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Prerequisites}
+Moobot is written in Python, and assumes an installation of at \textit{least}
+Python 2.0 on the host machine, or greater.  Other modules are used as well,
+but the ones we use that are not installed along with Moobot (as described in
+this guide), are detected in the installation process, and advisement is given
+accordingly.
+
+
+\section{Obtaining Moobot}
+There are a variety of methods in which one can obtain the sources for moobot.
+You can either obtain one of our releases via some mirror or from our official
+repository on sourceforge.net at
+\texttt{http://www.sourceforge.net/projects/moobot}, where you can download
+official releases, or use CVS to get the latest enhancements to Moobot.  The
+only official way we support of obtaining moobot is, of course, through our
+official repository at sourceforge.net, so that is the only method we will
+describe here.
+\subsection{Sourceforge.net official releases}
+To obtain an official release of Moobot from sourceforge.net, simply go to the
+project page at \texttt{http://www.sourceforge.net/projects/moobot}, and click
+on the package you wish to download (moobot, in this case).  It should bring
+you to a screen which lists all of the available releases of Moobot that we
+have ever done.  Obviously the latest release is recommended, as it will have
+fixed bugs in the previous versions, however you may feel free to pick
+whatever version you like.  For now, the only style of packaging that we will
+have will be zipped/tarred up source collections that you simply unzip and run
+``as is'', however we do plan to offer other means of installation in the
+future.
+
+Once you have obtained the archive for the version of Moobot you wish to use,
+extract it into an appropriate directory (any directory will work, just choose
+one that makes sense within your filesystem).  The next step is installing
+Moobot, which we cover in the next chapter.
+\subsection{Using CVS}
+To obtain the latest version of Moobot, even later than the most recent
+release, you have to use CVS.  Thankfully, sourceforge.net provides us public
+CVS space that can be accessed anonymously by anyone.  And here's how you use
+it to get the latest Moobot source.
+
+First, you will want to create a sort of ``sandbox'' in which you want to
+install Moobot so as not to disrupt other system files.  You can even install
+it in your own home directory if you wish (this is how I run it).  Once that
+is done, change to that directory, and perform the two commands shown below
+(note: the password is empty, simply hit Enter when prompted for a password):
+
+\begin{verbatim}
+cvs -d:pserver:anonymous@cvs.moobot.sf.net:/cvsroot/moobot login
+cvs -z3 -d:pserver:anonymous@cvs.moobot.sf.net:/cvsroot/moobot co moobot
+\end{verbatim}
+
+This should create a \texttt{moobot} directory and place several files and
+subdirectories in it.  Once this is completed, you may update to the most
+recent version of the files you have by simply typing \texttt{cvs update} in
+this directory.  To get any new files added to the project since then,
+however, you may have to reperform the steps above.  Now you are ready to
+install Moobot fully!
+
+\section{Installing Moobot}
+At this point in time, you should have some directory with Moobot sources in
+it (as outlined in the previous section).  For the most part, you are actually
+already done.  All that is left is to make sure certain Python modules are
+installed and to set up database stuff if you wish.  To do this, we have
+provided an installation script for you, \texttt{install.py}.  To run the
+installation script, either make the install script executable using the
+\texttt{chmod} command and then run it with \texttt{./install.py}, or simply
+run it with \texttt{python install.py}.
+\subsection{Checking for modules}
+The first step in the installation is checking to see whether or not all the
+Python modules that Moobot needs/can use are installed on your system.  It
+should prompt you telling you what is going on and ask you to hit enter to
+continue.  Once you do so, it should begin checking for one of a few modules
+that may or may not exist on your system.  Here is a listing of what modules
+Moobot is designed to use right now as well as an explanation of what purpose
+they serve in the operation of Moobot.
+\begin{itemize}
+	\item[\texttt{gtk}]
+		Along with \texttt{GTK}, provides a GUI for viewing and/or
+		editing the contents of the database you choose to use.  This
+		library consists of most of the actual GUI design function
+		calls.
+	\item[\texttt{GTK}]
+		Along with \texttt{gtk}, provieds a GUI for viewing and/or
+		editing the contents of the database you choose to use.  This
+		library consists mostly of constants pertinent to the
+		\texttt{gtk} module.
+	\item[\texttt{irclib}]
+		Provides the core IRC functionality required by Moobot, as
+		well as by \texttt{irclib}, another required library.
+	\item[\texttt{ircbot}]
+		Contains the base class from which Moobot is derived, and
+		provides very low-level bot functionality of Moobot
+	\item[\texttt{MySQLdb}]
+		Provides a Python interface for a MySQL database used for
+		many things that Moobot can do
+	\item[\texttt{PgSQL}]
+		Provides a Python interface for a PostgresSQL database
+		used for many things that Moobot can do
+\end{itemize}
+Some of these modules are considered \emph{crucial} to the usage of Moobot,
+because without them, it simply won't work.  Others, are important, but not
+detrimental to the operation of Moobot.  Lastly, some are merely cosmetic and
+will not adversely affect the operation of Moobot at all.  The install script
+explains the level of importance of each missing module, and you can make your
+own decisions as to whether or not to install the missing modules before
+proceeding with the installation.
+\subsection{Configuring bot parameters}
+The next step in the installation is to configure certain parameters that the
+bot will use in running.  As stated in the install script, the values you
+choose here are not final, so don't be afraid to enter in bogus entries as
+long as you have the intent of fixing them later on.  The values will be
+stored in the \texttt{moobot.conf} configuration file in the same directory as
+the install script, and this file will be parsed for these parameters whenever
+you run Moobot.  The questions for this are fairly straightforward, so we
+won't cover them in this guide.
+
+\emph{(NOTE: If you are using CVS and do not wish your \texttt{moobot.conf}
+file to
+be overwritten when you update to the latest version of CVS (because we do
+include \texttt{moobot.conf} in the CVS tree), then simply copy your
+\texttt{moobot.conf} file to \texttt{/etc/moobot.conf}.  Moobot checks this
+file for values last, and these values will override any values found in a
+\texttt{moobot.conf} file in the current directory.)}
+
+\subsection{Choose a Database}
+If you had one of the aforementioned database modules installed, you are now
+prompted to choose which database you would like to use.  Once you select a
+database type from the list of databases available to you, the installer will
+try to create a symlink (symbolic link) from the database module that you
+chose to \texttt{database.py}.  If your filesystem or operating system doesn't
+support symbolic links, you must copy the file manually.
+
+\subsection{Setting up the Database}
+In order to use Moobot's database capabilities, a certain database structure
+is expected to be in place, as well as at least one entry in a few tables.
+This portion of the install sets that up.
+
+The first thing you are asked is for the bot's username to be used with the
+database.  The actual name chosen here isn't all that important, as long as
+you don't try to use a name that is already existing in the database.
+For example, ``moobot'' will suffice.
+
+Next, you are asked for the host that is running the database.  For all
+intents and purposes, this should almost always be ``localhost'' because in
+99\% of cases, you will want the database to be local.  If you have reasons
+for it to be otherwise, then you are probably smart enough to know what goes
+here.
+
+The name of the database is next and it, like the username, is rather trivial
+as long as you don't use one that is existing already.  Again, ``moobot'' is
+as good a choice as any for this option.
+
+Then you are asked to enter in a password for the database (twice, for
+verification purposes).  Use normal password-choosing conventions here and all
+should be well.
+
+It then asks if you are sure if you want to create all of this now.  Unless
+for some reason you wish to put this off until later, you will want to say
+``yes'' or ``y'' here.  It will then use the database admin tools on your
+system to create a new database user, a new database, and to import the
+database structure which can be seen in the appropriate \texttt{.sql} file
+from our CVS.
+
+\section{Finished!}
+Congratulations!  You should now have a working Moobot.  Simply run
+\texttt{python moobot.py} and it will connect to whatever servers you
+specified in your config file.
+
+\section{Bug Reports}
+Probably the easiest way to contact us with bug reports is to simply hop on
+IRC and join us in \texttt{\#moobot} on \texttt{irc.openprojects.net} and if we
+are around, tell us what problems you are having and we might even test it
+right then and there.
+\end{document}
+
