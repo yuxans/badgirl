@@ -22,13 +22,37 @@
 from moobot_module import MooBotModule
 handler_list = ["grantPriv", "revokePriv", "listPriv"]
 
+privCache = None
+
+def flushPriv():
+	global privCache
+	privCache = None
+
 def checkPriv(hostmask, privilege):
 	"""checks if the user identified by hostmask has privilege privilege
 	returns 0 if the nick/hostmask doesn't have that privilege
 	returns 1 if they do"""
-	import database
-	value=database.doSQL("select count(hostmask) from grants where '" + hostmask + "' LIKE hostmask and (priv_type = '" + privilege + "'  or priv_type = 'all_priv')")
-	return value[0][0]
+	global privCache
+
+	if not privCache:
+		privCache = {}
+		import database, re
+		privs = database.doSQL("SELECT priv_type,hostmask FROM grants ORDER BY priv_type")
+		for priv in privs:
+			ptype, pmask = priv
+			regex = re.compile(re.escape(pmask).replace("\\%", ".*"))
+			if not privCache.has_key(ptype):
+				privCache[ptype] = []
+			privCache[ptype].append(regex)
+	if privCache.has_key(privilege):
+		for regex in privCache[privilege]:
+			if regex.match(hostmask):
+				return 1
+	if privilege != 'all_priv' and privCache.has_key('all_priv'):
+		for regex in privCache['all_priv']:
+			if regex.match(hostmask):
+				return 1
+	return 0
 
 class grantPriv(MooBotModule):
 	def __init__(self):
@@ -55,6 +79,7 @@ class grantPriv(MooBotModule):
 			return Event("privmsg", "", target, [ mask + " already has " + privilege +"." ])
 
 		database.doSQL("insert into grants(hostmask, priv_type) values('" + mask + "', '" + privilege  + "')")
+		flushPriv()
 		return Event("privmsg", "", target, [ "Granted " + privilege + " to " + mask + "." ])
 	
 class revokePriv(MooBotModule):
@@ -83,6 +108,7 @@ class revokePriv(MooBotModule):
 			return Event("privmsg", "", target, [ mask + " does not have " + privilege +"." ])
 	
 		database.doSQL("delete from grants where hostmask = '" + mask + "' and priv_type = '" + privilege +"'")
+		flushPriv()
 		return Event("privmsg", "", target, [ "Revoked " + privilege + " from " + mask + "." ])
 		
 class listPriv(MooBotModule):
