@@ -50,9 +50,9 @@ class stockQuote(MooBotModule):
 			try:    
 				quote = urllib2.urlopen(url).read()
 			except Exception, e:
-				print e
+				self.debug(e)
 				sys.exit()
-			splitquote = quote.split(',')
+			splitquote = quote.decode("gbk", "replace").split(',')
 			if splitquote[1] != "0.00":    
 				quote = "The current price of %s(%s) is %s" % (splitquote[0].strip('"').rstrip(), (splitquote[1])[1:-4] , splitquote[2])
 			else:

@@ -20,10 +20,10 @@
 try:
    import gtk, GTK
 except:
-   print "Ths program uses PyGTK, which doesn't seem to be installed.\n"
-   print "If you're using debian, apt-get install python-gtk,\n"
-   print "otherwise, head on over to http://www.daa.com.au/~james/pygtk/\n"
-   print "and grab it."
+   self.debug("Ths program uses PyGTK, which doesn't seem to be installed.\n")
+   self.debug("If you're using debian, apt-get install python-gtk,\n")
+   self.debug("otherwise, head on over to http://www.daa.com.au/~james/pygtk/\n")
+   self.debug("and grab it.")
 
 
 import database
@@ -140,7 +140,7 @@ class myProg:
 		for record in database.doSQL("select * from "+ self.table.name + " order by " + self.table.order_by):
 			values=[]
 			for index in self.table.order:
-				values.append(string.replace(str(record[index]), "\\", "\\\\"))
+				values.append(string.replace(self.str(record[index]), "\\", "\\\\"))
 			self.listBox.append(values)
 		self.listBox.thaw()
 		self.listBox.columns_autosize()
@@ -192,7 +192,7 @@ class myProg:
 		self.listBox.sort()
 
 	def test(self, *args):
-		print args
+		self.debug(args)
 	
 
 class Table:

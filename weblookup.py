@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: gbk -*-
 
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
 # Copyright (C) 2005 by baa
@@ -38,7 +39,7 @@ class slashdot(MooBotModule):
 		response = connect.getresponse()
 		if response.status != 200:
 			msg = response.status + ": " + response.reason
-			print msg
+			self.debug(msg)
 			return Event("privmsg", "", target, [msg])
 		else:
 			import re
@@ -87,7 +88,7 @@ class google(MooBotModule):
 		response = connect.getresponse()
 		if response.status != 200:
 			msg = response.status + ": " + response.reason
-			print msg
+			self.debug(msg)
 			return Event("privmsg", "", target, [msg])
 		else:
 			listing = response.read()
@@ -111,7 +112,7 @@ class google(MooBotModule):
 
 # 	def handler(self, **args):
 # 		"""gets kernel status"""
-# 		print "kernelStatus"
+# 		self.debug("kernelStatus")
 # 		from telnetlib import Telnet
 # 		import string
 # 		connection=Telnet("kernel.org", 79)
@@ -192,12 +193,14 @@ class dict(MooBotModule):
 		self.rBody = re.compile("^<!-- BODY", re.I)
 		self.ymap = {"slash": "/", "quote": "'", "_e_": 2, "_a": "a:", "int": "S"}
 		self.cmap = {"\\\\": "\\", "5": "'", "E": "2"}
-		self.rNx = re.compile("找不到和您查询的")
-		self.rCtoE = re.compile("简明汉英词典(.*)", re.M)
+		# 参见文件头 coding
+		# 新版本才可以用 u"GBK"
+		self.rNx = re.compile("找不到和您查询的".decode("gbk"))
+		self.rCtoE = re.compile("简明汉英词典(.*)".decode("gbk"), re.M)
 		self.rBlue = re.compile("<font color=blue>", re.I)
-		self.rEtoC = re.compile("简明英汉词典</div>(.*?)</div>", re.S)
+		self.rEtoC = re.compile("简明英汉词典</div>(.*?)</div>".decode("gbk"), re.S)
 		self.rSpell = re.compile("str2img\('([^']+)", re.I)
-		self.rExpl = re.compile('class="explain_(?:attr|item)">(.*)', re.I)
+		self.rExpl = re.compile(u'class="explain_(?:attr|item)">(.*)', re.I)
 
  	def handler(self, **args):
 		import string
@@ -213,21 +216,16 @@ class dict(MooBotModule):
 
 	def lookup_ciba(self, word):
 		connect = httplib.HTTPConnection('cb.kingsoft.com', 80)
-		connect.request("GET", "/search?s=%s&t=word&lang=utf-8" % (unicode(word, "gbk").encode("UTF-8")))
+		connect.request("GET", "/search?s=%s&t=word&lang=utf-8" % (word.encode("UTF-8"), ))
 		response = connect.getresponse()
 		if response.status != 200:
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
-			print loc
-			import re
-			if re.compile("/error").match(loc):
-				return ""
-			else:
-				print "dict word(%s) err(%s) loc(%s)" % (word, msg, loc)
-				return ""
+			self.debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
+			return "error"
 		else:
 			# Do the parsing here
-			html = unicode(response.read(), "UTF-8").encode("gbk", 'replace')
+			html = response.read().decode("UTF-8", "ignore")
 			if self.rNx.search(html):
 				return ""
 	
@@ -269,7 +267,7 @@ class dict(MooBotModule):
 			if re.compile("/error").match(loc):
 				return ""
 			else:
-				print "dict word(%s) err(%s) loc(%s)" % (word, msg, loc)
+				self.debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
 		else:
 			import re
 			# Do the parsing here
@@ -313,7 +311,7 @@ class zipcode(MooBotModule):
 			response = conn.getresponse()
 			conn.close()
 			if response.status != 200:
-				print 'response from zipinfo' + str(status), reason
+				self.debug('response from zipinfo' + str(status), reason)
 			else: 
 				data = response.read()
 				message += self.parse_zipinfo_response(data, flags)
@@ -376,7 +374,7 @@ class zipcode(MooBotModule):
 			pos1 = data.find(TDTAG, pos1+1)
 			pos2 = data.find('<', pos1+1)
 			
-			print pos1, pos2, data[pos1:pos2]
+			self.debug(pos1, pos2, data[pos1:pos2])
 			message = data[pos1+len(TDTAG):pos2]
 			message += ', '
 	
@@ -499,7 +497,7 @@ class babelfish(MooBotModule):
 					(froml, tol)])
 
 		# create the POST body
-		params = {"doit": "done", "intl": "1", "tt": "urltext", "trtext": unicode(translation_text, "gbk").encode("UTF-8"), "lp": translation_key}
+		params = {"doit": "done", "intl": "1", "tt": "urltext", "trtext": translation_text.encode("UTF-8"), "lp": translation_key}
 
 		headers = {"Content-type": "application/x-www-form-urlencoded",
 				"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
@@ -513,14 +511,14 @@ class babelfish(MooBotModule):
 
 			return Event("privmsg", "", self.return_to_sender(args), [msg])
 		else:
-			listing = response.read()
+			listing = response.read().decode("UTF-8", "ignore")
 			listing = listing.replace('\n', '') # get rid of newlines
 
 		searchRegex2 = re.compile("<td bgcolor=white class=s><div style=padding:10px;>(.+?)</div></td>")
 
 		match = searchRegex2.search(listing)
 
-		result = unicode(match.group(1),"UTF-8").encode("gbk")
+		result = match.group(1)
 
 		return Event("privmsg", "", self.return_to_sender(args), 
 			[ "Translation: " + result ])
