@@ -451,7 +451,7 @@ class ServerConnection(Connection):
 		"""[Internal]"""
 
 		try:
-			new_data = self.socket.recv(2**14).decode(self.encoding, "ignore")
+			new_data = self.socket.recv(2**14)
 		except socket.error:
 			# The server hung up.
 			self.disconnect("Connection reset by peer")
@@ -468,6 +468,9 @@ class ServerConnection(Connection):
 		lines = lines[:-1]
 
 		for line in lines:
+			rawdata = line
+			line = line.decode(self.encoding, "ignore")
+
 			if DEBUG:
 				DebugErr("FROM SERVER:", line)
 
@@ -477,7 +480,8 @@ class ServerConnection(Connection):
 			self._handle_event(Event("all_raw_messages",
 									 self.get_server_name(),
 									 None,
-									 [line]))
+									 [line],
+									 rawdata))
 
 			m = _rfc_1459_command_regexp.match(line)
 
@@ -524,12 +528,12 @@ class ServerConnection(Connection):
 						if DEBUG:
 							DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
 								command, prefix, target, m))
-						self._handle_event(Event(command, prefix, target, m))
+						self._handle_event(Event(command, prefix, target, m, rawdata))
 					else:
 						if DEBUG:
-							Debug("command: %s, source: %s, target: %s, arguments: %s" % (
+							DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
 								command, prefix, target, [m]))
-						self._handle_event(Event(command, prefix, target, [m]))
+						self._handle_event(Event(command, prefix, target, [m], rawdata))
 			else:
 				target = None
 
@@ -550,7 +554,7 @@ class ServerConnection(Connection):
 					command = numeric_events[command]
 
 				if DEBUG:
-					Debug("command: %s, source: %s, target: %s, arguments: %s" % (
+					DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
 						command, prefix, target, arguments))
 				self._handle_event(Event(command, prefix, target, arguments))
 
@@ -733,7 +737,7 @@ class ServerConnection(Connection):
 		try:
 			self.socket.send(string.encode(self.encoding, "ignore") + "\r\n")
 			if DEBUG:
-				self.Debug("TO SERVER:", string)
+				DebugErr("TO SERVER:", string)
 		except socket.error:
 			# Aouch!
 			self.disconnect("Connection reset by peer.")
@@ -863,7 +867,7 @@ class SimpleIRCClient:
 
 class Event:
 	"""Class representing an IRC event."""
-	def __init__(self, eventtype, source, target, arguments=None):
+	def __init__(self, eventtype, source, target, arguments=None, rawdata=None):
 		"""Constructor of Event objects.
 
 		Arguments:
@@ -883,6 +887,7 @@ class Event:
 			self._arguments = arguments
 		else:
 			self._arguments = []
+		self._rawdata = rawdata or ""
 
 	def eventtype(self):
 		"""Get the event type."""
@@ -899,6 +904,10 @@ class Event:
 	def arguments(self):
 		"""Get the event arguments."""
 		return self._arguments
+
+	def rawdata(self):
+		"""Get the event rawdata."""
+		return self._rawdata
 
 _LOW_LEVEL_QUOTE = "\020"
 _CTCP_LEVEL_QUOTE = "\134"
