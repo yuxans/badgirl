@@ -64,7 +64,7 @@ class mime(MooBotModule):
 		print args["text"]
 		text = string.join(args["text"].split()[2:])
 		text = escapes(text)
-	
+		# TODO. need change, don't use native tools.
 		if args["text"].split()[1] == "mime":
 			mime = os.popen("echo " + text + " | mimencode")
 		elif args["text"].split()[1] == "unmime":
