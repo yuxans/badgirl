@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
+# Copyright (C) 2005 by baa
+# Copyright (C) 2005 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,7 +21,8 @@
 
 import httplib
 from moobot_module import MooBotModule
-handler_list = ["slashdot", "google", "kernelStatus", "insult", "excuse", "dict", "zipcode", "babelfish"]
+handler_list = ["slashdot", "google", # "insult", "excuse", "kernelStatus"
+		"dict", "zipcode", "babelfish"]
 
 class slashdot(MooBotModule):
 	def __init__(self):
@@ -102,138 +105,189 @@ class google(MooBotModule):
 				line += url + " "
 		return Event("privmsg", "", self.return_to_sender(args), [ line ])
 	
-class kernelStatus(MooBotModule):
-	def __init__(self):
-		self.regex = "^kernel$"
+# class kernelStatus(MooBotModule):
+# 	def __init__(self):
+# 		self.regex = "^kernel$"
 
-	def handler(self, **args):
-		"""gets kernel status"""
-		print "kernelStatus"
-		from telnetlib import Telnet
-		import string
-		connection=Telnet("kernel.org", 79)
-		connection.write("\n")
-		text=""
-		text = connection.read_all()
+# 	def handler(self, **args):
+# 		"""gets kernel status"""
+# 		print "kernelStatus"
+# 		from telnetlib import Telnet
+# 		import string
+# 		connection=Telnet("kernel.org", 79)
+# 		connection.write("\n")
+# 		text=""
+# 		text = connection.read_all()
 	
-		# Extract just the version numbers, instead of flooding
-		# the channel with everything.
-		result = ""
-		for line in text.split("\n"):
-			if len(line.split(":")) > 1:
-				line = line.split(" ", 2)[2]
-				version = string.strip(line.split(":")[1]) + " ;; "
-				line = line.split("of", 2)[0]
-				line = line.split("for", 2)[0]
-				line = line.split("to", 2)[0]
-				result += string.strip(line) + ":   " + version
+# 		# Extract just the version numbers, instead of flooding
+# 		# the channel with everything.
+# 		result = ""
+# 		for line in text.split("\n"):
+# 			if len(line.split(":")) > 1:
+# 				line = line.split(" ", 2)[2]
+# 				version = string.strip(line.split(":")[1]) + " ;; "
+# 				line = line.split("of", 2)[0]
+# 				line = line.split("for", 2)[0]
+# 				line = line.split("to", 2)[0]
+# 				result += string.strip(line) + ":   " + version
 	
-		from irclib import Event
-		target = self.return_to_sender(args)
-		return Event("privmsg", "", target, [ result ])
+# 		from irclib import Event
+# 		target = self.return_to_sender(args)
+# 		return Event("privmsg", "", target, [ result ])
 	
-class insult(MooBotModule):
-	def __init__(self):
-		self.regex = "^insult .+"
-	def handler(self, **args):
-		"""gets an insult"""
-		from telnetlib import Telnet
-		connection=Telnet("insulthost.colorado.edu", 1695)
-		connection.write("\n")
-		text=""
-		#i=connection.read_some()
-		#while i != '':
-		#	text = text + i
-		#	i=connection.read_some()
-		text = connection.read_all()
+# class insult(MooBotModule):
+# 	def __init__(self):
+# 		self.regex = "^insult .+"
+# 	def handler(self, **args):
+# 		"""gets an insult"""
+# 		from telnetlib import Telnet
+# 		connection=Telnet("insulthost.colorado.edu", 1695)
+# 		connection.write("\n")
+# 		text=""
+# 		#i=connection.read_some()
+# 		#while i != '':
+# 		#	text = text + i
+# 		#	i=connection.read_some()
+# 		text = connection.read_all()
 	
-		import string
-		who = args["text"]
-		who = who[string.find(who, " ")+1:]
-		who = who[string.find(who, " ")+1:]
-		text = string.replace(text, "You are", who + " is")
-		from irclib import Event
-		target = self.return_to_sender(args)
-		result = Event("privmsg", "", target, [ text ])
-		return result
+# 		import string
+# 		who = args["text"]
+# 		who = who[string.find(who, " ")+1:]
+# 		who = who[string.find(who, " ")+1:]
+# 		text = string.replace(text, "You are", who + " is")
+# 		from irclib import Event
+# 		target = self.return_to_sender(args)
+# 		result = Event("privmsg", "", target, [ text ])
+# 		return result
 	
-class excuse(MooBotModule):
-	def __init__(self):
-		self.regex = "^excuse$"
-	def handler(self, **args):
-		"Grabs an excuse from the BOFH excuse server"
-		from telnetlib import Telnet
-		connection=Telnet("athena.jive.org", 666)
-		text = ""
-		text = connection.read_all()
-		#i = connection.read_some()
-		#while i != "":
-		#	text = text + i
-		#	i = connection.read_some()
-		connection.close()
-		text = text.split("\n")
-		from string import join
- 		msg = join(text[3:-1])	# The first three lines and the last are unneeded
+# class excuse(MooBotModule):
+# 	def __init__(self):
+# 		self.regex = "^excuse$"
+# 	def handler(self, **args):
+# 		"Grabs an excuse from the BOFH excuse server"
+# 		from telnetlib import Telnet
+# 		connection=Telnet("athena.jive.org", 666)
+# 		text = ""
+# 		text = connection.read_all()
+# 		#i = connection.read_some()
+# 		#while i != "":
+# 		#	text = text + i
+# 		#	i = connection.read_some()
+# 		connection.close()
+# 		text = text.split("\n")
+# 		from string import join
+#  		msg = join(text[3:-1])	# The first three lines and the last are unneeded
 		
-		from irclib import Event
-		target = self.return_to_sender(args)
-		return Event("privmsg", "", target, [msg])
+# 		from irclib import Event
+# 		target = self.return_to_sender(args)
+# 		return Event("privmsg", "", target, [msg])
 
 class dict(MooBotModule):
 	def __init__(self):
-		self.regex = "^dict .+$"
+		import re
+		self.regex = "^dict .+"
+		self.rStrip = re.compile("(<.*?>)+")
+		self.rWord = re.compile("^<!-- WORD", re.I)
+		self.rGif = re.compile("/gif/([\\w_]+)\\.gif", re.I)
+		self.rBody = re.compile("^<!-- BODY", re.I)
+		self.ymap = {"slash": "/", "quote": "'", "_e_": 2, "_a": "a:", "int": "S"}
+		self.cmap = {"\\\\": "\\", "5": "'", "E": "2"}
+		self.rNx = re.compile("ÕÒ²»µ½ºÍÄú²éÑ¯µÄ")
+		self.rCtoE = re.compile("¼òÃ÷ººÓ¢´Êµä(.*)", re.M)
+		self.rBlue = re.compile("<font color=blue>", re.I)
+		self.rEtoC = re.compile("¼òÃ÷Ó¢ºº´Êµä</div>(.*?)</div>", re.S)
+		self.rSpell = re.compile("str2img\('([^']+)", re.I)
+		self.rExpl = re.compile('class="explain_(?:attr|item)">(.*)', re.I)
 
-	def handler(self, **args):
+ 	def handler(self, **args):
 		import string
-		from irclib import Event
-		target = self.return_to_sender(args)
-		defs = self.lookup(string.join(args["text"].split()[2:]))
-		result = ""
-		for element in defs:
-			for line in element.split("."):
-				if len( result + line) < 800:
-					result += line
-		if len(defs) == 0:
-			result = "Could not find definition for " + string.join(args["text"].split()[2:])
-		return Event("privmsg", "", target, [ result ])
+ 		from irclib import Event
+ 		target = self.return_to_sender(args)
+		word = string.join(args["text"].split()[2:])
+ 		# result = self.lookup_yahoo(word)
+ 		result = self.lookup_ciba(word)
+		result = result.replace("&lt;","<").replace("&gt;",">")
+ 		if len(result) == 0:
+ 			result = "Could not find definition for " + word
+ 		return Event("privmsg", "", target, [ result ])
 
-	def lookup(self, word):
-		""" parse the definitions"""
-		import string
-		output = self.raw_lookup(word).replace("\r\n", "\n")
-		if string.find(output, "552 no match") >= 0 or string.find(output, "501 syntax error") >= 0 or string.find(output, "\n150") < 0:
-			return []
-		output = output.split("\n150", 1)[1]
-		defs = output.split("\n.\n")
+	def lookup_ciba(self, word):
+		connect = httplib.HTTPConnection('cb.kingsoft.com', 80)
+		connect.request("GET", "/search?s=%s&t=word&lang=utf-8" % (unicode(word, "gbk").encode("UTF-8")))
+		response = connect.getresponse()
+		if response.status != 200:
+			msg = "%d:%s" % (response.status, response.reason)
+			loc = response.getheader("location")
+			print loc
+			import re
+			if re.compile("/error").match(loc):
+				return ""
+			else:
+				print "dict word(%s) err(%s) loc(%s)" % (word, msg, loc)
+				return ""
+		else:
+			# Do the parsing here
+			html = unicode(response.read(), "UTF-8").encode("gbk", 'replace')
+			if self.rNx.search(html):
+				return ""
+	
+			m = self.rCtoE.search(html)
+			if m:
+				m = self.rBlue.split(m.group(1))[1:]
+				words = []
+				for i in m:
+					words.append(i[:i.find("<")])
+				return word + ": " + ", ".join(words)
+	
+			m = self.rEtoC.search(html)
+			if m:
+				html = m.group(1)
+				result = word + ":"
+				m = self.rSpell.search(html)
+				if m:
+					spell = m.group(1)
+					for k in self.cmap:
+						spell = spell.replace(k, self.cmap[k])
+					result += " /" + spell + "/"
+				m = self.rExpl.search(html)
+				if m:
+					html = m.group(1)
+					html = self.rStrip.sub(" ", html)
+					result += " "
+					result += html
+				return result
+				
+			return ""
 
-		results = []
-		for d in defs:
-			line = d.replace("\n", " ").strip()
-			while line.find("  ") >= 0:
-				line = line.replace("  ", " ")
-			#if line[0] in "123456789/" and len(line)  <= 200:
-			#if len(line)  <= 200:
-			if d != defs[0] and d != defs[-1]:
-				results.append(string.join(line.split()[1:]))
-		return results
-
-	def raw_lookup(self, word):
-		"""gets word definition"""
-		import telnetlib 
-		import time
-		connection=telnetlib.Telnet("dict.org", 2628)
-		connection.write("define * " + word + "\r\n")
-		text=""
-		while connection.read_eager() == "":
-		   time.sleep(.5)
-		i=connection.read_eager()
-		while i != '':
-			text = text + i
-			i=connection.read_eager()
-
-		connection.write("quit\n\r")
-		connection.close()
-		return text
+	def lookup_yahoo(self, word):
+		connect = httplib.HTTPConnection('cn.yahoo.com', 80)
+		connect.request("GET", "/dictionary/result/%s/%s.html" % (word[0], word))
+		response = connect.getresponse()
+		if response.status != 200:
+			msg = "%d:%s" % (response.status, response.reason)
+			loc = response.getheader("location")
+			if re.compile("/error").match(loc):
+				return ""
+			else:
+				print "dict word(%s) err(%s) loc(%s)" % (word, msg, loc)
+		else:
+			import re
+			# Do the parsing here
+			listing = response.read()
+			listing = listing.split("\n")
+			ibody = 0
+			str = word + " "
+			for item in listing:
+				if self.rWord.match(item):
+					for m in self.rGif.finditer(item):
+						m = m.group(1)
+						if self.ymap.has_key(m):
+							m = self.ymap[m]
+						str += m
+				elif self.rBody.match(item):
+					str += self.rStrip.sub("", item) + " "
+					ibody += 1
+			return str
 
 class zipcode(MooBotModule):
 	def __init__(self):
@@ -369,84 +423,105 @@ class zipcode(MooBotModule):
 class babelfish(MooBotModule):
 	"Does a search on babelfish.altavista.com and returns the translation"
 	def __init__(self):
-		self.regex = "^(babelfish|translate) \w+ to \w+ .+"
-
 		# the languages babelfish can do
-		self.languages = { "english" : "en", "chinese" : "zh",
-					"french" : "fr", "german" : "de",
-					"italian" : "it", "japanese" : "ja",
-					"korean" : "ko", "portuguese" : "pt",
-					"russian" : "ru", "spanish" : "es"}
 
-		# the combinations (from_to) that babelfish can translate
-		self.translations =[ "en_zh", "en_fr", "en_de" , "en_it",
-			"en_ja", "en_ko" , "en_pt", "en_es" , "zh_en",
-			"fr_en" , "fr_de", "de_en", "de_fr" , "it_en",
-			"ja_en", "ko_en", "pt_en", "ru_en", "es_en"]
+		self.languages = {"english" : "en",
+				  "chinese" : "zh",
+				  "schinese" : "zh",
+				  "tchinese" : "zt",
+				  "dutch": "nl",
+				  "french" : "fr",
+				  "german" : "de",
+				  "italian" : "it",
+				  "japanese" : "ja",
+				  "korean" : "ko",
+				  "portuguese" : "pt",
+				  "russian" : "ru",
+				  "spanish" : "es",
+				  "greek": "el"}
+
+		# the combinations (from_to) that babelfish can
+		self.translations =["zh_en", "zt_en", "en_zh",
+		"en_zt", "en_nl", "en_fr", "en_de", "en_el", "en_it",
+		"en_ja", "en_ko", "en_pt", "en_ru", "en_es", "nl_en",
+		"nl_fr", "fr_en", "fr_de", "fr_el", "fr_it", "fr_pt",
+		"fr_nl", "fr_es", "de_en", "de_fr", "el_en", "el_fr",
+		"it_en", "it_fr", "ja_en", "ko_en", "pt_en", "pt_fr",
+		"ru_en", "es_en", "es_fr"]
+
+		self.regex = "^((babelfish|translate) \w+ to \w+|%s|babelfish$|translate$)" % ("|".join(self.translations))
+
+
+	def help(self, args):
+		from irclib import Event
+		langs = " ".join(self.languages.keys())
+		trans = " ".join(self.languages.values())
+ 		return Event("privmsg", "", self.return_to_sender(args), [
+			"Usage: translate <FROM_LANGUAGE> to <TO_LANGUAGE> TEXT\r\nAvailable LANGUAGES are \"%s\"" % (langs)
+			+ "\r\nOr: {LN_LN} TEXT\r\nWhere LNs are \"%s\"" % (trans)
+			])
 
 	def handler(self, **args):
-		from irclib import Event, nm_to_n
-		import string, re
+		from irclib import Event
+		import string, re, urllib
 		
-		request = args["text"].split(" ", 2)[2] # chop off the "moobot: babelfish"
+		translation_key = args["text"].split(" ", 2)[1].lower()
+		tmp = args["text"].split(" ", 2)
+		if len(tmp) != 3:
+			return self.help(args)
+		request = tmp[2] # chop off the "moobot: babelfish"
+		if translation_key in self.translations:
+			translation_text = request
+		else:
+			froml = request.split()[0].lower() # the source language
 							# to get something like "english to spanish foo"
-		from_language = request.split()[0] # the source language
-		to_language = request.split()[2] # the destination language
-		translation_text = string.join(request.split()[3:], "+") # the string to translate
-						# we also switch whitespace for +s here,
-						# to work in the HTTP request
+			tol = request.split()[2].lower() # the destination language
+			translation_text = " ".join(request.split()[3:]) # the string to translate
+			if len(translation_text) == 0:
+				return self.help(args)
 
-		# check if we know the languages they want to use
-		if from_language.lower() not in self.languages.keys() :
-			return Event("privmsg", "", self.return_to_sender(args), 
-				[ "unknown language: " + from_language ])
-		if to_language.lower() not in self.languages.keys():
-			return Event("privmsg", "", self.return_to_sender(args), 
-				[ "unknown language: " + to_language ])
+			# check if we know the languages they want to use
+			if froml not in self.languages.keys() :
+				return Event("privmsg", "", self.return_to_sender(args), 
+					[ "unknown language: " + froml ])
+			if tol not in self.languages.keys():
+				return Event("privmsg", "", self.return_to_sender(args), 
+					[ "unknown language: " + tol ])
 
-		# the value for the lp= field for the cgi arguments
-		translation_key = "%s_%s" % (self.languages[from_language.lower()], 
-			self.languages[to_language.lower()])
+			# the value for the lp= field for the cgi arguments
+			translation_key = "%s_%s" % (self.languages[froml], 
+				self.languages[tol])
 
-		# make sure the translation_key is one we can use
-		if translation_key not in self.translations:
-			return Event("privmsg", "", self.return_to_sender(args), 
-				[ "Babelfish doesn't know how to do %s to %s" % 
-				(from_language, to_language)])
+			# make sure the translation_key is one we can use
+			if translation_key not in self.translations:
+				return Event("privmsg", "", self.return_to_sender(args), 
+					[ "Babelfish doesn't know how to do %s to %s" % 
+					(froml, tol)])
 
-		search_request = "/tr?tt=urltext&urltext=%s&lp=%s" % \
-			(translation_text, translation_key) # create the HTTP request
+		# create the POST body
+		params = {"doit": "done", "intl": "1", "tt": "urltext", "trtext": unicode(translation_text, "gbk").encode("UTF-8"), "lp": translation_key}
 
+		headers = {"Content-type": "application/x-www-form-urlencoded",
+				"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
+				"Accept-Encoding": ""}
 		# connect, make the reauest
 		connect = httplib.HTTPConnection('babelfish.altavista.com', 80)
-		connect.request("GET", search_request) 
-
+		connect.request("POST", "/tr", urllib.urlencode(params), headers)
 		response = connect.getresponse()
 		if response.status != 200: # check for errors
 			msg = response.status + ": " + response.reason
-			print msg
-			return Event("privmsg", "", target, [msg])
-		else:
-			listing = response.read() # grab the html source
-			listing = string.replace(listing, '\n', '') # get rid of newlines
 
-		searchRegex = re.compile("<textarea[^<]+</textarea>")
-		searchRegex2 = re.compile("<td bgcolor=white[^<]+</td>")
-				#for some reason, the results are sometimes in a textarea,
-				# and sometimes in a table.  We check if there's a 
-				# <td bgcolor=white before the first textarea, if there is,
-				# we use that.
-		if searchRegex2.search(listing) != None:
-			match = searchRegex2.search(listing)
+			return Event("privmsg", "", self.return_to_sender(args), [msg])
 		else:
-			match = searchRegex.search(listing)
+			listing = response.read()
+			listing = listing.replace('\n', '') # get rid of newlines
 
-		result = match.group() #get the whole textarea node
-		result = string.replace(result, "</textarea>", "")#chop off the closing tag
-		result = string.replace(result, "</td>", "")#chop off the closing tag
-		result = result[result.find(">")+1:] # chop off everything up to the first >
-						# which should be the opening textarea or td 
-						# tag
+		searchRegex2 = re.compile("<td bgcolor=white class=s><div style=padding:10px;>(.+?)</div></td>")
+
+		match = searchRegex2.search(listing)
+
+		result = unicode(match.group(1),"UTF-8").encode("gbk")
 
 		return Event("privmsg", "", self.return_to_sender(args), 
 			[ "Translation: " + result ])
+
