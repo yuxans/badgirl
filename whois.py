@@ -54,18 +54,16 @@ class whois(MooBotModule):
 
 			data = ''
 			dataelement = ''
-			desc = 0
-			pt = re.compile('^inetnum:|^netname:|^country:|^descr:')
-			pt2 = re.compile('^descr:')
+			dones = {}
+			pt = re.compile('^(inetnum|netname|country|descr):')
 
 			for dataelement in alldata:
-				if pt2.match(dataelement):
-					if desc:
-						break
-					else:
-						desc = 1
-				if pt.match(dataelement):
-					data += "\r\n" + unicode(dataelement, 'hz').encode('gbk')
+				m = pt.match(dataelement)
+				if m:
+					k = m.group(1)
+					if not dones.has_key(k):
+						dones[k] = 1
+						data += "\r\n" + unicode(dataelement, 'hz').encode('gbk')
 		else:
 			data = "Sorry, I can only query IP ADDRESS for you."
 
