@@ -44,7 +44,7 @@ import string, thread, threading
 
 
 from ircbot import SingleServerIRCBot, IRCDict, Channel
-from irclib import irc_lower
+from irclib import irc_lower, Debug
 
 
 class MooBot(SingleServerIRCBot):
@@ -52,16 +52,17 @@ class MooBot(SingleServerIRCBot):
 	class HandlerExists(MooBotException): pass
 	config_files = ['moobot.conf', '/etc/moobot/moobot.conf']
 
-	def __init__(self, channels=[], nickname="", server="", port=6667, password="", module_list=[]):
+	def __init__(self, channels=[], nickname="", server="", port=6667, password="", module_list=[], encoding=""):
 		"""MooBot initializer - gets values from config files and uses those
 		unless passed values directly"""
-		print "possible config files: " + ", ".join(self.config_files)
+		Debug("possible config files: " + ", ".join(self.config_files))
 
 		# Get values from config files and replace any of the empty ones above
 		configs = self.get_configs()
 		config_nick = configs['nick']
 		config_server = configs['server']
 		config_port = configs['port']
+		config_encoding = configs['encoding']
 		config_password = configs['password']
 		config_channels = configs['channels']
 		config_module_list = configs['module_list']
@@ -74,8 +75,9 @@ class MooBot(SingleServerIRCBot):
 		if port == 6667: port = config_port
 		if password == "": password = config_password
 		if module_list == []: module_list = config_module_list
+		if encoding == "": encoding = config_encoding
 		# Now that we have our values, initialize it all
-		SingleServerIRCBot.__init__(self, [(server, port, password)], nickname, nickname)
+		SingleServerIRCBot.__init__(self, [(server, port, password, encoding)], nickname, nickname)
 		self.channels = IRCDict()
 		for channel in channels:
 			self.channels[channel] = Channel()
@@ -91,7 +93,7 @@ class MooBot(SingleServerIRCBot):
 	def on_welcome(self, c, e):
 		"""Whenever this bot joins a server, this is executed"""
 		for channel in self.channels.keys():
-			print "Joining", channel
+			Debug("Joining", channel)
 			c.join(channel)
 
 	def on_privmsg(self, c, e):
@@ -105,10 +107,10 @@ class MooBot(SingleServerIRCBot):
 		args["channel"] = e.target()
 		msg = string.strip(msg)
 		from irclib import nm_to_n
-		# print what was said to the stdout with a bit of colour.
-		print YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" + \
+		# Debug(what was said to the stdout with a bit of colour.)
+		Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" + \
 			BLUE + args["channel"] + ">" + NORMAL + \
-			RED + "(" + args["type"] + ")" + NORMAL, args["text"]
+			RED + "(" + args["type"] + ")" + NORMAL, args["text"])
 		temp = threading.Thread(target=self.process_privmsg, args=(msg, args), name="privmsg subthread")
 		temp.setDaemon(1)
 		temp.start()
@@ -132,10 +134,10 @@ class MooBot(SingleServerIRCBot):
 		args["channel"] = e.target()
 		# Then check with all the global handlers, see if any match
 		from irclib import nm_to_n
-		# print what was said to the stdout with a bit of colour.
-		print YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" +\
+		# Debug(what was said to the stdout with a bit of colour.)
+		Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" +\
 			BLUE + args["channel"] + ">" + NORMAL +\
-			RED + "(" + args["type"] + ")" + NORMAL, args["text"]
+			RED + "(" + args["type"] + ")" + NORMAL, args["text"])
 		temp = threading.Thread(target=self.process_pubmsg, \
 			args=(msg, args), name="pubmsg subthread")
 		temp.setDaemon(1)
@@ -219,11 +221,11 @@ class MooBot(SingleServerIRCBot):
 		# This should never come up unless you take out the "dunno" handlers
 		# that generally hand every case that no other handler takes care of
 		if type == Handler.LOCAL:
-			print "Could not get event handler."
-			print "msg:", args["text"]
-			print "type:", args["type"]
-			print "source:", args["source"]
-			print "channel:", args["channel"]
+			Debug("Could not get event handler.")
+			Debug("msg:", args["text"])
+			Debug("type:", args["type"])
+			Debug("source:", args["source"])
+			Debug("channel:", args["channel"])
 
 		return []
 
@@ -247,41 +249,41 @@ class MooBot(SingleServerIRCBot):
 		"""Does an appropriate action based on event"""
 		if event.eventtype() == "privmsg":
 			for line in string.split(event.arguments()[0], "\n"):
-				# print the output to the STDOUT, with a bit of colour
-				print RED + ">" + \
+				# Debug(the output to the STDOUT, with a bit of colour)
+				Debug(RED + ">" + \
 					PURPLE + self.connection.get_nickname() + \
 					RED + "/" + \
 					GREEN + event.target() + \
 					RED + "<" + \
-					NORMAL, line
+					NORMAL, line)
 				self.connection.privmsg(event.target(), line)
 		elif event.eventtype() == "action":
-			print RED + " * " + \
+			Debug(RED + " * " + \
 				PURPLE + self.connection.get_nickname() + \
 				RED + "/" + \
 				GREEN + event.target() + \
-				NORMAL, event.arguments()
+				NORMAL, event.arguments())
 			self.connection.action(event.target(), event.arguments()[0])
 		elif event.eventtype() == "internal":
-			#print "internal", event.arguments()[0], event.target
+			#Debug("internal", event.arguments()[0], event.target)
 			if event.arguments()[0] == "join":
-				print "Joining", event.target()
+				Debug("Joining", event.target())
 				self.connection.join(event.target())
 			elif event.arguments()[0] == "part":
-				print "Parting", event.target()
+				Debug("Parting", event.target())
 				self.connection.part(event.target())
 			elif event.arguments()[0] == "load":
 				self.load_module(event);
 			elif event.arguments()[0] == "unload":
 				self.unload_module(event);
 			elif event.arguments()[0] == "nick":
-				print "Changing nick to ", event.target()
+				Debug("Changing nick to ", event.target())
 				self.connection.nick(event.target())
 			elif event.arguments()[0] == "kick":
-				print "Kicking", event.target(), "from", event.arguments()[1]
+				Debug("Kicking", event.target(), "from", event.arguments()[1])
 				self.connection.kick(event.arguments()[1], event.target())
 			elif event.arguments()[0] == "send_raw":
-				print "Sending raw command: " + event.arguments()[0]
+				Debug("Sending raw command: " + event.arguments()[0])
 				self.connection.send_raw(event.arguments()[1])
 			elif event.arguments()[0] == "modules":
 				from irclib import Event
@@ -318,7 +320,7 @@ class MooBot(SingleServerIRCBot):
 		elif event.eventtype() == "continue":
 			return
 		else:
-			print "This event type", event.eventtype(), "has no suitable event"
+			Debug("This event type", event.eventtype(), "has no suitable event")
 
 	def get_configs(self, filelist=[]):
 		"""Gets configuration options from a list of files"""
@@ -326,34 +328,35 @@ class MooBot(SingleServerIRCBot):
 
 		config = ConfigParser()
 		filelist += MooBot.config_files
-		print "Parsed config files:"
-		print config.read(filelist)
+		Debug("Parsed config files:", config.read(filelist))
 
 		# Initialize the things we will return just in case they aren't in
 		# any of the files that we parse through.  Then get their values
 		# and stick the rest in "others"
 		nick=""; server=""; port=6667; password=""; channels=[]; others={}
+		encoding = "utf-8"
 		module_list = []
 		try:
 			nick = config.get('connection', 'nick')
 			server = config.get('connection', 'server')
+			encoding = config.get('connection', 'encoding')
 			port = int(config.get('connection', 'port'))
 			password = config.get('connection', 'password')
 			channels = config.get('connection', 'channels').split(" ")
 			module_list = config.get('modules', 'modulefiles').split(" ")
 		except ValueError:
-			print "ERROR: Non-numeric port in config files."
+			Debug("ERROR: Non-numeric port in config files.")
 		except NoSectionError:
-			print "ERROR: [connection] section missing from config files."
+			Debug("ERROR: [connection] section missing from config files.")
 		except NoOptionError:
-			print "ERROR: missing vital option"
+			Debug("ERROR: missing vital option")
 		for section in config.sections():
 			if section != "connection":
 				# These will all be returned, don't need to be in others
 				for option in config.options(section):
 					others[option] = config.get(section, option)
 		return {'nick': nick, 'server': server, 'port': port, 'password': password, 
-			'channels': channels, 'module_list': module_list,
+			'channels': channels, 'module_list': module_list, 'encoding': encoding,
 			'others': others}
 	
 	def load_module(self, event):
@@ -372,7 +375,7 @@ class MooBot(SingleServerIRCBot):
 			try:
 				fp, pathname, description = imp.find_module(newmod)
 			except:
-				print "Module \"%s\" not found " % (newmod)
+				Debug("Module \"%s\" not found " % (newmod))
 				if fp:
 					fp.close()
 				continue
@@ -387,9 +390,9 @@ class MooBot(SingleServerIRCBot):
 				for handlerName in importedModule.handler_list:
 					newHandler = Handler(importedModule, handlerName)
 					self.handlers.append(newHandler)
-					print "Added handler: " , handlerName, "for \"" \
+					Debug("Added handler: " , handlerName, "for \"" \
 						+ newHandler.regex.pattern+"\"", \
-						"priority ", newHandler.instance.priority
+						"priority ", newHandler.instance.priority)
 				if importedModule.__name__ not in self.module_list:
 					self.module_list.append(importedModule.__name__)
 			finally:
@@ -434,7 +437,7 @@ class Handler:
 
 	def reInstantiate(self):
 		from re import compile
-		print "reloading %s from %s" % (self.className, self.module.__name__)
+		Debug("reloading %s from %s" % (self.className, self.module.__name__))
 		reload(self.module)
 		self.instance = getattr(self.module, self.className)()
 		self.regex = compile(self.instance.regex)
