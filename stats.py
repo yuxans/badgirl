@@ -20,11 +20,13 @@
 """ stats.py - hehstats, lolstats, etc """
 from moobot_module import MooBotModule
 from moobot import Handler
-handler_list = ["increment", "stats", "reset_stats", "set_stats", "find"]
+handler_list = ["stats", "reset_stats", "set_stats", "find", "increment"]
+
+stats_phrases = "(qgp|\.\.\.|hehe?|h[a4]w|bah|lol|moo|[:;]\))"
 
 class increment(MooBotModule):
 	def __init__(self):
-		self.regex = "^(\.\.\.|hehe?|h[a4]w|bah|lol|moo|[:;]\))$"
+		self.regex = "^%s[.?!]?$" % stats_phrases
 		self.type = Handler.GLOBAL
 		self.priority = 3
 
@@ -34,9 +36,12 @@ class increment(MooBotModule):
 		from irclib import Event
 		import database
 		import string
+		import re
 		from irclib import nm_to_n
 		keyword = args["text"]
-		keyword = keyword[string.find(keyword, " ")+1:]
+		if keyword != "...":
+			keyword = re.sub("[.?!]$", "", keyword)
+		keyword = string.lower(keyword)
 		results=database.doSQL("select counter from stats where nick = '" + nm_to_n(args["source"]) + "' and type = '" + keyword + "'")
 		if len(results) == 0:
 			database.doSQL("insert into stats values( '" + nm_to_n(args["source"]) + "', '" + keyword + "', 0)")
@@ -50,13 +55,12 @@ class increment(MooBotModule):
 
 class stats(MooBotModule):
 	def __init__(self):
-		self.regex = "^(\.\.\.|hehe?|lol|bah|h[a4]w|moo|[:;]\))stats$"
+		self.regex = "^%sstats$" % stats_phrases
 
 	def handler(self, **args):
 		"""when you say, for instance, hehstats, this function is 
 		called and reports your hehstats."""
 		import database
-		import string
 		from irclib import nm_to_n, Event
 
 		target = self.return_to_sender(args)
@@ -119,15 +123,13 @@ class stats(MooBotModule):
 
 class reset_stats(MooBotModule):
 	def __init__(self):
-		self.regex="^(\.\.\.|hehe?|lol|bah|moo|h[a4]w|karma|[:;]\))reset .+$"
+		self.regex="^%sreset .+$" % stats_phrases
 
 	def handler(self, **args):
 		"""deletes a specific stat for a given user"""
 		import database
-		import string
 		import priv
 		from irclib import Event
-		from irclib import nm_to_n
 	
 		target = self.return_to_sender(args)
 	
@@ -138,12 +140,12 @@ class reset_stats(MooBotModule):
 			return Event("privmsg", "", target, [ "You aren't allowed to do that" ])
 		
 		self.debug(type, who)
-		records=database.doSQL("delete from stats where type = '" + type  + "' and nick = '" + who + "'")
+		database.doSQL("delete from stats where type = '" + type  + "' and nick = '" + who + "'")
 		return Event("privmsg", "", target, [ "Reset " + who + "'s " + type + " stats." ])
 
 class set_stats(MooBotModule):
 	def __init__(self):
-		self.regex="^(\.\.\.|hehe?|lol|bah|moo|h[a4]w|karma|[:;]\))set .+ -?\d+$"
+		self.regex="^%sset .+ -?\d+$" % stats_phrases
 
 	def handler(self, **args):
 		"""Set someone's stats to a specific number"""
@@ -193,7 +195,7 @@ class set_stats(MooBotModule):
 
 class find(MooBotModule):
 	def __init__(self):
-		self.regex = "^(stat|hehe?|lol|bah|moo|h[a4]w|karma|[:;]\))find .+$"
+		self.regex = "^(stat|%s)find .+$" % stats_phrases
 
 	def handler(self, **args):
 		"""Search for a certain string having either a given stat or any stat
@@ -220,11 +222,11 @@ class find(MooBotModule):
 			else:
 				msg += "(" + str(count) + " found): "
 			# Now the actual nicks and types
-			query = "select nick, type from stats where nick " \
+			query = "select nick, type, counter from stats where nick " \
 				+ "like '%" + name + "%' limit 15"
 			results = database.doSQL(query)
 			for tuple in results:
-				msg += tuple[0] + " [" + tuple[1] + "] ;; "
+				msg += "%s (%s: %s) ;; " % tuple
 			# Remove the last " ;; "
 			if count != 0:
 				msg = msg[:-4]
@@ -242,11 +244,11 @@ class find(MooBotModule):
 			else:
 				msg += "(" + str(count) + " found): "
 			# Now the actual nicks for that type
-			query = "select nick from stats where nick like " \
+			query = "select nick, counter from stats where nick like " \
 				+ "'%" + name + "%' and type='" + stat + "' limit 15"
 			results = database.doSQL(query)
 			for tuple in results:
-				msg += tuple[0] + " ;; "
+				msg += "%s: %s ;; " % tuple
 			# Remove the last " ;; "
 			if count != 0:
 				msg = msg[:-4]
