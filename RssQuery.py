@@ -28,6 +28,13 @@ class RssRecord(MooBotModule):
 	datas = {}
 	exists = False
 	cached = False
+
+	def getName(self):
+		return self.datas["r_name"]
+
+	def getUrl(self):
+		return self.datas["r_url"]
+
 	def _restore(self, datas):
 		import time
 		if not datas or not datas[0]:
@@ -66,10 +73,6 @@ class RssRecord(MooBotModule):
 								int(self.datas["r_id"])
 								))
 
-	def getTitles(self):
-		datas = self.getDatas()
-		return datas["title"]
-	
 	def getDatas(self):
 		import urllib2, time, database, re, base64
 		try:
@@ -91,7 +94,7 @@ class RssRecord(MooBotModule):
 				encoding = m.group(1)
 				data = data.replace(m.group(0), "")
 
-		data = data.decode(encoding)
+		data = data.decode(encoding.upper().replace("GB2312", "GBK"))
 
 		# {{{ parse
 		from RSS import ns, CollectionChannel, TrackingChannel
@@ -138,7 +141,7 @@ class RssRecord(MooBotModule):
 
 	def getNames():
 		import database
-		rsses = database.doSQL("SELECT r_name FROM rss")
+		rsses = database.doSQL("SELECT r_name FROM rss ORDER BY r_name")
 		names = []
 		for rss in rsses:
 			names.append(rss[0])
@@ -153,6 +156,8 @@ class RssRecord(MooBotModule):
 	flush = staticmethod(flush)
 
 class RssQuery(MooBotModule):
+	inqueries = {}
+
 	def __init__(self):
 		names = None # RssRecord.getNames()
 		if names:
@@ -175,46 +180,62 @@ class RssQuery(MooBotModule):
 			text = None
 
 		cmd = cmd.lower()
-		if cmd == 'rss':
+		if cmd == 'rss' or cmd != 'rssadd' and cmd != 'rssdel' and cmd != 'rssflush':
+			# add back
+			if cmd != 'rss':
+				text = cmd + " " + text
+
 			if text:
 				if text.find(' ') != -1:
-					text, id = text.split(" ", 1)
+					text, cmd = text.split(" ", 1)
 					try:
-						id = int(id)
+						int(cmd)
+						cmd = int(cmd)
 					except:
-						id = 0
+						pass
 				else:
-					id = "no"
+					cmd = "no"
 				rss = RssRecord(text)
-				if rss.exists:
-					datas = rss.getDatas()
-					if id == "no":
+				if not rss.exists:
+					msg = "%s not exists" % text
+				else:
+					name = rss.getName()
+					# no lock implemented yet
+					error = None
+					if self.inqueries.has_key(name):
+						cmd = "busy"
+					else:
+						self.inqueries[name] = True
+						try:
+							datas = rss.getDatas()
+						except Exception, e:
+							error = e
+
+						del self.inqueries[name]
+
+					if error:
+						msg = str(error)
+					elif cmd == "busy":
+						msg = "%s is already in query, please standby" % name
+					elif cmd == "no":
 						msg = text + ": " + " // ".join(datas['title'])[0:400]
-					elif id == 0:
+					elif cmd == "url":
+						msg = "%s: url is %s" % (text, rss.getUrl())
+					elif cmd == 0:
 						msg = "%s: count=%d" % (text, len(datas['link']))
-					elif id:
-						id = id - 1
+					elif cmd:
+						id = cmd - 1
 						links = datas['link']
-						if id > len(links):
+						if id < 0 or id > len(links):
 							msg = "out of ubound"
 						else:
 							desc = datas['description'][id].split('<', 1)[0]
 							desc = desc.split("\n", 1)[0]
 							desc = desc.split("\r", 1)[0]
 							msg = "%s: %s // %s // %s" % (text, links[id], datas['title'][id], desc)
-				else:
-					msg = "%s not exists" % text
 			else:
 				names = RssRecord.getNames() or "oops, None"
-				msg = 'rss is "rss key" or "rssadd key url" or "rssdel key" or "rssflush", where key can be: ' + ", ".join(names)
-
-		elif cmd != 'rssadd' and cmd != 'rssdel' and cmd != 'rssflush':
-			text = cmd
-			rss = RssRecord(text)
-			if rss.exists:
-				msg = text + ": " + " ;; ".join(rss.getTitles())[0:400]
-			else:
-				msg = "%s was deleted" % text
+				msg = 'rss is "rss $key [|$num|url]" or "rssadd $key $url" or "rssdel $key" or "rssflush", where $key can be one of: ' + ", ".join(names)
 		elif priv.checkPriv(args["source"], "rss") == 0:
 			msg = "You don't have permission to do that."
 		elif cmd == 'rssflush':
