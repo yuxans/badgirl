@@ -56,7 +56,7 @@ notify.set()
 countLock = thread.allocate_lock()
 
 type = "mysql"
-del conn
+
 print "initializing DB connections & locks"
 for j in range(num_connections):
 	conn = MySQLdb.connect(host = dbhostname, port = dbport, user = dbuser, db = dbname, passwd=dbpass,
