@@ -40,7 +40,7 @@ def checkPriv(hostmask, privilege):
 		privs = database.doSQL("SELECT priv_type,hostmask FROM grants ORDER BY priv_type")
 		for priv in privs:
 			ptype, pmask = priv
-			regex = re.compile(re.escape(pmask).replace("\\%", ".*"))
+			regex = re.compile(re.escape(pmask).replace("\\%", ".*"), re.I)
 			if not privCache.has_key(ptype):
 				privCache[ptype] = []
 			privCache[ptype].append(regex)
@@ -121,7 +121,7 @@ class listPriv(MooBotModule):
 		import database
 	
 		if checkPriv(args["source"], "list_priv") == 0:
-			return Event("privmsg", "", target, [ "You don't have permission to do that." ])
+			return Event("privmsg", "", self.return_to_sender(args), [ "You don't have permission to do that." ])
 	
 		privs = database.doSQL("SELECT priv_type,hostmask FROM grants")
 		p = []
