@@ -5,6 +5,27 @@
 -- Server version	3.23.49-log
 
 --
+-- Table structure for table 'alias'
+--
+
+CREATE TABLE alias (
+  nick varchar(31) NOT NULL default '',
+  realnick varchar(31) NOT NULL default '',
+  type varchar(20) NOT NULL default '',
+  UNIQUE KEY nick (nick)
+) TYPE=MyISAM;
+
+--
+-- Table structure for table 'aliasregex'
+--
+
+CREATE TABLE aliasregex (
+  regex varchar(64) NOT NULL default '',
+  realnick varchar(31) NOT NULL default '',
+  UNIQUE KEY regex (regex)
+) TYPE=MyISAM;
+
+--
 -- Table structure for table 'data'
 --
 
@@ -13,6 +34,15 @@ CREATE TABLE data (
   type varchar(20) NOT NULL default '',
   created_by varchar(100) default NULL,
   PRIMARY KEY  (data,type)
+) TYPE=MyISAM;
+
+--
+-- Table structure for table 'deb'
+--
+
+CREATE TABLE deb (
+  package varchar(255) default NULL,
+  build enum('stable','testing','unstable') default NULL
 ) TYPE=MyISAM;
 
 --
@@ -26,9 +56,9 @@ CREATE TABLE factoids (
   requested_count int(11) default NULL,
   created_by varchar(150) default NULL,
   created_time decimal(11,0) default NULL,
-  modified_by varchar(192) default NULL,
+  modified_by varchar(150) default NULL,
   modified_time decimal(11,0) default NULL,
-  locked_by varchar(150) default NULL,
+  locked_by varchar(64) default NULL,
   locked_time decimal(11,0) default NULL,
   factoid_value text,
   PRIMARY KEY  (factoid_key)
@@ -85,6 +115,7 @@ CREATE TABLE seen (
   hostmask varchar(150) default NULL,
   time decimal(11,0) default NULL,
   message text,
+  type varchar(20) NOT NULL default '',
   PRIMARY KEY  (nick)
 ) TYPE=MyISAM;
 
@@ -108,6 +139,17 @@ CREATE TABLE webstats (
   count decimal(10,0) NOT NULL default '0',
   quote text,
   quote_time decimal(11,0) default NULL,
-  channel varchar(255) default NULL
+  channel varchar(255) default NULL,
+  type varchar(30) default 'privmsg'
 ) TYPE=MyISAM;
 
+--
+-- Table structure for table 'urls'
+--
+
+CREATE TABLE url (
+  nick varchar(64) NOT NULL,
+  time timestamp NOT NULL,
+  string text NOT NULL,
+  url_id integer AUTO_INCREMENT
+) TYPE=MyISAM;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import moobot_module
+from moobot_module import MooBotModule, MooBotModuleException
 
 class MooBotDBModule(MooBotModule):
 	"Base class for all MooBot modules using DB access"

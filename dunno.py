@@ -31,23 +31,14 @@ class dunno(MooBotModule):
 	def handler(self, **args):
 		"""grabs a random reply from the database"""
 		from irclib import Event
-		import database, string, random
+		import database, string
 		from irclib import nm_to_n
+                # Different names; same function.  Sigh.
 		if database.type == "pgsql":
-			# For postgres, we find the number of dunnos, calculate a random
-			# offset into the table based on that number (the offset is
-			# a zero-index offset), and then select the dunno at that offset
-			# into the data table.
-			random.seed()
-			num_query = "select count(data) from data where type='dunno'"
-			num_dunnos = database.doSQL(num_query)[0][0]
-			offset = random.randint(1, num_dunnos) - 1
 			dunno_query = "select data from data where type='dunno' order " \
-				+ "by data limit 1 offset " + str(offset)
+				+ "by random() limit 1"
 			line = database.doSQL(dunno_query)[0][0]
 		elif database.type == "mysql":
-			# For MySQL we simply use the rand() function to pick a random
-			# dunno for us
 			dunno_query = "select data from data where type='dunno' order " \
 				+ "by rand() limit 1"
 			line = database.doSQL(dunno_query)[0][0]

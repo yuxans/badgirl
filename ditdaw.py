@@ -19,7 +19,7 @@
 
 import string
 from moobot_module import MooBotModule
-handler_list=["ditdaw"]
+handler_list=["ditdaw","dawdit"]
 
 class ditdaw(MooBotModule):
 	"""
@@ -68,7 +68,10 @@ class ditdaw(MooBotModule):
 			"7" : "--... ",
 			"8" : "---.. ",
 			"9" : "----. ",
-			" " : "		 "
+			"?" : "..--.. ",
+			"." : ".-.-.- ",
+			"," : "--..-- ",
+			" " : "	 "
 		}
 	
 		# Strip botname and command
@@ -88,6 +91,79 @@ class ditdaw(MooBotModule):
 				n_message += tr[letter]
 			except KeyError:
 				n_message += letter + " "
+	
+		target = self.return_to_sender(args)
+	
+		from irclib import Event
+		result = Event("privmsg", "", target, [ n_message ])
+		return result
+
+class dawdit(MooBotModule):
+	"""
+	Module to convert morse code to plain text for MooBot
+	"""
+
+	def __init__(self):
+		self.regex = "^dawdit .+"
+
+	def handler(self, **args):
+		# Code definition.	Pretty long
+		tr = {
+			".-"    : "a",
+			"-..."  : "b",
+			"-.-."  : "c",
+			"-.."   : "d",
+			"."     : "e",
+			"..-."  : "f",
+			"--."   : "g",
+			"...."  : "h",
+			".."    : "i",
+			".---"  : "j",
+			"-.-"   : "k",
+			".-.."  : "l",
+			"--"    : "m",
+			"-."    : "n",
+			"---"   : "o",
+			".--."  : "p",
+			"--.-"  : "q",
+			".-."   : "r",
+			"..."   : "s",
+			"-"     : "t",
+			"..-"   : "u",
+			"...-"  : "v",
+			".--"   : "w",
+			"-..-"  : "x",
+			"-.--"  : "y",
+			"--.."  : "z",
+			"-----" : "0",
+			".----" : "1",
+			"..---" : "2",
+			"...--" : "3",
+			"....-" : "4",
+			"....." : "5",
+			"-...." : "6",
+			"--..." : "7",
+			"---.." : "8",
+			"----." : "9",
+			""      : " ",
+			"..--.." : "?",
+			".-.-.-" : ".",
+			"--..--" : ","
+		}
+	
+		# Strip botname and command
+		message = args["text"].split(" ")[2:]
+	
+		n_message = ""
+	
+		# Make the translation. If the letter has no code in the 
+		# translation table, add it in its "natural" form.
+		#
+		for group in message:
+			try:
+				n_message += tr[group]
+			except KeyError:
+				n_message += group + " "
 	
 		target = self.return_to_sender(args)
 	

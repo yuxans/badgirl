@@ -40,14 +40,12 @@ class ignore(MooBotModule):
 
 class ignorePublic(ignore):
 	def __init__(self):
-		self.regex = ".*"
-		self.priority = -19
+		ignore.__init__(self)
 		self.type = Handler.GLOBAL
 
 class ignorePrivate(ignore):
 	def __init__(self):
-		self.regex = ".*"
-		self.priority = -19
+		ignore.__init__(self)
 		self.type = Handler.LOCAL
 
 

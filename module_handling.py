@@ -20,7 +20,7 @@
 """module_handling.py - used to load/unload/reload modules"""
 
 from moobot_module import MooBotModule
-handler_list = ["reload", "load", "unload"]
+handler_list = ["reload", "load", "unload", "processLoadUnload"]
 
 
 class reload(MooBotModule):
@@ -88,3 +88,15 @@ class unload(MooBotModule):
 			return Event("internal", "", "", [ "unload" ] + module_list)
 		else:
 			return Event("privmsg", "", self.return_to_sender(args), [ "that requires module_priv." ])
+
+class processLoadUnload(MooBotModule):
+	def __init__(self):
+		self.type = "internal"
+	def handler(self, **args):
+		bot = args["ref"]()
+		event = args["event"]
+		if event.arguments()[0] == "load":
+			bot.load_module(event)
+		elif event.arguments()[0] == "unload":
+			bot.unload_module(event)
+

@@ -158,9 +158,6 @@ class wordgame(MooBotModule):
 	def get_new_answer(self):
 		""" Retrieves a random word for codeexamples.org """
 		import httplib
-		import random
-
-		rand = random.Random()
 
 		conn = httplib.HTTPConnection('www.codeexamples.org')
 		conn.request("GET", '/cgi-bin/randomword.cgi')
@@ -291,7 +288,7 @@ class wordgame(MooBotModule):
 	def do_chan(self, mask, input):
 		import priv
 		if priv.checkPriv(mask, "all_priv") == 0:
-			return "I don't have to listen to you, " + who
+			return "I don't have to listen to you."
 		else:
 			try:
 				if input[0] == '+':

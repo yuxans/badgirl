@@ -20,7 +20,7 @@
 """priv.py - used for checking privelages on certain functions from a database """
 
 from moobot_module import MooBotModule
-handler_list = ["grantPriv", "revokePriv"]
+handler_list = ["grantPriv", "revokePriv", "showPriv"]
 
 def checkPriv(hostmask, privilege):
 	"""checks if the user identified by hostmask has privilege privilege
@@ -84,4 +84,20 @@ class revokePriv(MooBotModule):
 	
 		database.doSQL("delete from grants where hostmask = '" + mask + "' and priv_type = '" + privilege +"'")
 		return Event("privmsg", "", target, [ "Revoked " + privilege + " from " + mask + "." ])
+		
+class showPriv(MooBotModule):
+	def __init__(self):
+		self.regex="^privs( .+)?$"
+
+	def handler(self, **args):
+		"""Checks what privs a given nick has."""
+		from irclib import Event
+		import database, re
+
+		text = ""
+		hostmask = args["source"]
+		for result in database.doSQL("select priv_type from grants where '" + hostmask + "' LIKE hostmask"):
+			text += result[0] + ", "
+		text = re.sub(", $", "", text)
+		return Event("privmsg", "", self.return_to_sender(args), [ "Your privs are : " + text ])
 		

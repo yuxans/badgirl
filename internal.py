@@ -22,7 +22,7 @@
 This module [will have] functions for such things as channel joins and parts,
 (de)opping, et cetera.
 """
-handler_list=["join", "nick", "part", "list_modules", "send_raw", "kick"]
+handler_list=["join", "nick", "part", "list_modules", "send_raw", "kick", "op", "internalEventProcess"]
 
 from moobot_module import MooBotModule
 
@@ -46,7 +46,8 @@ class join(MooBotModule):
 		channel = args["text"]
 		channel = channel[string.find(channel, " ")+1:]
 		channel = channel[string.find(channel, " ")+1:]
-		result = Event("internal", "", channel, [ "join" ] )
+		result = [Event("internal", "", channel, [ "join" ] )]
+		result.append(Event("privmsg","", channel, ["Ok, I'm here, now what are your other two wishes?"]))
 		return result
 
 class nick(MooBotModule):
@@ -78,10 +79,10 @@ class join_nopriv(MooBotModule):
 	def handler(self, **args):
 		"""handles "join" commands without priv checking"""
 		from irclib import Event
-		target = args["channel"]
-		if args["type"] == "privmsg":
-			from irclib import nm_to_n
-			target=nm_to_n(args["source"])
+		#target = args["channel"]
+		#if args["type"] == "privmsg":
+		#	from irclib import nm_to_n
+		#	target=nm_to_n(args["source"])
 		import string
 		print "join"
 		channel = args["text"]
@@ -117,10 +118,10 @@ class part_nopriv(MooBotModule):
 	def handler(self, **args):
 		"""handles "part" commands without priv checking"""
 		from irclib import Event
-		target = args["channel"]
-		if args["type"] == "privmsg":
-			from irclib import nm_to_n
-			target=nm_to_n(args["source"])
+		#target = args["channel"]
+		#if args["type"] == "privmsg":
+		#	from irclib import nm_to_n
+		#	target=nm_to_n(args["source"])
 		import string
 		print "part"
 		channel = args["text"]
@@ -149,6 +150,23 @@ class kick(MooBotModule):
 		result = Event("internal", "", string.split(user)[1], [ "kick" ,string.split(user)[0]] )
 		return result
 
+class op(MooBotModule):
+	def __init__(self):
+		self.regex = "^op #.+ .+"
+
+	def handler(self, **args):
+		"""handles "op" commands"""
+		from irclib import Event
+		import priv
+		if priv.checkPriv(args["source"], "op_priv") == 0:
+			return Event("privmsg", "", self.return_to_sender(args), [ "You do not have permission to do that." ])
+		import string
+		user = args["text"]
+		user = user[string.find(user, " ")+1:]
+		user = user[string.find(user, " ")+1:]
+		result = Event("internal", "", string.split(user)[1], [ "op", string.split(user)[0]] )
+		return result
+
 class list_modules(MooBotModule):
 	def __init__(self):
 		self.regex = "^MODULES?\s+.*"
@@ -174,3 +192,57 @@ class send_raw(MooBotModule):
 
 		print string.split(args["text"], " ", 3)[3]
 		return Event("internal", "send_raw", "", ["send_raw", string.split(args["text"], " ", 3)[3] ])
+
+class internalEventProcess(MooBotModule):
+	def __init__(self):
+		self.type = "internal"
+	def handler(self, **args):
+		from handler import Handler
+		bot = args["ref"]()
+		event = args["event"]
+		#print "internal", event.arguments()[0], event.target
+		if event.arguments()[0] == "join":
+			print "Joining", event.target()
+			bot.connection.join(event.target())
+		elif event.arguments()[0] == "part":
+			print "Parting", event.target()
+			bot.connection.part(event.target())
+		elif event.arguments()[0] == "nick":
+			print "Changing nick to ", event.target()
+			bot.connection.nick(event.target())
+		elif event.arguments()[0] == "kick":
+			print "Kicking", event.target(), "from", event.arguments()[1]
+			bot.connection.kick(event.arguments()[1], event.target())
+		elif event.arguments()[0] == "op":
+			print "Opping", event.target(), "from", event.arguments()[1]
+			bot.connection.mode(event.arguments()[1], "+o " + event.target())
+		elif event.arguments()[0] == "send_raw":
+			print "Sending raw command: " + event.arguments()[0]
+			bot.connection.send_raw(event.arguments()[1])
+		elif event.arguments()[0] == "modules":
+			from irclib import Event
+			match = 0
+			for module in event.arguments()[1].split(" "):
+				for handlerType in bot.handlers.keys():
+					for handler in bot.handlers[handlerType]:
+						if handler.className == module:
+							match = 1
+							if handler.className is not None:
+								msg = `handler.pattern()` + ": " + \
+									`handler.func_name()` + "() - " + \
+									`handler.instance.__doc__` + " ("
+								if handler.type == Handler.GLOBAL:
+									msg += "global)"
+								else:
+									msg += "local)"
+							else:
+								msg = handler.pattern() + ": " + \
+									handler.func_name() + "() ("
+								if handler.type == Handler.GLOBAL:
+									msg += "global)"
+								else:
+									msg += "local)"
+			if match == 0:
+				msg = "no handler found with function " + module + "()"
+			bot.do_event(Event("privmsg", "", event.target(), [msg]))
+

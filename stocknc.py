@@ -28,9 +28,8 @@ class stockQuote(MooBotModule):
 		from irclib import Event 
 		target = self.return_to_sender(args)
 
-		import urllib2, string, sys
+		import urllib2, sys
 		symbol = args["text"].split()[2]
-		newsymbol = symbol.upper()
 		base = 'http://finance.yahoo.com/d/quotes.csv?s=' 
 		tail = '&f=sl1d1t1c1ohgv&e=.csv' 
 		url = base+symbol+tail 
@@ -41,7 +40,7 @@ class stockQuote(MooBotModule):
 			sys.exit()
 		splitquote = quote.split(',')
 		if splitquote[1] != "0.00":    
-			quote = "The current price of %s is %s" % ((splitquote[0])[1:-1] , splitquote[1])
+			quote = "The current price per share of %s is $%s" % ((splitquote[0])[1:-1] , splitquote[1])
 		else:
 			quote = "Sorry, I couldn't find that one"
 		return Event("privmsg", "", target, [quote])

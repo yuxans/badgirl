@@ -35,12 +35,12 @@ class count_speak_times(MooBotModule):
 		many times a person has spoken.  Also stores a random quote from the
 		person (basically 10% chance a given quote is going to be chosen for the
 		"random quote" in the database."""
-		import database, time, random, string, seen
+		import database, time, random, seen
 		from irclib import Event, nm_to_n
 	
 		# Get nick and quote text
 		nick = nm_to_n(args["source"]).lower()
-		quote = seen.escape_quotes(string.joinfields(args["text"].split()[1:]))
+		quote = seen.escape_quotes(args["text"])
 		channel = args["channel"].lower()
 		if args["type"] == "privmsg": target = nm_to_n(args["source"])
 		else: target = args["channel"]
@@ -55,8 +55,8 @@ class count_speak_times(MooBotModule):
 				+ " quote_time) values('" + nick + "', '" + channel + "', 1, '" \
 				+ quote + "', " + str(int(time.time())) + ")"
 			database.doSQL(query)
-#			response.append(Event("action", "", target, \
-#				["jots down a new quote for " + nick]))
+			response.append(Event("action", "", target, \
+				["jots down a new quote for " + nick]))
 		else:
 			import time
 			# Get the current count and increment it
@@ -82,7 +82,8 @@ class count_speak_times(MooBotModule):
 					+ " and channel='" + channel + "'"
 				database.doSQL(query)
 				if new_count > 10:
-					response.append(Event("continue", "", target, [""]))
+					response.append(Event("action", "", target, \
+						["jots down a new quote for " + nick]))
 			else:
 				query = "update webstats set count=" + str(new_count) + " where " \
 				+ "nick='" + nick + "' and channel='" + channel + "'"
@@ -105,7 +106,11 @@ class get_quote(MooBotModule):
 		quote = ""
 		if record:
 			print record
-			quote = "<" + str(record[0][0]) + "/" + str(record[0][4]) + "> " + str(record[0][2])
+			if record[0][5] == "privmsg":
+				quote = "<" + str(record[0][0]) + "/" + str(record[0][4]) + "> " + str(record[0][2])
+			elif record[0][5] == "action":
+				quote = "* " + str(record[0][0]) + "/" + str(record[0][4]) + " " + str(record[0][2])
+
 		else:
 			quote = "No quote available from " + args["text"].split()[2]
 		if args["type"] == "privmsg":

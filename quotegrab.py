@@ -28,21 +28,38 @@ class quotegrab(MooBotModule):
 	""" grabs a user's last quote from the 'seen' table and uses it as
 	their quote for the channel in webstats."""
 	def __init__(self):
-		self.regex="^quotegrab\s.+$"
+		self.regex="^(qg|quotegrab)(\s.+)?$"
 
 	def handler(self, **args):
 		import database, priv, string
-		from irclib import nm_to_n, Event
-		user = args["text"].split()[2] # get name
+		from irclib import Event, nm_to_n
+		# if we don't have a nick supplied, get the second most recent form the DB
+		# (the most recent would be the person saying "~qg"
+		try:
+			user = args["text"].split()[2] # get name
+		except IndexError:
+			temp = database.doSQL("select nick from seen order by time desc limit 2")
+			if len(temp) == 2:
+				user=temp[1][0]
+			else:
+				user=temp[0][0]
+
+		if nm_to_n(args["source"]).lower() == user.lower():
+			return Event("privmsg", "", self.return_to_sender(args), [ "Can't quotegrab yourself!" ])
+
 		if priv.checkPriv(args["source"], "quote_priv") == 0: #check if requester is allowed to do this
 			return Event("privmsg", "", self.return_to_sender(args), [ "That requires quote_priv" ])
-		results = database.doSQL("select message, time from seen where nick = '%s'" % (user))
+
+		results = database.doSQL("select message, time, type from seen where nick = '%s'" % (user))
 		# check if they have a "seen" entry, act accordingly
 		if len(results) > 0:
-			quote, time = results[0]
+			quote, time, type = results[0]
 		else:
 			return Event("privmsg", "", self.return_to_sender(args), [ "No quote available for %s" % (user) ])
+		# If it's not a privmsg, spit it back
+		if type not in ["privmsg", "action"]:
+			return Event("privmsg", "", self.return_to_sender(args), [ "Last event seen was not a message or action, not grabbing quote for %s" % user ])
 		#update their webstats entry with the new info
-		database.doSQL("update webstats set quote = '%s', quote_time = %s where nick = '%s' and channel = '%s'" % (string.replace(string.replace(quote, "\\", "\\\\"), "'", "\\'"), str(time), user, args["channel"]))
+		database.doSQL("update webstats set quote = '%s', quote_time = %s, type= '%s' where nick = '%s' and channel = '%s'" % (string.replace(string.replace(quote, "\\", "\\\\"), "'", "\\'"), str(time), type, user, args["channel"]))
 			
 		return Event("privmsg", "", self.return_to_sender(args), [ "Grabbing quote for %s" % (user) ])

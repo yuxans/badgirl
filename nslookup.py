@@ -29,7 +29,7 @@ class nslookup(MooBotModule):
 
 	def handler(self, **args):
 		"""Does domain name lookups or reverse lookups on IPs"""
-		import socket, string, re
+		import socket, re
 
 		host = args["text"].split()
 		host = host[2]

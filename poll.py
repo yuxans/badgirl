@@ -28,7 +28,7 @@ class show_poll(MooBotModule):
 
 	def handler(self, **args):
 		"""displays a poll"""
-		import database
+		import database, string
 		from irclib import Event
 		target=args["channel"]
 		if args["type"] == "privmsg":
@@ -44,7 +44,7 @@ class show_poll(MooBotModule):
 		# and return them.
 		text = database.doSQL("select question from poll where poll_num =" + poll_num)[0][0] + "  :  "
 		for question in database.doSQL("select * from poll_options where poll_num =" + poll_num + " order by option_key"):
-			text += question[1] + ")" + question[2] + " (" + str(database.doSQL("select count(voter_nickmask) from poll_votes where poll_num =" + poll_num + " and option_key = '"+ question[1]  +"'")[0][0])+ " votes)  ;;  "
+			text += question[1] + ")" + question[2] + " (" + str(database.doSQL("select count(voter_nickmask) from poll_votes where poll_num =" + poll_num + " and option_key = '"+ string.replace(question[1], "'", "\\'")  +"'")[0][0])+ " votes)  ;;  "
 	
 		return Event("privmsg", "", target, [ text ])
 	
@@ -179,7 +179,7 @@ class remove_poll(MooBotModule):
 		""" removes a poll. 
 		Syntax:
 		moobot: remove poll #"""
-		import database, priv, string
+		import database, priv
 		from irclib import Event
 		target=args["channel"]
 		if args["type"] == "privmsg":
