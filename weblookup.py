@@ -30,7 +30,7 @@ class slashdot(MooBotModule):
 
 	def handler(self, **args):
 		"Gets headlines from slashdot.org"
-		from irclib import Event, nm_to_n
+		from irclib import Event
 		target = self.return_to_sender(args)
 
 		connect = httplib.HTTPConnection('slashdot.org', 80)
@@ -74,7 +74,7 @@ class google(MooBotModule):
 		self.regex = "^google for .+"
 
 	def handler(self, **args):
-		from irclib import Event, nm_to_n
+		from irclib import Event
 		import string
 		self.return_to_sender(args)
 		
