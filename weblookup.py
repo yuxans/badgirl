@@ -4,8 +4,6 @@
 # Copyright (C) 2005 by baa
 # Copyright (C) 2005 by FKtPp
 #
-# $CVSHeader
-# 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
@@ -26,8 +24,7 @@
 import httplib
 from moobot_module import MooBotModule
 handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
-		"babelfish", "debpackage", # "debfile",
-		"foldoc", "pgpkey",
+		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
 		"geekquote"]
 
 class slashdot(MooBotModule):
@@ -408,7 +405,9 @@ class babelfish(MooBotModule):
 
 import HTMLParser2 
 class debpackage(MooBotModule, HTMLParser2.HTMLParser):
-	max_packages = 10
+	"""
+	Does a package search on http://packages.debian.org and returns top 10 result
+	"""
 	def __init__(self):
 		self.regex="^debpackage .+"
 		self.package = ""
@@ -422,10 +421,11 @@ class debpackage(MooBotModule, HTMLParser2.HTMLParser):
 		self.list = "%s:" % self.package
 		self.li = 0
 		self.li_over = False
-		self.after_br = False		
+		self.after_br = False
+		self.block_size = 400
+		self.block = 400
 
 	def handler(self, **args):
-		import re
 		import httplib
 		from irclib import Event
 
@@ -485,6 +485,10 @@ class debpackage(MooBotModule, HTMLParser2.HTMLParser):
 			self.li += 1
 			self.after_br = False
 			if self.li <= self.__max_hit:
+				# TODO. fix break calculating method
+				if len(self.list) >= self.block:
+					self.list += "\n%s:" % self.package
+					self.block += self.block_size
 				self.list += " =%d=> " % self.li
 			else:
 				self.li_over = True
@@ -508,6 +512,95 @@ class debpackage(MooBotModule, HTMLParser2.HTMLParser):
 				if not self.in_a:
 					if not self.after_br:
 						self.list += data.strip()
+
+class debfile(MooBotModule, HTMLParser2.HTMLParser):
+	"""
+	Does a file search on http://packages.debian.org and returns top 10 matched package names
+	"""
+	def __init__(self):
+		self.regex = "^debfile .+"
+		self.file = ""
+		self.version = ""
+		HTMLParser2.HTMLParser.__init__(self)
+
+	def reset(self):
+		HTMLParser2.HTMLParser.reset(self)
+		self.list = "%s(%s): " % (self.file, self.version)
+		self.inner_div = False
+		self.after_hr = False
+		self.is_result_table = False
+		self.in_box = False
+		self.hit = 0
+		self.__max_hit = 10
+		self.over = False
+		self.block = 400
+		self.block_size = 400
+
+	def handler(self, **args):
+		import urllib
+		from irclib import Event
+		target = self.return_to_sender(args)
+		self.version = ['stable', 'testing', 'unstable']
+		request = args["text"].split()[2:]
+		if request[0] in self.version:
+			self.version = request[0]
+			del request[0]
+		else:
+			self.version = "testing"
+		if len(request) != 1:
+			msg = "Usage: debfile [stable|testing|unstable] filename"
+			return Event("privmsg", "", target, [msg])
+		self.file = request[0]
+		form_action = "http://packages.debian.org/cgi-bin/search_contents.pl?%s"
+		form_inputs = urllib.urlencode({"word": self.file,
+						"searchmode": "searchfiles",
+						"case": "insensitive",
+						"version": self.version,
+						"architecture": "i386"})
+		try:
+			result = urllib.urlopen(form_action % form_inputs)
+		except Exception, e:
+			self.Debug(e)
+		self.reset()
+		self.feed(result.read())
+		return Event("privmsg", "", target, [self.list])
+
+	def handle_starttag(self, tag, attrs):
+		if tag == "div":
+			for a_name, a_value in attrs:
+				if a_name == "id" and a_value == "inner":
+					self.inner_div = True
+		elif tag == "hr" and self.inner_div:
+			self.after_hr = True
+		elif tag == "pre" and self.after_hr:
+			self.is_result_table = True
+
+	def handle_data(self, data):
+		if not self.over:
+			if self.is_result_table:
+				if '\n' in data:
+					data = data.strip()
+					if len(self.list)+len(data) >= self.block:
+						self.list += "\n%s(%s): " % (self.file, self.version)
+						self.block += self.block_size
+					self.hit += 1
+					if self.hit == self.__max_hit:
+						self.over = True
+					else:
+						self.list += "=%d=> " % self.hit
+						self.list += data
+				else:
+					self.list += data.strip()
+				if '[' in data:
+					self.in_box = True
+				elif ']' in data:
+					self.in_box = False
+				if not self.in_box:
+					self.list += " "
+
+	def handle_endtag(self, tag):
+		if tag == "pre" and self.after_hr:
+			self.is_result_table = False
 
 class acronym(MooBotModule):
 	"""
