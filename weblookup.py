@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: gbk -*-
 
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
 # Copyright (C) 2005 by baa
@@ -80,9 +79,9 @@ class google(MooBotModule):
 		self.return_to_sender(args)
 		
 		search_terms = args["text"].split(" ")[3:]
-		search_request = "/ie?hl=zh-CN&oe=GBK&ie=GBK&q="
+		search_request = "/ie?hl=zh-CN&oe=UTF-8&ie=UTF-8&q="
 									# the resulting output so much nicer
-		search_request += string.join(search_terms, "+")
+		search_request += string.join(search_terms, "+").encode("UTF-8", 'replace')
 		connect = httplib.HTTPConnection('www.google.com', 80)
 		connect.request("GET", search_request) 
 		response = connect.getresponse()
@@ -91,7 +90,7 @@ class google(MooBotModule):
 			self.debug(msg)
 			return Event("privmsg", "", target, [msg])
 		else:
-			listing = response.read()
+			listing = response.read().decode("UTF-8", 'replace')
 		urls=[]
 		for i in listing.split():
 			if string.find(i, "HREF=http://") >= 0:
@@ -186,7 +185,8 @@ class google(MooBotModule):
 class dict(MooBotModule):
 	def __init__(self):
 		import re
-		self.regex = "^dict .+"
+		# have problem filtering out `|' character
+		self.regex = "^(dict |~)[^~\+\*/\\<>-]+"
 		self.rStrip = re.compile("(<.*?>)+")
 		self.rWord = re.compile("^<!-- WORD", re.I)
 		self.rGif = re.compile("/gif/([\\w_]+)\\.gif", re.I)
@@ -203,10 +203,12 @@ class dict(MooBotModule):
 		self.rExpl = re.compile(u'class="explain_(?:attr|item)">(.*)', re.I)
 
  	def handler(self, **args):
-		import string
  		from irclib import Event
  		target = self.return_to_sender(args)
-		word = string.join(args["text"].split()[2:])
+		if args["text"].split()[1][0][0] == '~':
+			word = "".join(args["text"].split()[1:])[1:]
+		else:
+			word = "".join(args["text"].split()[2:])
  		# result = self.lookup_yahoo(word)
  		result = self.lookup_ciba(word)
 		result = result.replace("&lt;","<").replace("&gt;",">")
@@ -446,8 +448,12 @@ class babelfish(MooBotModule):
 		"fr_nl", "fr_es", "de_en", "de_fr", "el_en", "el_fr",
 		"it_en", "it_fr", "ja_en", "ko_en", "pt_en", "pt_fr",
 		"ru_en", "es_en", "es_fr"]
+		self.shortcuts = {
+			"ec": "en_zh",
+			"ce": "zh_en"
+			}
 
-		self.regex = "^((babelfish|translate) \w+ to \w+|%s|babelfish$|translate$)" % ("|".join(self.translations))
+		self.regex = "^((babelfish|translate) \w+ to \w+|(%s)\s+.+|babelfish$|translate$)" % ("|".join(self.translations + self.shortcuts.keys()))
 
 
 	def help(self, args):
@@ -456,26 +462,31 @@ class babelfish(MooBotModule):
 		trans = " ".join(self.languages.values())
  		return Event("privmsg", "", self.return_to_sender(args), [
 			"Usage: translate <FROM_LANGUAGE> to <TO_LANGUAGE> TEXT\r\nAvailable LANGUAGES are \"%s\"" % (langs)
-			+ "\r\nOr: {LN_LN} TEXT\r\nWhere LNs are \"%s\"" % (trans)
+			+ "\r\nSynonyms: {LN_LN} TEXT\r\nWhere LNs are \"%s\"" % (trans)
 			])
 
 	def handler(self, **args):
 		from irclib import Event
 		import string, re, urllib
 		
-		translation_key = args["text"].split(" ", 2)[1].lower()
 		tmp = args["text"].split(" ", 2)
+		translation_key = tmp[1].lower()
 		if len(tmp) != 3:
 			return self.help(args)
 		request = tmp[2] # chop off the "moobot: babelfish"
-		if translation_key in self.translations:
+
+		if self.shortcuts.has_key(translation_key):
+			translation_key = self.shortcuts[translation_key]
+			translation_text = request
+		elif translation_key in self.translations:
 			translation_text = request
 		else:
 			froml = request.split()[0].lower() # the source language
 							# to get something like "english to spanish foo"
 			tol = request.split()[2].lower() # the destination language
-			translation_text = " ".join(request.split()[3:]) # the string to translate
-			if len(translation_text) == 0:
+			translation_text = " ".join(request.split()[3:]) 
+			# The string to translate, it's length wont't be ZERO
+			if re.compile("^\s*$").match(translation_text):
 				return self.help(args)
 
 			# check if we know the languages they want to use
@@ -496,6 +507,8 @@ class babelfish(MooBotModule):
 					[ "Babelfish doesn't know how to do %s to %s" % 
 					(froml, tol)])
 
+		translation_text = translation_text.replace("'", "¡¯".decode("gbk"));
+
 		# create the POST body
 		params = {"doit": "done", "intl": "1", "tt": "urltext", "trtext": translation_text.encode("UTF-8"), "lp": translation_key}
 
@@ -514,7 +527,7 @@ class babelfish(MooBotModule):
 			listing = response.read().decode("UTF-8", "ignore")
 			listing = listing.replace('\n', '') # get rid of newlines
 
-		searchRegex2 = re.compile("<td bgcolor=white class=s><div style=padding:10px;>(.+?)</div></td>")
+		searchRegex2 = re.compile("<td bgcolor=white class=s><div style=padding:10px;>(.*?)</div></td>")
 
 		match = searchRegex2.search(listing)
 
