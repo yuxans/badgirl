@@ -183,6 +183,8 @@ class google(MooBotModule):
 # 		return Event("privmsg", "", target, [msg])
 
 class dict(MooBotModule):
+	cache = {}
+	cache_old = {}
 	def __init__(self):
 		import re
 		# have problem filtering out `|' character
@@ -201,19 +203,44 @@ class dict(MooBotModule):
 		self.rEtoC = re.compile("¼òÃ÷Ó¢ºº´Êµä</div>(.*?)</div>".decode("gbk"), re.S)
 		self.rSpell = re.compile("str2img\('([^']+)", re.I)
 		self.rExpl = re.compile(u'class="explain_(?:attr|item)">(.*)', re.I)
+		self.ciba_failed = 0
 
  	def handler(self, **args):
  		from irclib import Event
  		target = self.return_to_sender(args)
 		if args["text"].split()[1][0][0] == '~':
-			word = "".join(args["text"].split()[1:])[1:]
+			word = " ".join(args["text"].split()[1:])[1:]
 		else:
-			word = "".join(args["text"].split()[2:])
- 		# result = self.lookup_yahoo(word)
- 		result = self.lookup_ciba(word)
-		result = result.replace("&lt;","<").replace("&gt;",">")
- 		if len(result) == 0:
- 			result = "Could not find definition for " + word
+			word = " ".join(args["text"].split()[2:])
+
+		# simple yet powerful garbage collection
+		# better not use time
+		if len(self.cache) > 500:
+			self.cache_old = self.cache
+			self.cache = {}
+
+		if self.cache.has_key(word):
+			result = "(cached) " + self.cache[word]
+		elif self.cache_old.has_key(word):
+			self.cache[word] = self.cache_old[word]
+			result = "(oldcache)" + self.cache[word]
+		else:
+			if self.ciba_failed <= 0:
+ 				result = self.lookup_ciba(word)
+				if result == "error":
+					self.ciba_failed = 10
+ 					result = self.lookup_yahoo(word)
+			else:
+ 				result = self.lookup_yahoo(word)
+				self.ciba_failed = self.ciba_failed - 1
+			result = result.replace("&lt;","<").replace("&gt;",">")
+ 			if len(result) == 0:
+ 				result = "Could not find definition for " + word
+			elif result == "error":
+				pass
+			else:
+				self.cache[word] = result
+
  		return Event("privmsg", "", target, [ result ])
 
 	def lookup_ciba(self, word):
@@ -261,19 +288,21 @@ class dict(MooBotModule):
 
 	def lookup_yahoo(self, word):
 		connect = httplib.HTTPConnection('cn.yahoo.com', 80)
-		connect.request("GET", "/dictionary/result/%s/%s.html" % (word[0], word))
+		w = word.encode("GBK") # better than error
+		connect.request("GET", "/dictionary/result/%s/%s.html" % (w[0], w))
 		response = connect.getresponse()
 		if response.status != 200:
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
+			import re
 			if re.compile("/error").match(loc):
 				return ""
 			else:
 				self.debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
+				return ""
 		else:
-			import re
 			# Do the parsing here
-			listing = response.read()
+			listing = response.read().decode("GBK")
 			listing = listing.split("\n")
 			ibody = 0
 			str = word + " "
