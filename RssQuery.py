@@ -21,83 +21,229 @@
 from moobot_module import MooBotModule
 handler_list=["RssQuery"]
 
-class cool(MooBotModule):
+class RssRecord(MooBotModule):
+	ttl = 3600
+	keys = ["r_id","r_name","r_mtime","r_cache","r_url"]
+	fields = ",".join(keys)
+	datas = {}
+	exists = False
+	cached = False
+	def _restore(self, datas):
+		import time
+		if not datas or not datas[0]:
+			return False
+		datas = datas[0]
+		self.exists = True
+		i = 0
+		for key in self.keys:
+			self.datas[key] = datas[i]
+			i = i + 1
+		if time.time() - int(self.datas["r_mtime"]) < self.ttl:
+			self.cached = True
+		return True
+
+	def __init__(self, q, name = None):
+		import database
+		if q.find("://") != -1:
+			key = "r_url"
+		else:
+			key = "r_name"
+		feed = database.doSQL("SELECT %s FROM rss WHERE %s='%s'" % (
+								self.fields, key, self.sqlEscape(q)))
+		if self._restore(feed):
+			pass
+		elif name:
+			database.doSQL("INSERT rss SET r_name='%s',r_url='%s'" % (
+									self.sqlEscape(name), self.sqlEscape(q)
+									))
+			feed = database.doSQL("SELECT %s FROM rss WHERE r_name='%s'" % (
+									self.fields, self.sqlEscape(name)))
+			self._restore(feed)
+
+	def delete(self):
+		import database
+		database.doSQL("DELETE FROM rss WHERE r_id=%d" % (
+								int(self.datas["r_id"])
+								))
+
+	def getTitles(self):
+		datas = self.getDatas()
+		return datas["title"]
+	
+	def getDatas(self):
+		import urllib2, time, database, re, base64
+		try:
+			import cPickle as pickle
+		except:
+			import pickle
+
+		if self.cached:
+			data = base64.decodestring(self.datas["r_cache"])
+			return pickle.loads(data)
+		self.debug("open url")
+
+		data = urllib2.urlopen(self.datas["r_url"]).read()
+		encoding = "ISO-8859-1"
+		m = re.compile('^<\\?xml[^>]*').search(data)
+		if m:
+			m = re.compile('encoding="([^"]+)"').search(m.group(0))
+			if m:
+				encoding = m.group(1)
+				data = data.replace(m.group(0), "")
+
+		data = data.decode(encoding)
+
+		# {{{ parse
+		from RSS import ns, CollectionChannel, TrackingChannel
+		from urllib2 import URLError
+
+		#Create a tracking channel, which is a data structure that
+		#Indexes RSS data by item URL
+		tc = TrackingChannel()
+		tc.encoding = None # unicode
+		
+		#Returns the RSSParser instance used, which can usually be ignored
+		try:
+			tc.parseString(data)
+		except URLError, e:
+			return [str(e)]
+		except Exception, e:
+			return "parse error"
+		
+		keys = {"title": (ns.rss10, 'title'),
+				"link": (ns.rss10, 'link'),
+				"description": (ns.rss10, 'description')}
+		
+		datas = {}
+		for key in keys:
+			datas[key] = []
+
+		items = tc.listItems()
+		for item in items:
+			item_data = tc.getItem(item)
+			for key in keys:
+				datas[key].append(item_data.get(keys[key], "(none)"))
+		# }}}
+
+		data = pickle.dumps(datas)
+		data = base64.encodestring(data)
+		now = int(time.time())
+		database.doSQL("UPDATE rss SET r_cache='%s',r_mtime='%s' WHERE r_id=%d" % (
+								self.sqlEscape(data), now, int(self.datas["r_id"])
+								))
+		self.datas["r_cache"] = data
+		self.datas["r_mtime"] = now
+		self.cached = True
+		return datas
+
+	def getNames():
+		import database
+		rsses = database.doSQL("SELECT r_name FROM rss")
+		names = []
+		for rss in rsses:
+			names.append(rss[0])
+		return names
+
+	getNames = staticmethod(getNames)
+
+	def flush():
+		import database
+		database.doSQL("UPDATE rss SET r_mtime=0,r_cache=''")
+
+	flush = staticmethod(flush)
+
+class RssQuery(MooBotModule):
 	def __init__(self):
-		self.regex = "^rss .+"
+		names = None # RssRecord.getNames()
+		if names:
+			names = "|" + "|".join(names)
+		else:
+			names = ""
+		self.regex = "^((rss|rssflush|rssadd|rssdel) .+|rss%s)" % (names)
 
 	def handler(self, **args):
-		"""
-		TODO.
-		commandline summarys:
-		rss shortcut ---- query rss feeds
-		rss [-a|--assign] foo http://foo.bar/foo/bar/foo.rss ---- asssign uri shortcuts.
-		rss [-u|--uri[=]] http://foo.bar/foo/bar/foo.rdf ----query uri
-		rss -l|--list [keywords] ---- list assigned rss feeds match the keywords or if keywords not present list all rss feeds.
-		rss -r|--remove shortcut
-		
-		from RSS import ns, CollectionChannel, TrackingChannel
-
-#Create a tracking channel, which is a data structure that
-#Indexes RSS data by item URL
-tc = TrackingChannel()
-
-#Returns the RSSParser instance used, which can usually be ignored
-tc.parse("http://www.python.org/channews.rdf")
-
-RSS10_TITLE = (ns.rss10, 'title')
-RSS10_DESC = (ns.rss10, 'description')
-
-#You can also use tc.keys()
-items = tc.listItems()
-for item in items:
-	#Each item is a (url, order_index) tuple
-	url = item[0]
-	print "RSS Item:", url
-	#Get all the data for the item as a Python dictionary
-	item_data = tc.getItem(item)
-	print "Title:", item_data.get(RSS10_TITLE, "(none)")
-	print "Description:", item_data.get(RSS10_DESC, "(none)")
-	
-		"""
 		import string
 		from irclib import Event
+		import priv
 
-		# Split the string and take every word after the first two as the
-		# words to "cool-ify" (first two are the bot name and "cool")
-		who = string.join(args["text"].split(" ")[2:])
+		msg = "Huh?"
 
-		# Surround whatever with ":cool:" tags
-		text = ":cool: " + who + " :cool:"
+		dummy, cmd = args["text"].split(" ", 1)
+		if cmd.find(" ") != -1:
+			cmd, text = cmd.split(" ", 1)
+		else:
+			text = None
+
+		cmd = cmd.lower()
+		if cmd == 'rss':
+			if text:
+				if text.find(' ') != -1:
+					text, id = text.split(" ", 1)
+					try:
+						id = int(id)
+					except:
+						id = 0
+				else:
+					id = "no"
+				rss = RssRecord(text)
+				if rss.exists:
+					datas = rss.getDatas()
+					if id == "no":
+						msg = text + ": " + " // ".join(datas['title'])[0:400]
+					elif id == 0:
+						msg = "%s: count=%d" % (text, len(datas['link']))
+					elif id:
+						id = id - 1
+						links = datas['link']
+						if id > len(links):
+							msg = "out of ubound"
+						else:
+							desc = datas['description'][id].split('<', 1)[0]
+							desc = desc.split("\n", 1)[0]
+							desc = desc.split("\r", 1)[0]
+							msg = "%s: %s // %s // %s" % (text, links[id], datas['title'][id], desc)
+				else:
+					msg = "%s not exists" % text
+			else:
+				names = RssRecord.getNames() or "oops, None"
+				msg = 'rss is "rss key" or "rssadd key url" or "rssdel key" or "rssflush", where key can be: ' + ", ".join(names)
+
+		elif cmd != 'rssadd' and cmd != 'rssdel' and cmd != 'rssflush':
+			text = cmd
+			rss = RssRecord(text)
+			if rss.exists:
+				msg = text + ": " + " ;; ".join(rss.getTitles())[0:400]
+			else:
+				msg = "%s was deleted" % text
+		elif priv.checkPriv(args["source"], "rss") == 0:
+			msg = "You don't have permission to do that."
+		elif cmd == 'rssflush':
+			RssRecord.flush()
+			msg = "cache flushed"
+		elif not text:
+			msg = "params required"
+		elif cmd == 'rssadd':
+			try:
+				name, url = text.split(" ", 1)
+				rss = RssRecord(name)
+				if rss.exists:
+					msg = "%s is already exists" % name
+				else:
+					rss = RssRecord(url, name)
+					msg = "%s added with url %s" % (name, url)
+			except ValueError:
+				msg = "error format"
+			except:
+				msg = "internal error"
+		elif cmd == 'rssdel':
+			name = text
+			rss = RssRecord(name)
+			if rss.exists:
+				rss.delete()
+				msg = "%s deleted" % name
+			else:
+				msg = "%s not exists" % name
 
 		target = self.return_to_sender(args)
-		result = Event("privmsg", "", target, [ text ])
-       		return result
-
-	def parse_args(self, *args):
-		"""parse the argument line acroding the following switchs
-
-		-u --uri	uri to query
-		-l --list	list assigned shorts
-		-h --help	display help message
-		-a --assign	assign a RSS feed uri to a shortcut
-		-r --remove	remove shortcut from database
-
-		Returns None if encounter a help request, otherwise, returns a map of {"server":SERVER_STRING, "port":PORT_STRING, "query":QUERY_STRING} form. SERVER_STRING or PORT_STRING or QUERY_STRING will be None if not set in the argument line"""
-		import getopt
-		TempMap = {"server":None, "port":None, "query":None}
-		argv = args.split()[2:]
-		try:
-			optlist, argv = getopt.getopt(argv, 'u:l:ha:r:', ["help", "uri=", "list=", "assign=", "remove="])
-# 			for o, a in optlist:
-# 				if o in ("-h", "--help"):
-# 					return None
-# 				if o in ("-u", "--uri"):
-
-# 				if o in ("-p", "--port"):
-
-
-			
-		except GetoptError:
-			debug(argv.[2])
-		# return something
-
+		result = Event("privmsg", "", target, [ "rss " + msg[0:500] ])
+		return result
