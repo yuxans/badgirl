@@ -83,7 +83,7 @@ class join_nopriv(MooBotModule):
 			from irclib import nm_to_n
 			target=nm_to_n(args["source"])
 		import string
-		print "join"
+		self.debug("join")
 		channel = args["text"]
 		channel = string.joinfields(channel.split(" ")[2:])
 		result = Event("internal", "", channel, [ "join" ] )
@@ -122,7 +122,7 @@ class part_nopriv(MooBotModule):
 			from irclib import nm_to_n
 			target=nm_to_n(args["source"])
 		import string
-		print "part"
+		self.debug("part")
 		channel = args["text"]
 		channel = string.joinfields(channel.split(" ")[2:])
 		result = Event("internal", "", channel, [ "part" ] )
@@ -172,5 +172,5 @@ class send_raw(MooBotModule):
 		if (priv.checkPriv(args["source"], "all_priv") == 0):
 			return Event("privmsg", "", self.return_to_sender(args), ["You can't do that!"])
 
-		print string.split(args["text"], " ", 3)[3]
+		self.debug(string.split(args["text"], " ", 3)[3])
 		return Event("internal", "send_raw", "", ["send_raw", string.split(args["text"], " ", 3)[3] ])

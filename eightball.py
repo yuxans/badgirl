@@ -33,7 +33,7 @@ class eightball(MooBotModule):
 		"""provides a fanciful and wonderful fortune for the
 	   	not-so-fortunate
 		"""
-		print "eightball", args["text"]
+		self.debug("eightball", args["text"])
 		import string
 		from irclib import nm_to_n, Event
 	

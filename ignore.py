@@ -34,7 +34,7 @@ class ignore(MooBotModule):
 		import priv
 		from irclib import Event
 		if priv.checkPriv(args["source"], "notalk_priv") != 0 and priv.checkPriv(args["source"], "all_priv") == 0:
-			print "ignoring message by " + args["source"]
+			self.debug("ignoring message by " + args["source"])
 			return Event("do nothing", "", "" , [ ])
 		return Event("continue", "", "" , [])
 

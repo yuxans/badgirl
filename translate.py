@@ -61,7 +61,7 @@ class mime(MooBotModule):
 	def handler(self, **args):
 		import os, string
 	
-		print args["text"]
+		self.debug(args["text"])
 		text = string.join(args["text"].split()[2:])
 		text = escapes(text)
 		# TODO. need change, don't use native tools.

@@ -44,7 +44,7 @@ class flood_protect(MooBotModule):
 			self.messages[args["source"]].time + 5 >= time.time() and \
 			priv.checkPriv(args["source"], "flood_priv") == 0:
 				self.messages[args["source"]].time = time.time()
-				print "ignoring duplicate message"
+				self.debug("ignoring duplicate message")
 				return Event("do nothing", "", "", [ ])
 
 			self.messages[args["source"]].message = args["text"]

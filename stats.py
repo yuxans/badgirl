@@ -137,7 +137,7 @@ class reset_stats(MooBotModule):
 		if priv.checkPriv(args["source"], "reset_stats_priv") == 0:
 			return Event("privmsg", "", target, [ "You aren't allowed to do that" ])
 		
-		print type, who
+		self.debug(type, who)
 		records=database.doSQL("delete from stats where type = '" + type  + "' and nick = '" + who + "'")
 		return Event("privmsg", "", target, [ "Reset " + who + "'s " + type + " stats." ])
 

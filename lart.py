@@ -74,7 +74,7 @@ class add(MooBotModule):
 		import database
 		type = string.split(args["text"])[2]
 		value = string.join(string.split(args["text"])[3:])
-		print value
+		self.debug(value)
 		if args["type"] == "privmsg":
 			from irclib import nm_to_n
 			target=nm_to_n(args["source"])

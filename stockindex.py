@@ -55,7 +55,7 @@ class stockIndex(MooBotModule):
 		try:
 			quote = urllib2.urlopen(url).read()
 		except Exception, e:
-			print e
+			self.debug(e)
 			quote = "Data source error."
 			sys.exit()
 		splitquote = quote.split(',')

@@ -106,7 +106,7 @@ class wordgame(MooBotModule):
 		elif cmd in ['guess', 'g']:
 			rest.strip()
 			if len(rest) != 1:
-				print len(rest), "'" + rest + "'"
+				self.debug(len(rest), "'" + rest + "'")
 				message = "only one character please, " + who
 			else:
 				message = self.do_guess(rest, who)
@@ -167,13 +167,13 @@ class wordgame(MooBotModule):
 		resp = conn.getresponse()
 
 		if resp.status != 200:
-			print 'Ack! Falling back on hardcoded words...'
+			self.debug('Ack! Falling back on hardcoded words...')
 			self.index += 1
 			if self.index >= len(self.words):
 				self.index = 0
 			return self.words[self.index]
 		else: 
-			print 'using codeexamples.org word'
+			self.debug('using codeexamples.org word')
 			word = resp.read()
 			conn.close()
 			word = word.strip()
