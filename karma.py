@@ -44,7 +44,7 @@ class karma(MooBotModule):
 		# which we check by seeing if the first word is "karma"
 		msg = ""
 		if orig_msg[0] == "karma":
-			# If they just say "karma", print the top 3, the bottom 3, and
+			# If they just say "karma", self.debug(the top 3, the bottom 3, and)
 			# the requester's karma
 			if len(orig_msg) == 1:
 				top = "Top 3 Karma -"
@@ -55,7 +55,7 @@ class karma(MooBotModule):
 				for i in range(len(record)):
 					# i goes from 0 to 2 (hopefully)
 					top += " " + str(i+1) + ") " + record[i][1] + ": " \
-						+ str(record[i][0]) + ";"
+						+ self.str(record[i][0]) + ";"
 				top += "\n"
 				# Bottom 3
 				bot = "Bottom 3 Karma -"
@@ -64,16 +64,16 @@ class karma(MooBotModule):
 				record = database.doSQL(query)
 				for i in range(len(record)):
 					bot += " " + str(i+1) + ") " + record[i][1] + ": " \
-						+ str(record[i][0]) + ";"
+						+ self.str(record[i][0]) + ";"
 				bot += "\n"
 				# Requesters
 				import irclib
 				name = irclib.nm_to_n(args["source"])
-				print name
+				self.debug(name)
 				query = "select counter from stats where nick='" + name + "' and type='karma'"
 				record = database.doSQL(query)		
 				if len(record) != 0:
-					req = name + ": " + str(record[0][0])
+					req = name + ": " + self.str(record[0][0])
 				else:
 					req = ""
 
@@ -84,7 +84,7 @@ class karma(MooBotModule):
 					query = "select counter from stats where nick='" + name + "' and type='karma'"
 					record = database.doSQL(query)		
 					if len(record) != 0:
-						msg += name + ": " + str(record[0][0]) + " ;; "
+						msg += name + ": " + self.str(record[0][0]) + " ;; "
 					else:
 						msg += name + " has no karma stats" + " ;; "
 				msg = msg[:-4]
@@ -101,10 +101,10 @@ class karma(MooBotModule):
 				record = database.doSQL(query)
 				if len(record) != 0:
 					if operator == "++":
-						query = "update stats set counter="+ str(record[0][0]) +"+1 where nick='" + name + "' and type='karma'"
+						query = "update stats set counter="+ self.str(record[0][0]) +"+1 where nick='" + name + "' and type='karma'"
 						database.doSQL(query)
 					else:
-						query = "update stats set counter="+ str(record[0][0]) +"-1 where nick='" + name + "' and type='karma'"
+						query = "update stats set counter="+ self.str(record[0][0]) +"-1 where nick='" + name + "' and type='karma'"
 						database.doSQL(query)
 				else:
 					if operator == "++":
@@ -116,4 +116,4 @@ class karma(MooBotModule):
 				return Event("do nothing", "", target, [""])
 			else:
 				# Shouldn't ever get here, but in case we do...
-				print "Shouldn't be here! -", args["text"]
+				self.debug("Shouldn't be here! -", args["text"])
