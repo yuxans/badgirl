@@ -27,11 +27,11 @@ from moobot_module import MooBotModule
 class karma(MooBotModule):
 	"Either increases, decreases, or lists the karma"
 	def __init__(self):
-		self.regex = "(^karma( .+$)?$|^\w+(\+\+|\-\-)$)"
+		self.regex = "(^karma( .+$)?$|^[^ ]+(\+\+|\-\-)$)"
 
 	def handler(self, **args):
 		import database
-		from irclib import Event, nm_to_n
+		from irclib import Event
 		
 		# Set the target as either the person or the channel
 		target = self.return_to_sender(args)
@@ -117,3 +117,17 @@ class karma(MooBotModule):
 			else:
 				# Shouldn't ever get here, but in case we do...
 				self.debug("Shouldn't be here! -", args["text"])
+				return Event("do nothing", "", target, [""])
+	
+	def get_karma(self, name_list):
+		"""Return a dict of (nick: karma), given a nick list"""
+
+		pass
+	
+	def get_top_karmas(self, number):
+		"""Return the top N (N=number) karma-havers in a dict (nick: karma)"""
+		pass
+	
+	def set_karma(self, nick, karma):
+		"""Set the karma for a given nick"""
+		pass
