@@ -67,7 +67,7 @@ class seen(MooBotModule):
 			target=nm_to_n(args["source"])
 		nick = string.join(args["text"].split()[2:])
 		
-		nick = escape_quotes(nick)
+		nick = self.sqlEscape(nick)
 		if database.doSQL("select count(nick) from seen where nick = '" + nick + "'")[0][0] == 0:
 			return Event("privmsg", "", target, ["nope."])
 	
@@ -75,9 +75,3 @@ class seen(MooBotModule):
 	
 		text = nick + " (" + records[0][1] + ") was last seen on " + time.ctime(records[0][2]) + " saying: \"" + records[0][3] + "\"."
 		return Event("privmsg", "", target, [ text ])
-	
-def  escape_quotes(nick):
-	import string
-	nick = string.replace(nick, "\\", "\\\\")
-	nick = string.replace(nick, "'", "\\'")
-	return nick
