@@ -84,14 +84,18 @@ class SingleServerIRCBot(SimpleIRCClient):
 	def _connect(self):
 		"""[Internal]"""
 		password = None
+		encoding = None
 		if len(self.server_list[0]) > 2:
 			password = self.server_list[0][2]
+		if len(self.server_list[0]) > 3:
+			encoding = self.server_list[0][3]
 		try:
 			self.connect(self.server_list[0][0],
 						 self.server_list[0][1],
 						 self._nickname,
 						 password,
-						 ircname=self._realname)
+						 ircname=self._realname,
+						 encoding=encoding)
 		except ServerConnectionError:
 			pass
 
