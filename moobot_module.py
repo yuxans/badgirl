@@ -17,8 +17,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-from moobot import MooBot
-from moobot import Handler
+from moobot import MooBot, Debug, Handler
 
 class MooBotModule:
 	"""Base class for all MooBot modules"""
@@ -46,7 +45,7 @@ pages of the modules"""
 	def handler(self, **args):
 		"""This is the function that actually processes data and returns an
 Event.  Should be overridden for every module."""
-		print "You forgot to override the 'handler' method."
+		self.debug("You forgot to override the 'handler' method.")
 
 	def __cmp__(self, other):
 		""" Used for sorting the modules by priority"""
@@ -63,6 +62,15 @@ Event.  Should be overridden for every module."""
 		""" escapes \ and 's in strings for SQL """
 		import string
 		text = string.replace(text, "\\", "\\\\")
+		text = string.replace(text, '"', '\\"')
 		text = string.replace(text, "'", "\\'")
 		return text
 			
+	def debug(self, *args):
+		apply(Debug, args)
+
+	def str(self, obj):
+		if type(obj) is unicode:
+			return obj
+		else:
+			return str(obj)

@@ -371,7 +371,7 @@ class ServerConnection(Connection):
 	self.lock = thread.allocate_lock()
 
     def connect(self, server, port, nickname, password=None, username=None,
-                ircname=None):
+                ircname=None, encoding="utf-8"):
         """Connect/reconnect to a server.
 
         Arguments:
@@ -405,6 +405,7 @@ class ServerConnection(Connection):
         self.nickname = nickname
         self.username = username or nickname
         self.ircname = ircname or nickname
+        self.encoding = encoding
         self.password = password
         self.localhost = socket.gethostname()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -465,7 +466,7 @@ class ServerConnection(Connection):
         """[Internal]"""
 
         try:
-            new_data = self.socket.recv(2**14)
+            new_data = self.socket.recv(2**14).decode(self.encoding, "ignore")
         except socket.error, x:
             # The server hung up.
             self.disconnect("Connection reset by peer")
@@ -483,7 +484,7 @@ class ServerConnection(Connection):
 
         for line in lines:
             if DEBUG:
-                print "FROM SERVER:", line
+                Debug("FROM SERVER:", line)
 
             prefix = None
             command = None
@@ -534,13 +535,13 @@ class ServerConnection(Connection):
 
                         m = list(m)
                         if DEBUG:
-                            print "command: %s, source: %s, target: %s, arguments: %s" % (
-                                command, prefix, target, m)
+                            Debug("command: %s, source: %s, target: %s, arguments: %s" % (
+                                command, prefix, target, m))
                         self._handle_event(Event(command, prefix, target, m))
                     else:
                         if DEBUG:
-                            print "command: %s, source: %s, target: %s, arguments: %s" % (
-                                command, prefix, target, [m])
+                            Debug("command: %s, source: %s, target: %s, arguments: %s" % (
+                                command, prefix, target, [m]))
                         self._handle_event(Event(command, prefix, target, [m]))
             else:
                 target = None
@@ -562,8 +563,8 @@ class ServerConnection(Connection):
                     command = numeric_events[command]
 
                 if DEBUG:
-                    print "command: %s, source: %s, target: %s, arguments: %s" % (
-                        command, prefix, target, arguments)
+                    Debug("command: %s, source: %s, target: %s, arguments: %s" % (
+                        command, prefix, target, arguments))
                 self._handle_event(Event(command, prefix, target, arguments))
 
     def _handle_event(self, event):
@@ -748,9 +749,9 @@ class ServerConnection(Connection):
         The string will be padded with appropriate CR LF.
         """
         try:
-            self.socket.send(string + "\r\n")
+            self.socket.send(string.encode(self.encoding, "ignore") + "\r\n")
             if DEBUG:
-                print "TO SERVER:", string
+                Debug("TO SERVER:", string)
         except socket.error, x:
             # Aouch!
             self.disconnect("Connection reset by peer.")
@@ -850,7 +851,7 @@ class SimpleIRCClient:
             getattr(self, m)(c, e)
 
     def connect(self, server, port, nickname, password=None, username=None,
-                ircname=None):
+                ircname=None, encoding="utf-8"):
         """Connect/reconnect to a server.
 
         Arguments:
@@ -870,12 +871,11 @@ class SimpleIRCClient:
         This function can be called to reconnect a closed connection.
         """
         self.connection.connect(server, port, nickname,
-                                password, username, ircname)
+                                password, username, ircname, encoding)
 
     def start(self):
         """Start the IRC client."""
         self.ircobj.process_forever()
-
 
 class Event:
     """Class representing an IRC event."""
@@ -944,6 +944,7 @@ def mask_matches(nick, mask):
     r = re.compile(mask, re.IGNORECASE)
     return r.match(nick)
 
+### TODO fix for unicode
 _alpha = "abcdefghijklmnopqrstuvwxyz"
 _special = "-[]\\`^{}"
 nick_characters = _alpha + string.upper(_alpha) + string.digits + _special
@@ -956,7 +957,7 @@ def irc_lower(s):
     The definition of lowercased comes from the IRC specification (RFC
     1459).
     """
-    return string.translate(s, _ircstring_translation)
+    return s.lower() # return string.translate(s, _ircstring_translation)
 
 def _ctcp_dequote(message):
     """[Internal] Dequote a message according to CTCP specifications.
@@ -1112,6 +1113,17 @@ def _parse_modes(mode_string, unary_modes=""):
 def _ping_ponger(connection, event):
     """[Internal]"""
     connection.pong(event.target())
+
+def Debug(*args):
+	for text in args:
+		t = type(text)
+		if t is unicode:
+			print text.encode("gbk", "ignore"),
+		elif t is str:
+			print text,
+		else:
+			print str(text),
+	print
 
 # Numeric table mostly stolen from the Perl IRC module (Net::IRC).
 numeric_events = {
