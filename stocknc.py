@@ -45,7 +45,7 @@ class stockQuote(MooBotModule):
 		if flg == 0:
 			newsymbol = symbol.upper()
 			base = 'http://cn.finance.yahoo.com/d/quotes.csv?s='
-			tail = '&f=sl1d1t1c1ohgv&e=.csv' 
+			tail = '&f=nsl1d1t1c1ohgv&e=.csv' 
 			url = base+symbol+mode+tail 
 			try:    
 				quote = urllib2.urlopen(url).read()
@@ -54,7 +54,7 @@ class stockQuote(MooBotModule):
 				sys.exit()
 			splitquote = quote.split(',')
 			if splitquote[1] != "0.00":    
-				quote = "The current price of %s is %s" % ((splitquote[0])[1:-4] , splitquote[1])
+				quote = "The current price of %s(%s) is %s" % (splitquote[0].strip('"').rstrip(), (splitquote[1])[1:-4] , splitquote[2])
 			else:
 				quote = "Sorry, I couldn't find that one"
 		return Event("privmsg", "", target, [quote])
