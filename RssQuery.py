@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2005 by FKtPp
+# Copyright (C) 2005 by baa
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
