@@ -1,6 +1,7 @@
 # grabs stock quotes
 
 # Copyright (c) 2002 Brett Kelly
+# Copyright (C) 2004 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -28,20 +29,32 @@ class stockQuote(MooBotModule):
 		from irclib import Event 
 		target = self.return_to_sender(args)
 
-		import urllib2, string, sys
+		import urllib2, string, sys, re
 		symbol = args["text"].split()[2]
-		newsymbol = symbol.upper()
-		base = 'http://finance.yahoo.com/d/quotes.csv?s=' 
-		tail = '&f=sl1d1t1c1ohgv&e=.csv' 
-		url = base+symbol+tail 
-		try:    
-			quote = urllib2.urlopen(url).read()
-		except Exception, e:
-			print e
-			sys.exit()
-		splitquote = quote.split(',')
-		if splitquote[1] != "0.00":    
-			quote = "The current price of %s is %s" % ((splitquote[0])[1:-1] , splitquote[1])
+
+		ss = re.compile('^6\d{5}')
+		sz = re.compile('^0\d{5}')
+		flg = 0
+		if ss.match(symbol):
+			mode = '&m=c'
+		elif sz.match(symbol):
+			mode = '&m=z'
 		else:
-			quote = "Sorry, I couldn't find that one"
+			flg = 1
+			quote = "Please use formal STOCK ID to query, exp. 600000 or 000001"
+		if flg == 0:
+			newsymbol = symbol.upper()
+			base = 'http://cn.finance.yahoo.com/d/quotes.csv?s='
+			tail = '&f=nsl1d1t1c1ohgv&e=.csv' 
+			url = base+symbol+mode+tail 
+			try:    
+				quote = urllib2.urlopen(url).read()
+			except Exception, e:
+				print e
+				sys.exit()
+			splitquote = quote.split(',')
+			if splitquote[1] != "0.00":    
+				quote = "The current price of %s(%s) is %s" % (splitquote[0].strip('"').rstrip(), (splitquote[1])[1:-4] , splitquote[2])
+			else:
+				quote = "Sorry, I couldn't find that one"
 		return Event("privmsg", "", target, [quote])

@@ -40,7 +40,7 @@ class version(MooBotModule):
 		url	 = "http://freshmeat.net/projects-xml/" + name
 
 		# In the document, we are looking for latest_version to tell us the version
-		regex	= re.compile("^\s*<latest_version>.*</latest_version>$", re.IGNORECASE)
+		regex	= re.compile("^\s*<latest_release_version>.*</latest_release_version>$", re.IGNORECASE)
 		xml_doc	= urllib2.urlopen(url).readlines()
 		version	= None
 
@@ -52,8 +52,8 @@ class version(MooBotModule):
 			output	= "Can't find %s on [fm]" % name
 		else:
 			version = version.strip() # Remove spaces and '\n'
-			version = version.replace("<latest_version>", "")
-			version = version.replace("</latest_version>", "")
+			version = version.replace("<latest_release_version>", "")
+			version = version.replace("</latest_release_version>", "")
 			output	= "Latest version of %s according to [fm]: %s" % (name, version)
 
 		target = self.return_to_sender(args)

@@ -38,11 +38,13 @@ UNDERLINE = ESCAPE + "[4m"
 BLINK = ESCAPE + "[5m"
 
 # Debugging turns stack traces on (allows bot crash)
-DEBUG = 1
+DEBUG = 0
+
+import string, thread, threading
+
 
 from ircbot import SingleServerIRCBot, IRCDict, Channel
 from irclib import irc_lower
-import string, thread, threading 
 
 
 class MooBot(SingleServerIRCBot):
@@ -50,14 +52,17 @@ class MooBot(SingleServerIRCBot):
 	class HandlerExists(MooBotException): pass
 	config_files = ['moobot.conf', '/etc/moobot/moobot.conf']
 
-	def __init__(self, channels=[], nickname="", server="", port=6667, module_list=[]):
+	def __init__(self, channels=[], nickname="", server="", port=6667, password="", module_list=[]):
 		"""MooBot initializer - gets values from config files and uses those
 		unless passed values directly"""
+		print "possible config files: " + ", ".join(self.config_files)
+
 		# Get values from config files and replace any of the empty ones above
 		configs = self.get_configs()
 		config_nick = configs['nick']
 		config_server = configs['server']
 		config_port = configs['port']
+		config_password = configs['password']
 		config_channels = configs['channels']
 		config_module_list = configs['module_list']
 		config_others = configs['others']
@@ -67,9 +72,10 @@ class MooBot(SingleServerIRCBot):
 		if nickname == "": nickname = config_nick
 		if server == "": server = config_server
 		if port == 6667: port = config_port
+		if password == "": password = config_password
 		if module_list == []: module_list = config_module_list
 		# Now that we have our values, initialize it all
-		SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
+		SingleServerIRCBot.__init__(self, [(server, port, password)], nickname, nickname)
 		self.channels = IRCDict()
 		for channel in channels:
 			self.channels[channel] = Channel()
@@ -317,17 +323,22 @@ class MooBot(SingleServerIRCBot):
 	def get_configs(self, filelist=[]):
 		"""Gets configuration options from a list of files"""
 		from ConfigParser import ConfigParser, NoSectionError, NoOptionError
+
 		config = ConfigParser()
 		filelist += MooBot.config_files
-		config.read(filelist)
+		print "Parsed config files:"
+		print config.read(filelist)
+
 		# Initialize the things we will return just in case they aren't in
 		# any of the files that we parse through.  Then get their values
 		# and stick the rest in "others"
-		nick=""; server=""; port=6667; channels=[]; others={}
+		nick=""; server=""; port=6667; password=""; channels=[]; others={}
+		module_list = []
 		try:
 			nick = config.get('connection', 'nick')
 			server = config.get('connection', 'server')
 			port = int(config.get('connection', 'port'))
+			password = config.get('connection', 'password')
 			channels = config.get('connection', 'channels').split(" ")
 			module_list = config.get('modules', 'modulefiles').split(" ")
 		except ValueError:
@@ -341,7 +352,7 @@ class MooBot(SingleServerIRCBot):
 				# These will all be returned, don't need to be in others
 				for option in config.options(section):
 					others[option] = config.get(section, option)
-		return {'nick': nick, 'server': server, 'port': port,
+		return {'nick': nick, 'server': server, 'port': port, 'password': password, 
 			'channels': channels, 'module_list': module_list,
 			'others': others}
 	
@@ -444,6 +455,11 @@ def main():
 	for module in bot.module_list:
 		bot.load_module(Event("", "", "", ["", module]))
 	bot.start()
+
+# config_files is needed by database
+import sys
+if len(sys.argv) > 1:
+	MooBot.config_files = [sys.argv[1]] + MooBot.config_files
 
 if __name__ == '__main__':
 	main()
