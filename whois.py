@@ -43,7 +43,7 @@ class whois(MooBotModule):
 		self.preferral = re.compile('^ReferralServer:\s+(?:whois://)?([^:\r\n]+)(?::(\d+))?', re.I | re.M)
 
 		# handler regex
-		self.regex = '^(?:(?:whois|whios\s+.+|%s)$' % (ipv4part)
+		self.regex = '^(?:(?:whois|whios)\s+.+|%s)$' % (ipv4part)
 		self.priority = 4
 
 		# list from GNU whois
