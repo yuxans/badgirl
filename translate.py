@@ -18,7 +18,7 @@
 #
 
 from moobot_module import MooBotModule
-handler_list = ["rot13", "reverse", "mime"]
+handler_list = ["rot13", "reverse"]
 
 class rot13(MooBotModule):
 	def __init__(self):
@@ -54,31 +54,6 @@ class reverse(MooBotModule):
 		for i in range(1, len(orig_string)+1):
 			newstring += orig_string[-i]
 		return Event("privmsg", "", target, [newstring])
-	
-class mime(MooBotModule):
-	def __init__(self):
-		self.regex = "^mime .+$"
-	def handler(self, **args):
-		import os, string
-	
-		self.debug(args["text"])
-		text = string.join(args["text"].split()[2:])
-		text = escapes(text)
-		# TODO. need change, don't use native tools.
-		if args["text"].split()[1] == "mime":
-			mime = os.popen("echo " + text + " | mimencode")
-		elif args["text"].split()[1] == "unmime":
-			mime = os.popen("echo " + text + " | mimencode -u ")
-	
-		
-		target = args["channel"]
-		if args["type"] == "privmsg":
-			from irclib import nm_to_n
-			target = nm_to_n(args["source"])
-	
-	
-		from irclib import Event
-		return  Event("privmsg", "", target, [ mime.read() ])
 	
 def escapes(text):
 	import string
