@@ -33,7 +33,11 @@ class Handler:
 		self.instance = getattr(module, className)()
 		self.module = module
 		self.className = className
-		self.regex = compile(self.instance.regex)
+		try:
+			self.regex = compile(self.instance.regex)
+		except Exception, e:
+			print "error compiling " + self.instance.regex
+			raise e
 		self.type = type or self.instance.type
 
 	def __str__(self):
