@@ -26,7 +26,8 @@ handler_list = ["whois"]
 
 class whois(MooBotModule):
 	def __init__(self):
-		self.regex="^d?whois .+"
+		self.regex="^(whois\s+.+|\d{1,3}(\.\d{1,3}){1,3})$"
+		self.priority = 4
 
 	def handler(self, **args):
 		"""TODO. only query from Asia Pacific Network Infomation Center, need fix"""
@@ -37,9 +38,12 @@ class whois(MooBotModule):
 		alldata = ''
 
 		myquery = args["text"].split()
-		myquery = myquery[2]
+		if myquery[1] == "whois":
+			myquery = myquery[2]
+		else:
+			myquery = myquery[1]
 
-		if re.compile('\d{1,3}(\.\d{1,3}){0,3}').match(myquery):
+		if re.compile('\d{1,3}(\.\d{1,3}){1,3}').match(myquery):
 			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			s.connect((HOST, PORT))
 			s.send(myquery+"\r\n")
@@ -57,6 +61,7 @@ class whois(MooBotModule):
 			dones = {}
 			pt = re.compile('^(inetnum|netname|country|descr):')
 
+			print alldata
 			for dataelement in alldata:
 				m = pt.match(dataelement)
 				if m:
@@ -65,7 +70,9 @@ class whois(MooBotModule):
 						dones[k] = True
 						data += "\r\n" + dataelement
 			try:
-				while True:
+				old = None
+				while old != data:
+					old = data
 					data = data.decode('hz').encode('gbk')
 			except Exception:
 				pass
