@@ -12,3 +12,7 @@ INSERT INTO data VALUES ('Eff if I know, WHO.','dunno',NULL);
 INSERT INTO data VALUES ('Do I look like a freakin\' infobot, WHO?','dunno','Strike!~Strike@resh1356.tigernet.trinity.edu');
 INSERT INTO data VALUES ('WHO: Google may be able to help you, cuz I sure can\'t!','dunno','Bradmont!~bradmont@h24-67-155-27.cc.shawcable.net');
 INSERT INTO data VALUES ('WHO, NFC, man','dunno','Strike!~Strike@resh1356.tigernet.trinity.edu');
+INSERT INTO grants VALUES ('%', 'delete_priv');
+INSERT INTO grants VALUES ('%', 'quote_priv');
+INSERT INTO grants VALUES ('%bot!%@%', 'notalk_priv');
+
