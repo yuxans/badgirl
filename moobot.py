@@ -17,7 +17,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-"""MooBot - The Pro-Trustix Python bot.
+"""MooBot - The pro-Debian Python bot.
 
 This bot aims to be a lot like the blootbot, apt, that
 is found in #debian on OPN all the time - minus the
@@ -26,33 +26,26 @@ I already said "the sucking" :)).  This is a work in
 progress.
 """
 
-# Colorized output constants
-ESCAPE = "\33"
-RED = ESCAPE + "[31m"
-GREEN = ESCAPE + "[32m"
-YELLOW = ESCAPE + "[33m"
-BLUE = ESCAPE + "[34m"
-PURPLE = ESCAPE + "[35m"
-NORMAL = ESCAPE + "[0m"
-UNDERLINE = ESCAPE + "[4m"
-BLINK = ESCAPE + "[5m"
-
 # Debugging turns stack traces on (allows bot crash)
 DEBUG = 0
 
 import string, thread, threading
 
 
+from utilities import *
+from os import environ
 from ircbot import SingleServerIRCBot, IRCDict, Channel
 from irclib import irc_lower, Debug
-
+from handler import Handler
+import string, thread, threading
 
 class MooBot(SingleServerIRCBot):
 	class MooBotException(Exception): pass
 	class HandlerExists(MooBotException): pass
-	config_files = ['moobot.conf', '/etc/moobot/moobot.conf']
+	config_files = [environ['HOME']+'/.moobot.conf', 'moobot.conf',
+            '/etc/moobot.conf']
 
-	def __init__(self, channels=[], nickname="", server="", port=6667, password="", module_list=[], encoding=""):
+	def __init__(self, channels=[], nickname="", realname="", server="", port=6667, module_list=[], encoding=""):
 		"""MooBot initializer - gets values from config files and uses those
 		unless passed values directly"""
 		Debug("possible config files: " + ", ".join(self.config_files))
@@ -60,6 +53,8 @@ class MooBot(SingleServerIRCBot):
 		# Get values from config files and replace any of the empty ones above
 		configs = self.get_configs()
 		config_nick = configs['nick']
+		config_username = configs['username']
+		config_realname = configs['realname']
 		config_server = configs['server']
 		config_port = configs['port']
 		config_encoding = configs['encoding']
@@ -69,26 +64,29 @@ class MooBot(SingleServerIRCBot):
 		config_others = configs['others']
 		# If we are passed any values directly, use those, but if they are empty
 		# we will fall back to the values we got from the config file
+#		for var in \
+#			['channels', 'nickname', 'username', 'server', 
+#			'port', 'module_list', 'others']:
+#				if kwargs.has_key(var): 
+#		if kwargs.has_key('channels'): channels = kwargs['channels']
+#		else: channels = config_channels
 		if channels == []: channels = config_channels
 		if nickname == "": nickname = config_nick
+		if realname == "": realname = config_realname
 		if server == "": server = config_server
 		if port == 6667: port = config_port
 		if password == "": password = config_password
 		if module_list == []: module_list = config_module_list
 		if encoding == "": encoding = config_encoding
 		# Now that we have our values, initialize it all
-		SingleServerIRCBot.__init__(self, [(server, port, password, encoding)], nickname, nickname)
+		SingleServerIRCBot.__init__(self, [(server, port, password, encoding)], nickname, realname)
 		self.channels = IRCDict()
 		for channel in channels:
 			self.channels[channel] = Channel()
-		self.handlers = []
+		self.handlers = {}
 		self.configs = config_others
 		self.module_list = module_list
 
-	def on_join(self, c, e):
-		"""Whenever a client joins a channel the bot is in, this is
-		executed"""
-		pass
 
 	def on_welcome(self, c, e):
 		"""Whenever this bot joins a server, this is executed"""
@@ -105,13 +103,15 @@ class MooBot(SingleServerIRCBot):
 		args["type"] = e.eventtype()
 		args["source"] = e.source()
 		args["channel"] = e.target()
+		args["event"] = e
 		msg = string.strip(msg)
 		from irclib import nm_to_n
 		# Debug(what was said to the stdout with a bit of colour.)
 		Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" + \
 			BLUE + args["channel"] + ">" + NORMAL + \
 			RED + "(" + args["type"] + ")" + NORMAL, args["text"])
-		temp = threading.Thread(target=self.process_privmsg, args=(msg, args), name="privmsg subthread")
+		temp = threading.Thread(target=self.process_privmsg, \
+			args=(msg, args), name="privmsg subthread")
 		temp.setDaemon(1)
 		temp.start()
 	
@@ -125,13 +125,13 @@ class MooBot(SingleServerIRCBot):
 	def on_pubmsg(self, c, e):
 		"""Whenever someone speaks in a channel where our bot resides, this is
 		executed"""
-		import string
 		msg = e.arguments()[0]
 		args = {}
 		args["text"] = msg
 		args["type"] = e.eventtype()
 		args["source"] = e.source()
 		args["channel"] = e.target()
+		args["event"] = e
 		# Then check with all the global handlers, see if any match
 		from irclib import nm_to_n
 		# Debug(what was said to the stdout with a bit of colour.)
@@ -171,6 +171,32 @@ class MooBot(SingleServerIRCBot):
 				for event in eventlist:
 					self.do_event(event)
 
+	def on_ctcp(self, c, e):
+		""" Executed on CTCP events."""
+		self.on_other(c, e)
+		SingleServerIRCBot.on_ctcp(self, c, e)
+		
+	def on_other(self, c, e):
+		""" executed when an event without a specific on_<event>
+		handler happens """
+		if e.eventtype() != "all_raw_messages": # ignore these, because they
+							# happen for every event
+			#print "in on_other with eventtype:", e.eventtype()
+			args = {}
+			args["event"] = e
+			args["type"] = e.eventtype()
+			temp = threading.Thread(target=self.process_other, \
+				args=(args, ""), name="other subthread")
+			temp.setDaemon(1)
+			temp.start()
+
+	def process_other(self, args, a):
+		""" Process events caught by on_other """
+		eventlist = self.get_handler(args["event"].eventtype(), "", args)
+		for event in eventlist:
+			self.do_event(event)
+
+
 	def get_global_handler(self, msg, args):
 		"""Used when an event is raised that needs a global handler"""
 		return self.get_handler(Handler.GLOBAL, msg, args)
@@ -183,43 +209,52 @@ class MooBot(SingleServerIRCBot):
 		"""Used when an event is raised that needs an event handler"""
 		# Check through the handlers for a key that matches
 		# the message contents.
-		from irclib import nm_to_n
 		from irclib import Event
 		import weakref
-		nickname = self.connection.get_nickname()
-		if type == Handler.GLOBAL and args["text"][:len(nickname)] != nickname:
-			# For now we are going to rewrite the message with the
-			# name on the front so that modules don't care if they are
-			# local or global.
-			args["text"] = self.connection.get_nickname() + ": " +\
-				args["text"]
-		# Iterate over the list of registered handlers, looking for a handler
-		# that matches in type and regex.  When it is found, call it and get a
-		# resulting event or list of events which we return
 		eventlist = [Event("continue", "", "", [""])]
-		for handler in self.handlers:
-			if eventlist[-1].eventtype() != "continue":
-				break
 
-			if handler.type == type:
-				if handler.regex.search(msg):
+		# "all" handlers should be done first.
+		# Skip them for LOCAL pubmsgs, though, because they'll already
+		# have run on the GLOBAL handler.
+		if type != Handler.LOCAL or args["event"].eventtype() != "pubmsg":
+			if "all" in self.handlers.keys():
+				for handler in self.handlers["all"]:
 					instance = handler.instance
-					# result can either be an Event or a list of Events, 
-					# in either case, we just add on all the Events to
-					# eventlist
-					result = instance.handler(text=args["text"], 
-						type=args["type"], source=args["source"], 
-						channel=args["channel"], ref=weakref.ref(self))
+					e = args["event"]
+					if e.source() == "":
+						e._source = self.connection.get_nickname()
+					arguments = {"event" :  e,
+					     	"ref": weakref.ref(self)}
+					instance.handler(**arguments)
+	
+		if type in self.handlers.keys():
+			for handler in self.handlers[type]:
+				if eventlist[-1].eventtype() != "continue":
+					break
+				if (type <> Handler.GLOBAL and type <> Handler.LOCAL) or \
+				   (handler.regex.search(msg)):
+					for key in ["text", "type", "source",
+						    "channel", "event"]:
+						if key not in args.keys():
+							args[key] = None
+					instance = handler.instance
+					result = instance.handler(text=args["text"],
+								  type=args["type"],
+								  source=args["source"],
+								  channel=args["channel"],
+								  event=args["event"],
+								  ref=weakref.ref(self))
 					if isinstance(result, Event):
 						eventlist.append(result)
-					else:
+					elif result != None:
 						eventlist += result
-
+						
 		if len(eventlist) >1:
 			return eventlist
 
-		# This should never come up unless you take out the "dunno" handlers
-		# that generally hand every case that no other handler takes care of
+		# This should never come up unless you take out the "dunno"
+		# handlers that generally hand every case that no other handler
+		# takes care of.
 		if type == Handler.LOCAL:
 			Debug("Could not get event handler.")
 			Debug("msg:", args["text"])
@@ -229,98 +264,9 @@ class MooBot(SingleServerIRCBot):
 
 		return []
 
-	def list_handlers(self):
-		"""Display the handlers currently registered with the bot"""
-		strings =[] 
-		for handler in self.handlers:
-			if handler.function.__doc__ is not None:
-				string = handler.pattern() + ": " + handler.func_name() + \
-					"() - " + handler.function.__doc__ + " ("
-				if handler.type == Handler.GLOBAL: string += "global)"
-				else: string += "local)"
-			else:
-				string = handler.pattern() + ": " + handler.func_name() + "() ("
-				if handler.type == Handler.GLOBAL: string += "global)"
-				else: string += "local)"
-			strings.append(string)
-		return strings
-
 	def do_event(self, event):
 		"""Does an appropriate action based on event"""
-		if event.eventtype() == "privmsg":
-			for line in string.split(event.arguments()[0], "\n"):
-				# Debug(the output to the STDOUT, with a bit of colour)
-				Debug(RED + ">" + \
-					PURPLE + self.connection.get_nickname() + \
-					RED + "/" + \
-					GREEN + event.target() + \
-					RED + "<" + \
-					NORMAL, line)
-				self.connection.privmsg(event.target(), line)
-		elif event.eventtype() == "action":
-			Debug(RED + " * " + \
-				PURPLE + self.connection.get_nickname() + \
-				RED + "/" + \
-				GREEN + event.target() + \
-				NORMAL, event.arguments())
-			self.connection.action(event.target(), event.arguments()[0])
-		elif event.eventtype() == "internal":
-			#Debug("internal", event.arguments()[0], event.target)
-			if event.arguments()[0] == "join":
-				Debug("Joining", event.target())
-				self.connection.join(event.target())
-			elif event.arguments()[0] == "part":
-				Debug("Parting", event.target())
-				self.connection.part(event.target())
-			elif event.arguments()[0] == "load":
-				self.load_module(event);
-			elif event.arguments()[0] == "unload":
-				self.unload_module(event);
-			elif event.arguments()[0] == "nick":
-				Debug("Changing nick to ", event.target())
-				self.connection.nick(event.target())
-			elif event.arguments()[0] == "kick":
-				Debug("Kicking", event.target(), "from", event.arguments()[1])
-				self.connection.kick(event.arguments()[1], event.target())
-			elif event.arguments()[0] == "send_raw":
-				Debug("Sending raw command: " + event.arguments()[0])
-				self.connection.send_raw(event.arguments()[1])
-			elif event.arguments()[0] == "modules":
-				from irclib import Event
-#				if event.arguments()[1] == "":
-#					strings = self.list_handlers()
-#					reply = ""
-#					for msg in strings:
-#						reply += msg + " ;; "
-#					self.do_event(Event("privmsg", "", event.target(), [reply]))
-#				else:
-				for module in event.arguments()[1].split(" "):
-					match = 0
-					for handler in self.handlers:
-						if handler.className == module:
-							match = 1
-							if handler.className is not None:
-								msg = `handler.pattern()` + ": " + \
-									`handler.func_name()` + "() - " + \
-									`handler.instance.__doc__` + " ("
-								if handler.type == Handler.GLOBAL:
-									msg += "global)"
-								else:
-									msg += "local)"
-							else:
-								msg = handler.pattern() + ": " + \
-									handler.func_name() + "() ("
-								if handler.type == Handler.GLOBAL:
-									msg += "global)"
-								else:
-									msg += "local)"
-					if match == 0:
-						msg = "no handler found with function " + module + "()"
-					self.do_event(Event("privmsg", "", event.target(), [msg]))
-		elif event.eventtype() == "continue":
-			return
-		else:
-			Debug("This event type", event.eventtype(), "has no suitable event")
+		self.get_handler(event.eventtype(), "", args={"event": event})
 
 	def get_configs(self, filelist=[]):
 		"""Gets configuration options from a list of files"""
@@ -328,16 +274,18 @@ class MooBot(SingleServerIRCBot):
 
 		config = ConfigParser()
 		filelist += MooBot.config_files
+		config.read(filelist)
 		Debug("Parsed config files:", config.read(filelist))
-
 		# Initialize the things we will return just in case they aren't in
 		# any of the files that we parse through.  Then get their values
 		# and stick the rest in "others"
-		nick=""; server=""; port=6667; password=""; channels=[]; others={}
+		nick=""; username=""; realname=""; server=""
+		port=6667; channels=[]; others={}
 		encoding = "utf-8"
-		module_list = []
 		try:
 			nick = config.get('connection', 'nick')
+			username = config.get('connection', 'username')
+			realname = config.get('connection', 'realname')
 			server = config.get('connection', 'server')
 			encoding = config.get('connection', 'encoding')
 			port = int(config.get('connection', 'port'))
@@ -355,7 +303,8 @@ class MooBot(SingleServerIRCBot):
 				# These will all be returned, don't need to be in others
 				for option in config.options(section):
 					others[option] = config.get(section, option)
-		return {'nick': nick, 'server': server, 'port': port, 'password': password, 
+		return {'nick': nick, 'username': username,
+			'realname': realname, 'server': server, 'port': port,
 			'channels': channels, 'module_list': module_list, 'encoding': encoding,
 			'others': others}
 	
@@ -389,15 +338,19 @@ class MooBot(SingleServerIRCBot):
 				# contains the names of classes to be loaded as bot modules
 				for handlerName in importedModule.handler_list:
 					newHandler = Handler(importedModule, handlerName)
-					self.handlers.append(newHandler)
-					Debug("Added handler: " , handlerName, "for \"" \
-						+ newHandler.regex.pattern+"\"", \
+					if newHandler.type not in self.handlers.keys():
+						self.handlers[newHandler.type] = []
+					self.handlers[newHandler.type].append(newHandler)
+					Debug("Added handler:" , handlerName, "for", \
+					        newHandler.type, "\"" \
+						+ newHandler.regex.pattern + "\"", \
 						"priority ", newHandler.instance.priority)
 				if importedModule.__name__ not in self.module_list:
 					self.module_list.append(importedModule.__name__)
 			finally:
 				# sort the list (for priorities)
-				self.handlers.sort()
+				for key in self.handlers.keys():
+					self.handlers[key].sort()
 				# Since we may exit via an exception, close fp explicitly.
 				if fp:
 					fp.close()
@@ -406,31 +359,24 @@ class MooBot(SingleServerIRCBot):
 		""" remove any handlers from self.handlers that are from any of the
 		modules passed in event.arguments()[1:]"""
 		module_list = event.arguments()[1:]
-		for index in range(len(self.handlers)-1, -1, -1):
-			if self.handlers[index].module.__name__ in module_list:
-				self.handlers.pop(index)
-		# sort the list (for priorities)
+		temp = []
+		for handlerType in self.handlers.keys():
+			for handler in self.handlers[handlerType]:
+				if handler.module.__name__ in module_list:
+					temp.append((handlerType, handler))
+					print handler
+
+		for handlerType, h in temp:
+			print h, repr(h)
+			self.handlers[handlerType].remove(h)
+
 		for module in module_list:
 			if module in self.module_list:
 				self.module_list.remove(module)
-		self.handlers.sort()
-	
-class Handler:
-	"""This class defines how chat messages are processed to generate chat
-	events that the bot acts out"""
-	GLOBAL = 1
-	LOCAL = 0
 
-	def __init__(self, module, className, type=0):
-		from re import compile
-		self.instance = getattr(module, className)()
-		self.module = module
-		self.className = className
-		self.regex = compile(self.instance.regex)
-		self.type = type or self.instance.type
-
-	def __str__(self):
-		return '"' + self.regex + '": ' + self.function.__name__
+		# sort the list (for priorities)
+		for handlerType in self.handlers.keys():
+			self.handlers[handlerType].sort()
 	
 	def __cmp__(self, other):
 		return cmp(self.instance, other.instance)
