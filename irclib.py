@@ -466,7 +466,7 @@ class ServerConnection(Connection):
         """[Internal]"""
 
         try:
-            new_data = self.socket.recv(2**14).decode(self.encoding, "ignore")
+            new_data = self.socket.recv(2**14).decode(self.encoding, "replace")
         except socket.error, x:
             # The server hung up.
             self.disconnect("Connection reset by peer")
