@@ -38,7 +38,6 @@ class stockQuote(MooBotModule):
 		self.regex="^(em|stockquote) .+"
 
 	def handler(self, **args):
-
 		target = self.return_to_sender(args)
 		requested_code = args["text"].split()[2]
 		quote_method = args["text"].split()[1]
@@ -46,8 +45,15 @@ class stockQuote(MooBotModule):
 		if quote_method == "stockquote":
 			quote = self.quote_cn_yahoo(requested_code)
 		else:
-			quote = self.eastmoney(requested_code)
+			quote = self.eastmoney(requested_code, \
+					       self.long_short(target))
 		return Event("privmsg", "", target, [quote])
+
+	def long_short(self, target):
+		default_short = True
+		if not re.compile("^#.*").match(target):
+			default_short = False
+		return default_short
 
 	def quote_cn_yahoo(self, symbol):
 		if self.ss.match(symbol):
@@ -77,8 +83,7 @@ class stockQuote(MooBotModule):
 
 		return result
 
-	def eastmoney(self, symbol):
-		__style = 's'
+	def eastmoney(self, symbol, short_style):
 		err_msg =  "Please use formal STOCK ID to query, exp. 600000 or 000001. Or you can view this link http://quote.eastmoney.com/q.asp?StockCode=%s" % symbol
 
 		if not (self.ss.match(symbol) or self.sz.match(symbol)):
@@ -102,7 +107,9 @@ class stockQuote(MooBotModule):
 			else:
 				p = myp()
 				p.feed(html)
-				return self.output_short(p.get_result())
+				return short_style \
+				    and self.output_short(p.get_result()) \
+				    or self.output_long(p.get_result())
 
 	def output_long(self, data_list):
 		__newline = "\r\n | "
