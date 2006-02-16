@@ -32,6 +32,9 @@ def checkPriv(hostmask, privilege):
 	"""checks if the user identified by hostmask has privilege privilege
 	returns 0 if the nick/hostmask doesn't have that privilege
 	returns 1 if they do"""
+	return getPriv(hostmask, privilege) and 1 or 0
+
+def getPriv(hostmask, privilege):
 	global privCache
 
 	if not privCache:
@@ -44,15 +47,17 @@ def checkPriv(hostmask, privilege):
 			if not privCache.has_key(ptype):
 				privCache[ptype] = []
 			privCache[ptype].append(regex)
+
 	if privCache.has_key(privilege):
 		for regex in privCache[privilege]:
 			if regex.match(hostmask):
-				return 1
+				return hostmask
+
 	if privilege != 'all_priv' and privCache.has_key('all_priv'):
 		for regex in privCache['all_priv']:
 			if regex.match(hostmask):
-				return 1
-	return 0
+				return hostmask
+	return False
 
 class grantPriv(MooBotModule):
 	def __init__(self):
