@@ -54,6 +54,7 @@ class zju_acm(MooBotModule, HTMLParser2.HTMLParser):
  				text += "Hey, problem %s wasn't done. Let's hack it~" % (self.problem,)
 		else:
 			text = "%s is not a valid PROBLEM ID, see http://acm.zju.edu.cn/ for details" % (self.problem,)
+		text += " TOTAL RESOLVED: %d" % (len(self.DoneList))
 		target = self.return_to_sender(args)
 		result = Event("privmsg", "", target, [ text ])
 		return result
