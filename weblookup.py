@@ -84,8 +84,15 @@ class google(MooBotModule):
 		# the resulting output so much nicer
 		search_request += string.join(search_terms, "+").encode("UTF-8", 'replace')
 		connect = httplib.HTTPConnection('www.google.com', 80)
-		connect.request("GET", search_request)
-		response = connect.getresponse()
+		headers = {"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)"}
+		connect.request("GET", search_request, None, headers)
+
+		try:
+			response = connect.getresponse()
+		except:
+			msg = "error"
+			return Event("privmsg", "", target, [msg])
+
 		if response.status != 200:
 			msg = str(response.status) + ": " + response.reason
 			self.debug(msg)
@@ -94,7 +101,7 @@ class google(MooBotModule):
 			listing = response.read().decode("UTF-8", 'replace')
 		urls=[]
 		for i in listing.split():
-			if string.find(i, "HREF=http://") >= 0:
+			if string.find(i, "href=http://") >= 0:
 				url = i[:string.find(i, ">")]
 				url = url[5:]
 				urls.append(url)
@@ -164,9 +171,11 @@ class dict(MooBotModule):
 		self.rSpell = re.compile("str2img\('([^']+)", re.I)
 		self.rExpl = re.compile(u'class="explain_(?:attr|item)">(.*)', re.I)
 		self.ciba_failed = 1
+		self.rSearch = re.compile(u'^[^*?_%]{2,}[*?_%]')
 
  	def handler(self, **args):
  		from irclib import Event
+		import dict
  		target = self.return_to_sender(args)
 		if args["text"].split()[1][0][0] == '~':
 			word = " ".join(args["text"].split()[1:])[1:]
@@ -179,11 +188,31 @@ class dict(MooBotModule):
 			self.cache_old = self.cache
 			self.cache = {}
 
-		if self.cache.has_key(word):
-			result = "(cached) " + self.cache[word]
+		if self.rSearch.match(word):
+			words = dict.search(word)
+			self.Debug(words)
+			if not words:
+				result = False
+			elif len(words) == 1:
+				result = words[0] + ', ' + dict.lookup(words[0])
+			else:
+				result = "Found %d" % len(words)
+				if len(words) >= dict.maxsearch:
+					result += " or more"
+				result += ": " + ", ".join(words)
+
+			if not result:
+				result = "not found"
+		else:
+			result = dict.lookup(word)
+
+		if result:
+			result = word + ": " + result
+		elif self.cache.has_key(word):
+			result = self.cache[word]
 		elif self.cache_old.has_key(word):
 			self.cache[word] = self.cache_old[word]
-			result = "(oldcache)" + self.cache[word]
+			result = self.cache[word]
 		else:
 			if self.ciba_failed <= 0:
  				result = self.lookup_ciba(word)
@@ -347,6 +376,9 @@ class babelfish(MooBotModule):
 		request = tmp[2] # chop off the "moobot: babelfish"
 
 		if self.shortcuts.has_key(translation_key):
+			if request.find(' ') == -1 and re.compile('^[a-z]+$', re.I).search(request):
+				return Event("privmsg", "", self.return_to_sender(args), 
+					[ "use: dict " + request + " or ~~" + request])
 			translation_key = self.shortcuts[translation_key]
 			translation_text = request
 		elif translation_key in self.translations:
@@ -604,14 +636,14 @@ class acronym(MooBotModule):
 	Does a search on www.acronymfinder.com and returns all definitions
 	"""
 	def __init__(self):
-		self.regex = "^explain [A-Z]+"
+		self.regex = "^explain [a-zA-Z]+"
 
 	def handler(self, **args):
 		from irclib import Event
 		import string, re
 		target = self.return_to_sender(args)
 
-		search_term = args["text"].split(" ")[2]
+		search_term = args["text"].split(" ")[2].upper()
 		search_request = "/af-query.asp?String=exact&Acronym=%s&Find=Find" % search_term
 		connect = httplib.HTTPConnection('www.acronymfinder.com', 80)
 		headers = {"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)"}
@@ -622,7 +654,7 @@ class acronym(MooBotModule):
 			self.debug(msg)
 			return Event("privmsg", "", target, [msg])
 		else:
-			listing = response.read()
+			listing = response.read().decode("latin1")
 
 
 		search = re.compile("<td[^>]*><b>%s\s*</b></td>[^<]+<td[^>]*>((?:<b>)?[A-Za-z][^<\n\r]+(?:</b>)?)\s*</td>" % search_term)
