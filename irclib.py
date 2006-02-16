@@ -692,7 +692,7 @@ class ServerConnection(Connection):
 
 	def part(self, channels):
 		"""Send a PART command."""
-		if type(channels) == types.StringType:
+		if type(channels) == types.StringType or type(channels) == types.UnicodeType:
 			self.send_raw("PART " + channels)
 		else:
 			self.send_raw("PART " + string.join(channels, ","))
@@ -1117,6 +1117,7 @@ def DebugErr(*args):
 			sys.stderr.write(text)
 		else:
 			sys.stderr.write(str(text))
+		sys.stderr.write(' ')
 	sys.stderr.write("\n")
 	sys.stderr.flush()
 
@@ -1124,11 +1125,11 @@ def Debug(*args):
 	for text in args:
 		t = type(text)
 		if t is unicode:
-			print text.encode("gbk", "ignore"),
+			print text.encode("gbk", "ignore"), ' ',
 		elif t is str:
-			print text,
+			print text, ' ',
 		else:
-			print str(text),
+			print str(text), ' ',
 	print
 
 # Numeric table mostly stolen from the Perl IRC module (Net::IRC).
