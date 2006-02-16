@@ -17,6 +17,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
+import re
 from moobot_module import MooBotModule
 handler_list=["math"]
 
@@ -51,7 +52,7 @@ class math(MooBotModule):
         # ]| : or
         # \*\* : exponentiation
         operator = "([%+-/*]|\*\*)"
-        
+
         # Total regex:
         #
         # ^ : starts with
@@ -80,11 +81,11 @@ class math(MooBotModule):
         # Split on spaces and then join everything after the first space
         # together -- this removes the botname
         expression = args["text"].split(" ")
-        string = ""
-        for part in expression[1:]:
-            string += part
+        string = "".join(expression[1:])
 
         try:
+            if not self.checkstarstar(string):
+                raise ArithmeticError
             result = str(eval(string))
             if len(result) > 512:
                 result = "I know the answer, but it's too long to say!"
@@ -99,3 +100,19 @@ class math(MooBotModule):
         except SyntaxError:
             result = "Syntax error (remove leading 0's from non-octal numbers, and make sure parentheses are paired properly)"
         return Event("privmsg", "", target, [result])
+
+    def checkstarstar(self, s):
+        danger_operator = "\*\*"
+        operator = "[()]"
+        s_list = re.split(danger_operator, s)
+        n = len(s_list)
+        if n < 2:
+            return True
+        elif n > 2:
+            return False
+        else:
+            number = re.split(operator, s_list[1])
+        for x in number:
+        if x != "":
+            break
+            return 1000 > eval(x)
