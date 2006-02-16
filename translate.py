@@ -17,8 +17,10 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
+from irclib import Event
+from irclib import Event
 from moobot_module import MooBotModule
-handler_list = ["rot13", "reverse"]
+handler_list = ["rot13", "reverse", "decode"]
 
 class rot13(MooBotModule):
 	def __init__(self):
@@ -26,14 +28,11 @@ class rot13(MooBotModule):
 
 	def handler(self, **args):
 		"Qbrf n fvzcyr ebg13, abguvat snapl"
-		from irclib import Event, nm_to_n
 		import string
-		if args["type"] == "privmsg": target=nm_to_n(args["source"])
-		else: target=args["channel"]
 	
 		msg = " ".join(args["text"].split(" ")[2:])
 		newstring = msg.encode("rot_13")
-		return Event("privmsg", "", target, [newstring])
+		return Event("privmsg", "", self.return_to_sender(args), [newstring])
 
 class reverse(MooBotModule):
 	def __init__(self):
@@ -41,19 +40,34 @@ class reverse(MooBotModule):
 
 	def handler(self, **args):
 		"gnirts a sesreveR"
-		from irclib import Event, nm_to_n
-		if args["type"] == "privmsg": target=nm_to_n(args["source"])
-		else: target=args["channel"]
 	
 		from string import join
 		orig_string = join(args["text"].split(" ")[2:])
 		newstring = ""
 		for i in range(1, len(orig_string)+1):
 			newstring += orig_string[-i]
-		return Event("privmsg", "", target, [newstring])
-	
-def escapes(text):
-	import string
-	text = string.replace(text, "\\", "\\\\")
-	text = string.replace(text, '"', '\\"')
-	return text
+		return Event("privmsg", "", self.return_to_sender(args), [newstring])
+
+class decode(MooBotModule):
+	def __init__(self):
+		self.regex = "^(?:decode from \S+ .+)$"
+
+	def handler(self, **args):
+		(cmd, encodings) = args['text'].split(' ', 4)[2:4]
+		if cmd.lower() == 'from':
+			rawmsg = args['event'].rawdata().split(' ', 6)[6]
+			encodings = encodings.lower().split(":")
+			msg = rawmsg
+			for encoding in encodings:
+				if encoding == 'base64':
+					try:
+						msg = msg.decode(encoding)
+					except:
+						msg = "decode from %s failed" % encoding
+						break
+				else:
+					msg = msg.decode(encoding, "replace")
+		else:
+			msg = "not implemented"
+
+		return Event("privmsg", "", self.return_to_sender(args), [ msg ])
