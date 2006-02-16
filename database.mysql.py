@@ -60,8 +60,8 @@ type = "mysql"
 print "initializing DB connections & locks"
 for j in range(num_connections):
 	conn = MySQLdb.connect(host = dbhostname, port = dbport, user = dbuser, db = dbname, passwd=dbpass,
+		read_default_file = "~/.my.cnf", read_default_group = "client",
 		unicode = dbencoding, unicode_errors = "replace")
-	conn.cursor().execute("SET CHARACTER SET " + dbencoding)
 	botdbs.append(conn)
 	dblocks.append(thread.allocate_lock())
 del conn
@@ -103,7 +103,10 @@ def getAConnection():
 			botdbs.append('')
 		elif cnum >= num_connections:
 			print "Not enough connections, spawning a new one."
-			botdbs[cnum] = MySQLdb.connect(host = dbhostname, user = dbuser, db = dbname, passwd=dbpass)
+			conn = MySQLdb.connect(host = dbhostname, user = dbuser, db = dbname, passwd=dbpass,
+				read_default_file = "~/.my.cnf", read_default_group = "client",
+				unicode = dbencoding, unicode_errors = "replace")
+			botdbs[cnum] = conn
 			printFreeConnections()
 
 	return cnum
