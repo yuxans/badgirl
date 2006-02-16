@@ -82,7 +82,8 @@ class MooBot(SingleServerIRCBot):
 		SingleServerIRCBot.__init__(self, [(server, port, password, encoding)], nickname, realname)
 		self.channels = IRCDict()
 		for channel in channels:
-			self.channels[channel] = Channel()
+			if channel.strip():
+				self.channels[channel.strip()] = Channel()
 		self.handlers = {}
 		self.configs = config_others
 		self.module_list = module_list
@@ -284,15 +285,20 @@ class MooBot(SingleServerIRCBot):
 		module_list = {}
 		encoding = "utf-8"
 		try:
-			nick = config.get('connection', 'nick')
-			username = config.get('connection', 'username')
-			realname = config.get('connection', 'realname')
-			server = config.get('connection', 'server')
-			encoding = config.get('connection', 'encoding')
-			port = int(config.get('connection', 'port'))
-			password = config.get('connection', 'password')
-			channels = config.get('connection', 'channels').split(" ")
-			module_list = config.get('modules', 'modulefiles').split(" ")
+			confenc = config.get('config', 'encoding')
+		except NoSectionError:
+			Debug("ERROR: [config]\nencoding=..")
+
+		try:
+			nick = config.get('connection', 'nick').decode(confenc)
+			username = config.get('connection', 'username').decode(confenc)
+			realname = config.get('connection', 'realname').decode(confenc)
+			server = config.get('connection', 'server').decode(confenc)
+			encoding = config.get('connection', 'encoding').decode(confenc)
+			port = int(config.get('connection', 'port').decode(confenc))
+			password = config.get('connection', 'password').decode(confenc)
+			channels = config.get('connection', 'channels').decode(confenc).split(" ")
+			module_list = config.get('modules', 'modulefiles').decode(confenc).split(" ")
 		except ValueError:
 			Debug("ERROR: Non-numeric port in config files.")
 		except NoSectionError:
@@ -303,7 +309,7 @@ class MooBot(SingleServerIRCBot):
 			if section != "connection":
 				# These will all be returned, don't need to be in others
 				for option in config.options(section):
-					others[option] = config.get(section, option)
+					others[option] = config.get(section, option).decode(confenc)
 		return {'nick': nick, 'username': username,
 			'realname': realname, 'server': server, 'port': port,
 			'channels': channels, 'module_list': module_list, 'encoding': encoding,
@@ -366,10 +372,10 @@ class MooBot(SingleServerIRCBot):
 			for handler in self.handlers[handlerType]:
 				if handler.module.__name__ in module_list:
 					temp.append((handlerType, handler))
-					print handler
+					# print handler
 
 		for handlerType, h in temp:
-			print h, repr(h)
+			print "unloading ", h, repr(h)
 			self.handlers[handlerType].remove(h)
 
 		for module in module_list:
