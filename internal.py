@@ -190,7 +190,7 @@ class send_raw(MooBotModule):
 		if (priv.checkPriv(args["source"], "all_priv") == 0):
 			return Event("privmsg", "", self.return_to_sender(args), ["You can't do that!"])
 
-		self.debug(string.split(args["text"], " ", 3)[3])
+		self.Debug(string.split(args["text"], " ", 3)[3])
 		return Event("internal", "send_raw", "", ["send_raw", string.split(args["text"], " ", 3)[3] ])
 
 class internalEventProcess(MooBotModule):
@@ -200,26 +200,27 @@ class internalEventProcess(MooBotModule):
 		from handler import Handler
 		bot = args["ref"]()
 		event = args["event"]
-		#print "internal", event.arguments()[0], event.target
-		if event.arguments()[0] == "join":
-			print "Joining", event.target()
+		cmd = event.arguments()[0]
+		self.Debug("internal", cmd, event.target())
+		if cmd == "join":
+			self.Debug("Joining", event.target())
 			bot.connection.join(event.target())
-		elif event.arguments()[0] == "part":
-			print "Parting", event.target()
+		elif cmd == "part":
+			self.Debug("Parting", event.target())
 			bot.connection.part(event.target())
-		elif event.arguments()[0] == "nick":
-			print "Changing nick to ", event.target()
+		elif cmd == "nick":
+			self.Debug("Changing nick to ", event.target())
 			bot.connection.nick(event.target())
-		elif event.arguments()[0] == "kick":
-			print "Kicking", event.target(), "from", event.arguments()[1]
+		elif cmd == "kick":
+			self.Debug("Kicking", event.target(), "from", event.arguments()[1])
 			bot.connection.kick(event.arguments()[1], event.target())
-		elif event.arguments()[0] == "op":
-			print "Opping", event.target(), "from", event.arguments()[1]
+		elif cmd == "op":
+			self.Debug("Opping", event.target(), "from", event.arguments()[1])
 			bot.connection.mode(event.arguments()[1], "+o " + event.target())
-		elif event.arguments()[0] == "send_raw":
-			print "Sending raw command: " + event.arguments()[0]
+		elif cmd == "send_raw":
+			self.Debug("Sending raw command: " + cmd)
 			bot.connection.send_raw(event.arguments()[1])
-		elif event.arguments()[0] == "modules":
+		elif cmd == "modules":
 			from irclib import Event
 			match = 0
 			for module in event.arguments()[1].split(" "):
