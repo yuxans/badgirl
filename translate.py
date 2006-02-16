@@ -27,15 +27,12 @@ class rot13(MooBotModule):
 	def handler(self, **args):
 		"Qbrf n fvzcyr ebg13, abguvat snapl"
 		from irclib import Event, nm_to_n
+		import string
 		if args["type"] == "privmsg": target=nm_to_n(args["source"])
 		else: target=args["channel"]
 	
-		from string import maketrans, translate, join
-		msg = join(args["text"].split(" ")[2:])
-		table = maketrans(
-		'nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM',
-		'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
-		newstring = translate(msg, table)
+		msg = " ".join(args["text"].split(" ")[2:])
+		newstring = msg.encode("rot_13")
 		return Event("privmsg", "", target, [newstring])
 
 class reverse(MooBotModule):
