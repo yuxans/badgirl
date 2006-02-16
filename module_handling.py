@@ -30,7 +30,7 @@ class reload(MooBotModule):
 		self.priority=-20
 
 	def handler(self, **args):
-		import priv, string
+		import priv 
 		from irclib import Event
 		module_list = []
 		for module in args["text"].split()[2:]:
@@ -38,7 +38,7 @@ class reload(MooBotModule):
 		if priv.checkPriv(args["source"], 'module_priv') != 0:
 			return [Event("internal", "", "", [ "unload" ] + module_list),
 				Event("internal", "", "", [ "load" ] + module_list), 
-				Event("privmsg", "", self.return_to_sender(args), [ "loading "  + string.join(module_list)] )]
+				Event("privmsg", "", self.return_to_sender(args), [ "loading "  + " ".join(module_list)] )]
 		else:
 			return Event("privmsg", "", self.return_to_sender(args), [ "that requires module_priv." ])
 
@@ -49,7 +49,7 @@ class load(MooBotModule):
 		self.priority=-20
 
 	def handler(self, **args):
-		import priv, imp, string
+		import priv, imp 
 		from irclib import Event
 		module_list = []
 		for module in args["text"].split()[2:]:
@@ -69,7 +69,7 @@ class load(MooBotModule):
 				return Event("privmsg", "", self.return_to_sender(args), [ failedMessage ])
 
 			else:
-				return [Event("internal", "", "", [ "load" ] + module_list), Event("privmsg", "", self.return_to_sender(args), [ "loading "  + string.join(module_list)] )]
+				return [Event("internal", "", "", [ "load" ] + module_list), Event("privmsg", "", self.return_to_sender(args), [ "loading "  + " ".join(module_list)] )]
 		else:
 			return Event("privmsg", "", self.return_to_sender(args), [ "that requires module_priv." ])
 class unload(MooBotModule):
@@ -85,7 +85,7 @@ class unload(MooBotModule):
 		for module in args["text"].split()[2:]:
 			module_list.append(module)
 		if priv.checkPriv(args["source"], 'module_priv') != 0:
-			return Event("internal", "", "", [ "unload" ] + module_list)
+			return [Event("internal", "", "", [ "unload" ] + module_list), Event("privmsg", "", self.return_to_sender(args), [ "unloading "  + " ".join(module_list)] )]
 		else:
 			return Event("privmsg", "", self.return_to_sender(args), [ "that requires module_priv." ])
 
