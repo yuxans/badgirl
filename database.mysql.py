@@ -21,7 +21,7 @@
 import MySQLdb
 import threading, thread, ConfigParser, sys
 import moobot
-from moobot import Debug
+from moobot import DebugErr
 
 parser=ConfigParser.ConfigParser()
 parser.read(moobot.MooBot.config_files)
@@ -61,7 +61,7 @@ print "initializing DB connections & locks"
 for j in range(num_connections):
 	conn = MySQLdb.connect(host = dbhostname, port = dbport, user = dbuser, db = dbname, passwd=dbpass,
 		read_default_file = "~/.my.cnf", read_default_group = "client",
-		unicode = dbencoding, unicode_errors = "replace")
+		use_unicode = True)
 	botdbs.append(conn)
 	dblocks.append(thread.allocate_lock())
 del conn
@@ -78,9 +78,9 @@ def doSQL(SQL):
 		cur.execute(SQL.encode(dbencoding, "backslashreplace"))
 		results = cur.fetchall() or []
 	except Exception, message:
-		Debug(moobot.RED + "There was an error with the database"+\
+		DebugErr(moobot.RED + "There was an error with the database"+\
 			" when executing " + moobot.BLUE + SQL + moobot.NORMAL)
-		Debug(moobot.RED + "Exception occurred: " + moobot.BLUE + \
+		DebugErr(moobot.RED + "Exception occurred: " + moobot.BLUE + \
 			str(message) + moobot.NORMAL)
 
 	releaseConnection(connection_num)
@@ -105,7 +105,7 @@ def getAConnection():
 			print "Not enough connections, spawning a new one."
 			conn = MySQLdb.connect(host = dbhostname, user = dbuser, db = dbname, passwd=dbpass,
 				read_default_file = "~/.my.cnf", read_default_group = "client",
-				unicode = dbencoding, unicode_errors = "replace")
+				use_unicode = True)
 			botdbs[cnum] = conn
 			printFreeConnections()
 
