@@ -21,8 +21,9 @@ class Birthday(MooBotModule):
 		import database
 		b = database.doSQL("SELECT birthday FROM birthday WHERE nick='%s'" % (self.sqlEscape(self.nick)))
 		if not b or not b[0]: return False
+		b = b[0][0]
 		try:
-			return ND(b[0][0].split('-'))
+			return ND((b.year, b.month, b.day))
 		except:
 			return False
 
