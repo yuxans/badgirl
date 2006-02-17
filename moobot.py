@@ -275,8 +275,11 @@ class MooBot(SingleServerIRCBot):
 
 		config = ConfigParser()
 		filelist += MooBot.config_files
-		config.read(filelist)
-		Debug("Parsed config files:", config.read(filelist))
+		for i in filelist:
+			parsed = config.read(i)
+			if parsed:
+				Debug("Parsed config files:", parsed)
+				break
 		# Initialize the things we will return just in case they aren't in
 		# any of the files that we parse through.  Then get their values
 		# and stick the rest in "others"
