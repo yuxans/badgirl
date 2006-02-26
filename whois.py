@@ -214,6 +214,12 @@ class whois(MooBotModule):
 						  ("220.0.0.0", 6, "apnic"),\
 						  ("0.0.0.0", 0, "DEFAULT"))
 		# }}}
+		# init ipv4_list
+		self.ipv4_list = []
+		for t_ip, t_mask, t_host in ipv4_list:
+			ip = self.ipv4_atoint(t_ip)
+			mask = ~((1 << (32 - t_mask)) - 1)
+			self.ipv4_list.append((ip, mask, t_host))
 		# {{{ TLD <== top level domain
 		self.tld_list = ((".br.com", "whois.centralnic.net"),\
 						 (".cn.com", "whois.centralnic.net"),\
@@ -507,68 +513,78 @@ class whois(MooBotModule):
 						 ("-uanic", "whois.com.ua"),\
 						 ("", "DEFAULT"))
 		# }}}
-		# {{{ IPv6
-		# ,----[ IPv6 ]
-		# | 379	508	whois.nic.mil
-		# | 1101	1200	ripe
-		# | 1877	1901	ripe
-		# | 2043	2043	ripe
-		# | 2047	2047	ripe
-		# | 2057	2136	ripe
-		# | 2387	2488	ripe
-		# | 2497	2528	whois.nic.ad.jp
-		# | 2585	2614	ripe
-		# | 2773	2822	ripe
-		# | 2830	2879	ripe
-		# | 3154	3353	ripe
-		# | 4608	4863	apnic
-		# | 5120	5376	whois.nic.mil
-		# | 5377	5631	ripe
-		# | 5800	6055	whois.nic.mil
-		# | 6656	6911	ripe
-		# | 7467	7722	apnic
-		# | 8192	9215	ripe
-		# | 9591	9622	whois.nic.ad.jp
-		# | 9628	9647	whois.nic.or.kr
-		# | 9683	9712	whois.nic.or.kr
-		# | 9753	9784	whois.nic.or.kr
-		# | 9840	9871	whois.nic.or.kr
-		# | 9943	9982	whois.nic.or.kr
-		# | 9990	10021	whois.nic.ad.jp
-		# | 9261	10067	apnic
-		# | 10034	10073	whois.nic.or.kr
-		# | 10154	10198	whois.nic.or.kr
-		# | 10074	10239	apnic
-		# | 12288	13311	ripe
-		# | 15360	16383	ripe
-		# | 17503	17534	whois.nic.ad.jp
-		# | 17567	17616	whois.nic.or.kr
-		# | 17673	17704	whois.nic.ad.jp
-		# | 17832	17880	whois.nic.or.kr
-		# | 17408	18431	apnic
-		# | 17930	17961	whois.nic.ad.jp
-		# | 18067	18098	whois.nic.ad.jp
-		# | 18121	18152	whois.nic.ad.jp
-		# | 18259	18290	whois.nic.ad.jp
-		# | 18259	18290	whois.nic.ad.jp
-		# | 20480	21503	ripe
-		# | 23552	24575	apnic
-		# | 23612	23643	whois.nic.ad.jp
-		# | 24576	25599	ripe
-		# | 26592	26623	lacnic
-		# | 27648	28671	lacnic
-		# | 28672	29695	ripe
-		# | 30720	31743	ripe
-		# | 33792	34815	ripe
-		# | 1	34815	arin
-		# `----
+		# {{{ IPv6 assign
+		ipv6_assign = (
+				[ 0x0200, "whois.apnic.net" ],
+				[ 0x0400, "whois.arin.net" ],
+				[ 0x0600, "whois.ripe.net" ],
+				[ 0x0800, "whois.ripe.net" ],
+				[ 0x0A00, "whois.ripe.net" ],
+				[ 0x0C00, "whois.apnic.net" ],
+				[ 0x0E00, "whois.apnic.net" ],
+				[ 0x1200, "whois.lacnic.net" ],
+				[ 0x1400, "whois.ripe.net" ],
+				[ 0x1600, "whois.ripe.net" ],
+				[ 0x1800, "whois.arin.net" ])
 		# }}}
-		# init ipv4_list
-		self.ipv4_list = []
-		for t_ip, t_mask, t_host in ipv4_list:
-			ip = self.ipv4_atoint(t_ip)
-			mask = ~((1 << (32 - t_mask)) - 1)
-			self.ipv4_list.append((ip, mask, t_host))
+		# init ipv6_assign
+		self.ipv6_assign = {}
+		for t_net, t_host in ipv6_assign:
+			self.ipv6_assign[t_net] = t_host
+		# {{{ IPv6
+		self.as_assign = (
+				[ 379, 508, "whois.nic.mil" ],
+				[ 1101, 1200, "whois.ripe.net" ],
+				[ 1877, 1901, "whois.ripe.net" ],
+				[ 2043, 2043, "whois.ripe.net" ],
+				[ 2047, 2047, "whois.ripe.net" ],
+				[ 2057, 2136, "whois.ripe.net" ],
+				[ 2387, 2488, "whois.ripe.net" ],
+				[ 2497, 2528, "whois.nic.ad.jp" ],
+				[ 2585, 2614, "whois.ripe.net" ],
+				[ 2773, 2822, "whois.ripe.net" ],
+				[ 2830, 2879, "whois.ripe.net" ],
+				[ 3154, 3353, "whois.ripe.net" ],
+				[ 4608, 4863, "whois.apnic.net" ],
+				[ 5120, 5376, "whois.nic.mil" ],
+				[ 5377, 5631, "whois.ripe.net" ],
+				[ 5800, 6055, "whois.nic.mil" ],
+				[ 6656, 6911, "whois.ripe.net" ],
+				[ 7467, 7722, "whois.apnic.net" ],
+				[ 8192, 9215, "whois.ripe.net" ],
+				[ 9591, 9622, "whois.nic.ad.jp" ],
+				[ 9628, 9647, "whois.nic.or.kr" ],
+				[ 9683, 9712, "whois.nic.or.kr" ],
+				[ 9753, 9784, "whois.nic.or.kr" ],
+				[ 9840, 9871, "whois.nic.or.kr" ],
+				[ 9943, 9982, "whois.nic.or.kr" ],
+				[ 9990, 10021, "whois.nic.ad.jp" ],
+				[ 9261, 10067, "whois.apnic.net" ],
+				[ 10034, 10073, "whois.nic.or.kr" ],
+				[ 10154, 10198, "whois.nic.or.kr" ],
+				[ 10074, 10239, "whois.apnic.net" ],
+				[ 12288, 13311, "whois.ripe.net" ],
+				[ 15360, 16383, "whois.ripe.net" ],
+				[ 17503, 17534, "whois.nic.ad.jp" ],
+				[ 17567, 17616, "whois.nic.or.kr" ],
+				[ 17673, 17704, "whois.nic.ad.jp" ],
+				[ 17832, 17880, "whois.nic.or.kr" ],
+				[ 17408, 18431, "whois.apnic.net" ],
+				[ 17930, 17961, "whois.nic.ad.jp" ],
+				[ 18067, 18098, "whois.nic.ad.jp" ],
+				[ 18121, 18152, "whois.nic.ad.jp" ],
+				[ 18259, 18290, "whois.nic.ad.jp" ],
+				[ 18259, 18290, "whois.nic.ad.jp" ],
+				[ 20480, 21503, "whois.ripe.net" ],
+				[ 23552, 24575, "whois.apnic.net" ],
+				[ 23612, 23643, "whois.nic.ad.jp" ],
+				[ 24576, 25599, "whois.ripe.net" ],
+				[ 26592, 26623, "whois.lacnic.net" ],
+				[ 27648, 28671, "whois.lacnic.net" ],
+				[ 28672, 29695, "whois.ripe.net" ],
+				[ 0, 30719, "whois.arin.net" ],
+				[ 0, 0, "." ])
+		# }}}
 
 	def handler(self, **args):
 		"""TODO. only query from Asia Pacific Network Infomation Center, need fix"""
@@ -606,13 +622,18 @@ class whois(MooBotModule):
 				if ip & mask == IntIP & mask:
 					break
 		elif ipver == 6:
-			pass	# not implement
+			if query_str[0:5] == "2001:":
+				v6net = int(query_str[5:].split(':')[0], 16) & 0xfe00;
+				if self.ipv6_assign.has_key(v6net):
+					t_host = self.ipv6_assign[v6net]
+			elif query_str[0:5].lower() == "3ffe:":
+				t_host = "whois.6bone.net"
 		elif ipver == 0:
 			query_str = query_str.lower()
 			query_str_l = len(query_str)
 			for tld, t_host in self.tld_list:
 				if query_str[query_str_l - len(tld):] == tld:
-					break
+					return (t_host, False)
 		if t_host == None:
 			raise Exception("can't found a server")
 		elif t_host == "NONE" or t_host == "UNALLOCATED":
@@ -632,7 +653,6 @@ class whois(MooBotModule):
 		if self.pIpv4Part.match(query_str):
 			return self.process(query_str, 4)
 		elif query_str.find(":") != -1:
-			return "IPv6 not implemented yet"
 			return self.process(query_str, 6)
 		elif query_str.find(".") != -1 or query_str.find("-") != -1:
 			return self.process(query_str, 0)
@@ -713,6 +733,7 @@ if __name__ == '__main__':
 	print w.decideServer("61.182.208", 4)
 	print w.decideServer("61.182.", 4)
 	print w.decideServer("61.", 4)
+	print w.decideServer("2001:470:1f00:1459:200:f8ff:fe7a:3d5", 6)
 	print w.decideServer("test.com", 0)
 
 # vim:fdm=marker:ts=4

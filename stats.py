@@ -22,7 +22,7 @@ from moobot_module import MooBotModule
 from moobot import Handler
 handler_list = ["stats", "reset_stats", "set_stats", "find", "increment"]
 
-stats_phrases = "(qgp|\.\.\.|hehe?|h[a4]w|bah|lol|moo|[:;]\))"
+stats_phrases = "(\=\_\=|-\_-|qgp|\.\.\.|hehe?|h[a4]w|bah|lol|moo|[:;]\))"
 
 class increment(MooBotModule):
 	def __init__(self):

@@ -26,7 +26,7 @@ from moobot_module import MooBotModule
 class dunno(MooBotModule):
 	def __init__(self):
 		self.regex=".*"
-		self.priority = 50
+		self.priority = 1000
 
 	def handler(self, **args):
 		"""grabs a random reply from the database"""

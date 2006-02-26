@@ -25,9 +25,6 @@ class RssRecord(MooBotModule):
 	ttl = 3600
 	keys = ["r_id","r_name","r_mtime","r_cache","r_url"]
 	fields = ",".join(keys)
-	datas = {}
-	exists = False
-	cached = False
 
 	def getName(self):
 		return self.datas["r_name"]
@@ -51,6 +48,10 @@ class RssRecord(MooBotModule):
 
 	def __init__(self, q, name = None):
 		import database
+		self.datas = {}
+		self.exists = False
+		self.cached = False
+
 		if q.find("://") != -1:
 			key = "r_url"
 		else:
@@ -83,7 +84,7 @@ class RssRecord(MooBotModule):
 		if self.cached:
 			data = base64.decodestring(self.datas["r_cache"])
 			return pickle.loads(data)
-		self.debug("open url")
+		self.Debug("open url")
 
 		data = urllib2.urlopen(self.datas["r_url"]).read()
 		encoding = "ISO-8859-1"
@@ -93,8 +94,10 @@ class RssRecord(MooBotModule):
 			if m:
 				encoding = m.group(1)
 				data = data.replace(m.group(0), "")
+			else:
+				encoding = "UTF-8"
 
-		data = data.decode(encoding.upper().replace("GB2312", "GBK"))
+		data = data.decode(encoding.upper().replace("GB2312", "GBK"), 'ignore')
 
 		# {{{ parse
 		from RSS import ns, CollectionChannel, TrackingChannel
@@ -108,10 +111,9 @@ class RssRecord(MooBotModule):
 		#Returns the RSSParser instance used, which can usually be ignored
 		try:
 			tc.parseString(data)
-		except URLError, e:
-			return [str(e)]
 		except Exception, e:
-			return "parse error"
+			self.Debug(e)
+			raise e
 		
 		keys = {"title": (ns.rss10, 'title'),
 				"link": (ns.rss10, 'link'),
@@ -165,6 +167,8 @@ class RssQuery(MooBotModule):
 		else:
 			names = ""
 		self.regex = "^((rss|rssflush|rssadd|rssdel) .+|rss%s)" % (names)
+		import re
+		self.pdescstrip = re.compile("(<[^>]+>|\r|\n)")
 
 	def handler(self, **args):
 		import string
@@ -198,6 +202,8 @@ class RssQuery(MooBotModule):
 				rss = RssRecord(text)
 				if not rss.exists:
 					msg = "%s not exists" % text
+				elif cmd == "url":
+					msg = "%s: url is %s" % (text, rss.getUrl())
 				else:
 					name = rss.getName()
 					# no lock implemented yet
@@ -218,9 +224,14 @@ class RssQuery(MooBotModule):
 					elif cmd == "busy":
 						msg = "%s is already in query, please standby" % name
 					elif cmd == "no":
-						msg = text + ": " + " // ".join(datas['title'])[0:400]
-					elif cmd == "url":
-						msg = "%s: url is %s" % (text, rss.getUrl())
+						msg = text + ": "
+						i = 0
+						for line in datas['title']:
+							i = i + 1
+							msg += " /%d/ %s" % (i, line)
+							if len(msg) > 400:
+								break
+						msg = msg[0:400]
 					elif cmd == 0:
 						msg = "%s: count=%d" % (text, len(datas['link']))
 					elif cmd:
@@ -229,20 +240,23 @@ class RssQuery(MooBotModule):
 						if id < 0 or id > len(links):
 							msg = "out of ubound"
 						else:
-							desc = datas['description'][id].split('<', 1)[0]
-							desc = desc.split("\n", 1)[0]
-							desc = desc.split("\r", 1)[0]
+							desc = datas['description'][id]
+							self.Debug(desc)
+							desc = self.pdescstrip.sub('  ', desc)
+							self.Debug(desc)
 							msg = "%s: %s // %s // %s" % (text, links[id], datas['title'][id], desc)
 			else:
 				names = RssRecord.getNames() or "oops, None"
-				msg = 'rss is "rss $key [|$num|url]" or "rssadd $key $url" or "rssdel $key" or "rssflush", where $key can be one of: ' + ", ".join(names)
-		elif priv.checkPriv(args["source"], "rss") == 0:
-			msg = "You don't have permission to do that."
-		elif cmd == 'rssflush':
-			RssRecord.flush()
-			msg = "cache flushed"
-		elif not text:
-			msg = "params required"
+				msg = 'RssQuery: "rss $key [ |$num|url]" or "rssadd $key $url" or "rssdel $key" or "rssflush". Note: CacheTtl=1 hour. $key can be one of: '
+				l = len(msg)
+				for name in names:
+					if l + len(name) + 1 > 400:
+						msg += "\r\n"
+						l -= 500
+					l += len(name) + 1
+					msg += " " + name
+		elif priv.checkPriv(args["source"], cmd) == 0 and priv.checkPriv(args["source"], "rss") == 0:
+			msg = "Sorry, you don't have permission to do that."
 		elif cmd == 'rssadd':
 			try:
 				name, url = text.split(" ", 1)
@@ -256,6 +270,11 @@ class RssQuery(MooBotModule):
 				msg = "error format"
 			except:
 				msg = "internal error"
+		elif cmd == 'rssflush':
+			RssRecord.flush()
+			msg = "cache flushed"
+		elif not text:
+			msg = "params required"
 		elif cmd == 'rssdel':
 			name = text
 			rss = RssRecord(name)
