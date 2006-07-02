@@ -23,14 +23,20 @@ zju_acm.py - parse the following page to find out if the problem have been done
 http://acm.zju.edu.cn/user_status.php?user=intx
 
 """ 
+
+import HTMLParser, re
 from moobot_module import MooBotModule
-import HTMLParser2
-import re
+
 handler_list=["zju_acm"]
 
-class zju_acm(MooBotModule, HTMLParser2.HTMLParser):
+# Without this, the HTMLParser won't accept Chinese attribute values
+HTMLParser.attrfind=re.compile(
+		r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
+		r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
+
+class zju_acm(MooBotModule, HTMLParser.HTMLParser):
 	def __init__(self):
-		HTMLParser2.HTMLParser.__init__(self)
+		HTMLParser.HTMLParser.__init__(self)
 		self.regex = "^acm .+"
 		self.DoneList = []
 		self.do = False

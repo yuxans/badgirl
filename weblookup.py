@@ -19,11 +19,17 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import httplib
+import httplib, HTMLParser 
 from moobot_module import MooBotModule
+
 handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
 		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
 		"geekquote"]
+
+# Without this, the HTMLParser won't accept Chinese attribute values
+HTMLParser.attrfind=re.compile(
+		r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
+		r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
 
 class slashdot(MooBotModule):
 	def __init__(self):
@@ -433,18 +439,17 @@ class babelfish(MooBotModule):
 		return Event("privmsg", "", self.return_to_sender(args), 
 			[ "Translation: " + result ])
 
-import HTMLParser2 
-class debpackage(MooBotModule, HTMLParser2.HTMLParser):
+class debpackage(MooBotModule, HTMLParser.HTMLParser):
 	"""
 	Does a package search on http://packages.debian.org and returns top 10 result
 	"""
 	def __init__(self):
 		self.regex="^debpackage .+"
 		self.package = ""
-		HTMLParser2.HTMLParser.__init__(self)
+		HTMLParser.HTMLParser.__init__(self)
 
 	def reset(self):
-		HTMLParser2.HTMLParser.reset(self)
+		HTMLParser.HTMLParser.reset(self)
 		self.__max_hit = 10
 		self.inner_div = False
 		self.in_ul = False
@@ -542,7 +547,7 @@ class debpackage(MooBotModule, HTMLParser2.HTMLParser):
 					if not self.after_br:
 						self.list += data.strip()
 
-class debfile(MooBotModule, HTMLParser2.HTMLParser):
+class debfile(MooBotModule, HTMLParser.HTMLParser):
 	"""
 	Does a file search on http://packages.debian.org and returns top 10 matched package names
 	"""
@@ -550,10 +555,10 @@ class debfile(MooBotModule, HTMLParser2.HTMLParser):
 		self.regex = "^debfile .+"
 		self.file = ""
 		self.version = ""
-		HTMLParser2.HTMLParser.__init__(self)
+		HTMLParser.HTMLParser.__init__(self)
 
 	def reset(self):
-		HTMLParser2.HTMLParser.reset(self)
+		HTMLParser.HTMLParser.reset(self)
 		self.list = "%s(%s): " % (self.file, self.version)
 		self.inner_div = False
 		self.after_hr = False

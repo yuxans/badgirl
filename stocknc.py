@@ -20,11 +20,8 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import re
-import httplib, urllib
-import urllib2, string, sys
+import re, httplib, urllib, urllib2, sys, HTMLParser
 from irclib import Event 
-from HTMLParser2 import HTMLParser
 from moobot_module import MooBotModule
 
 handler_list = ["stockQuote"]
@@ -94,7 +91,7 @@ class stockQuote(MooBotModule):
 		headers = {"Content-type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
 		"Accept-Encoding": ""}
-		em_con = httplib.HTTPConnection('quote.eastmoney.com', 80)
+		em_con = httplib.HTTPConnection('quote2.eastmoney.com', 80)
 		em_con.request("POST", "/q.asp", params, headers)
 		response = em_con.getresponse()
 		if response.status != 200:
@@ -144,11 +141,16 @@ class stockQuote(MooBotModule):
 		result = result % (data_list[6], data_list[10])
 		return result
 
-class myp(HTMLParser):
+# Without this, the HTMLParser won't accept Chinese attribute values
+HTMLParser.attrfind=re.compile(
+		r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
+		r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
+
+class myp(HTMLParser.HTMLParser):
 	"Html Parser for eastmoney quick stockquote"
 	
 	def __init__(self):
-		HTMLParser.__init__(self)
+		HTMLParser.HTMLParser.__init__(self)
 		self.ignore_data = True
 		self.data_list = []
 
