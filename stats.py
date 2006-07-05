@@ -22,11 +22,15 @@ from moobot_module import MooBotModule
 from moobot import Handler
 handler_list = ["stats", "reset_stats", "set_stats", "find", "increment"]
 
-stats_phrases = "(\=\_\=|-\_-|qgp|\.\.\.|hehe?|h[a4]w|bah|lol|moo|[:;]\))"
+stats_phrases = "(\=\_\=|-\_-|qgp|\.\.\.|\,\,\,|@@|@\_@|hehe?|h[a4]w|bah|lol|moo|[:;]\))"
+stats_scope = ["=_=", "-_-", "qgp", "...", ",,,", "@@", "@_@", "heh", "haw", "h4w", "bah", "lol", "moo", ":)", ";)"]
+bot_nick = "BadGirl"
+
 
 class increment(MooBotModule):
 	def __init__(self):
-		self.regex = "^%s[.?!]?$" % stats_phrases
+		#self.regex = "^%s[.?!]?$" % stats_phrases
+		self.regex = ""		# Get all data for line.
 		self.type = Handler.GLOBAL
 		self.priority = 3
 
@@ -38,15 +42,25 @@ class increment(MooBotModule):
 		import string
 		import re
 		from irclib import nm_to_n
-		keyword = args["text"]
-		if keyword != "...":
-			keyword = re.sub("[.?!]$", "", keyword)
-		keyword = string.lower(keyword)
-		results=database.doSQL("select counter from stats where nick = '" + nm_to_n(args["source"]) + "' and type = '" + keyword + "'")
-		if len(results) == 0:
-			database.doSQL("insert into stats values( '" + nm_to_n(args["source"]) + "', '" + keyword + "', 0)")
-			results=database.doSQL("select counter from stats where nick = '" + nm_to_n(args["source"]) + "' and type = '" + keyword + "'")
-		database.doSQL("update stats set counter = counter + 1 where nick = '" + nm_to_n(args["source"]) + "' and type= '" +keyword+"'")
+		
+		content = args["text"]
+		lower_content = string.lower(content)
+		
+		count = 0	# Init count to 0.
+		for scope in stats_scope:
+			if content.find(scope) >= 0 and len(content) != len("~" + scope + "stats") \
+			and (lower_content.startswith(string.lower(bot_nick)) == 0 or content.endswith(scope + "stats") == 0 \
+			or len(content) - len(bot_nick) - content.count(" ") - len(scope + "stats") - 2 > 0 ):
+				count = content.count(scope)
+				keyword = scope
+				
+				keyword = string.lower(keyword)
+				
+				results=database.doSQL("select counter from stats where nick = '" + nm_to_n(args["source"]) + "' and type = '" + keyword + "'")
+				if len(results) == 0:
+					database.doSQL("insert into stats values( '" + nm_to_n(args["source"]) + "', '" + keyword + "', 0)")
+					results=database.doSQL("select counter from stats where nick = '" + nm_to_n(args["source"]) + "' and type = '" + keyword + "'")
+				database.doSQL("update stats set counter = counter + %d where nick = '" % count + nm_to_n(args["source"]) + "' and type= '" + keyword+"'")
 		target=args["channel"]
 		if args["type"] == "privmsg":
 			from irclib import nm_to_n
