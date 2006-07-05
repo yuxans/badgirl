@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding:gbk -*-
 
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
 # Copyright (C) 2005 by baa
@@ -19,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import httplib, HTMLParser 
+import httplib, HTMLParser
 from moobot_module import MooBotModule
 
 handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
@@ -28,8 +29,8 @@ handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
-		r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
-		r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
+               r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
+               r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
 
 class slashdot(MooBotModule):
 	def __init__(self):
@@ -168,12 +169,10 @@ class dict(MooBotModule):
 		self.rBody = re.compile("^<!-- BODY", re.I)
 		self.ymap = {"slash": "/", "quote": "'", "_e_": "2", "_a": "a:", "int": "S"}
 		self.cmap = {"\\\\": "\\", "5": "'", "E": "2"}
-		# 参见文件头 coding
-		# 新版本才可以用 u"GBK"
-		self.rNx = re.compile("找不到和您查询的".decode("gbk"))
-		self.rCtoE = re.compile("简明汉英词典(.*)".decode("gbk"), re.M)
+		self.rNx = re.compile(u"找不到和您查询的")
+		self.rCtoE = re.compile(u"简明汉英词典(.*)", re.M)
 		self.rBlue = re.compile("<font color=blue>", re.I)
-		self.rEtoC = re.compile("简明英汉词典</div>(.*?)</div>".decode("gbk"), re.S)
+		self.rEtoC = re.compile(u"简明英汉词典</div>(.*?)</div>", re.S)
 		self.rSpell = re.compile("str2img\('([^']+)", re.I)
 		self.rExpl = re.compile(u'class="explain_(?:attr|item)">(.*)', re.I)
 		self.ciba_failed = 1
@@ -416,7 +415,7 @@ class babelfish(MooBotModule):
 					[ "Babelfish doesn't know how to do %s to %s" % 
 					(froml, tol)])
 
-		translation_text = translation_text.replace("'", "’".decode("gbk"));
+		translation_text = translation_text.replace("'", u"’");
 
 		# create the POST body
 		params = {"doit": "done", "intl": "1", "tt": "urltext", "trtext": translation_text.encode("UTF-8"), "lp": translation_key}
