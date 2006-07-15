@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import httplib, HTMLParser
+import re, httplib, HTMLParser
 from moobot_module import MooBotModule
 
 handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
