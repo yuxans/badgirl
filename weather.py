@@ -111,14 +111,78 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 		self.result_list.append(self.temp)
 		return self.result_list
 
+
+class WeatherCNCITYParser(HTMLParser.HTMLParser):
+	"""A customized HTMLParser to parse the weathercn weather citylist pages
+
+	It parse the citylist page and result a list of (city, url) turples to be
+	used to fetch weather forecast page. REMEMBER TO IGNORE HTMLParser.HTMLParseError
+	SO THAT YOU CAN PROCESS THAT MALFORMED PAGE
+	"""
+
+	def __init__(self):
+		HTMLParser.HTMLParser.__init__(self)
+		self.satisfy = 0
+		self.city = ""
+		self.url = ""
+		self.result_list = []
+
+	def handle_starttag(self, tag, attrs):
+		if tag not in ["a", "span"]:
+			pass
+		else:
+			tmpurl = ""
+
+			for n, v in attrs:
+				if n == "class" and v == "font_sl":
+					if tag == "a":
+						self.satisfy = 1
+					else:
+						self.satisfy += 1
+				elif n == "href":
+					tmpurl = v
+
+			if tmpurl.strip() and self.satisfy == 1:
+				self.url = tmpurl
+
+	def handle_endtag(self, tag):
+		if tag not in ["a", "span", "td"]:
+			pass
+		else:
+			if self.satisfy == 3 and tag == "span":
+				self.satisfy += 1
+			elif self.satisfy == 4 and tag == "a":
+				self.satisfy += 1
+			elif self.satisfy == 6 and tag == "td":
+				self.satisfy = 0
+				self.result_list.append((self.city , self.url))
+			else:
+				pass
+
+	def handle_data(self, data):
+		if self.satisfy == 2:
+			self.city = data
+			self.satisfy += 1
+		elif self.satisfy == 5:
+			self.city = "".join((self.city, data))
+			self.satisfy += 1
+		else:
+			pass
+
+	def o(self):
+		return self.result_list
+
 if __name__ == "__main__":
-	p = WeatherCNParser()
-	f = file("weather.html", "r")
+	p = WeatherCNCITYParser()
+	f = file("qhd.html", "r")
 	try:
 		p.feed(f.read().decode("gbk"))
 	except HTMLParser.HTMLParseError:
 		pass
-	print " | ".join(p.o()).encode("gbk")
+	for c, u in p.o():
+		print c
+		print u
+
 
 # vim:ts=4:sw=4:tw=80
 
