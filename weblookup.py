@@ -20,8 +20,9 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import re, httplib, HTMLParser
+import re, httplib, urllib, urllib2, HTMLParser
 from moobot_module import MooBotModule
+from irclib import Event
 
 handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
 		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
@@ -31,6 +32,11 @@ handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
 HTMLParser.attrfind=re.compile(
                r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
                r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
+
+class IEURLopener(urllib.FancyURLopener):
+	version = "Mozilla/4.0 (compatible; MSIE 6.0)"
+
+urllib._urlopener = IEURLopener()
 
 class slashdot(MooBotModule):
 	def __init__(self):
@@ -82,14 +88,12 @@ class google(MooBotModule):
 		self.regex = "^google for .+"
 
 	def handler(self, **args):
-		from irclib import Event
-		import string
 		self.return_to_sender(args)
 
 		search_terms = args["text"].split(" ")[3:]
 		search_request = "/ie?hl=zh-CN&oe=UTF-8&ie=UTF-8&q="
 		# the resulting output so much nicer
-		search_request += string.join(search_terms, "+").encode("UTF-8", 'replace')
+		search_request += '+'.join(search_terms).encode("UTF-8", 'replace')
 		connect = httplib.HTTPConnection('www.google.com', 80)
 		headers = {"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)"}
 		connect.request("GET", search_request, None, headers)
@@ -108,11 +112,11 @@ class google(MooBotModule):
 			listing = response.read().decode("UTF-8", 'replace')
 		urls=[]
 		for i in listing.split():
-			if string.find(i, "href=http://") >= 0:
-				url = i[:string.find(i, ">")]
+			if i.find("href=http://") >= 0:
+				url = i[:i.find(">")]
 				url = url[5:]
 				urls.append(url)
-		line = "Google says \"" + string.join(search_terms) + "\" is at: "
+		line = "Google says \"" + ' '.join(search_terms) + "\" is at: "
 		count=0
 		for url in urls:
 			count += 1
@@ -129,7 +133,6 @@ class kernelStatus(MooBotModule):
 		gets kernel status
 		"""
 		# self.debug("kernelStatus")
-		import string
 		connect=httplib.HTTPConnection("www.kernel.org", 80)
 		connect.request('GET', '/kdist/finger_banner')
 		response = connect.getresponse()
@@ -288,7 +291,7 @@ class dict(MooBotModule):
 		if response.status != 200:
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
-			import re
+
 			if re.compile("/error").match(loc):
 				return ""
 			else:
@@ -362,7 +365,6 @@ class babelfish(MooBotModule):
 
 
 	def help(self, args):
-		from irclib import Event
 		langs = " ".join(self.languages.keys())
 		trans = " ".join(self.languages.values())
  		return Event("privmsg", "", self.return_to_sender(args), [
@@ -371,8 +373,6 @@ class babelfish(MooBotModule):
 			])
 
 	def handler(self, **args):
-		from irclib import Event
-		import string, re, urllib
 		
 		tmp = args["text"].split(" ", 2)
 		translation_key = tmp[1].lower()
@@ -506,6 +506,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		else:
 			self.reset()
 			self.feed(response.read())
+		conn.close()
 		return Event("privmsg", "", target, [self.list])
 
 	def handle_starttag(self, tag, attrs):
@@ -594,9 +595,11 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 			result = urllib.urlopen(form_action % form_inputs)
 		except Exception, e:
 			self.Debug(e)
-		self.reset()
-		self.feed(result.read())
-		return Event("privmsg", "", target, [self.list])
+		else:
+			self.reset()
+			self.feed(result.read())
+			result.close()
+			return Event("privmsg", "", target, [self.list])
 
 	def handle_starttag(self, tag, attrs):
 		if tag == "div":
@@ -643,33 +646,24 @@ class acronym(MooBotModule):
 		self.regex = "^explain [a-zA-Z]+"
 
 	def handler(self, **args):
-		from irclib import Event
-		import string, re
 		target = self.return_to_sender(args)
 
 		search_term = args["text"].split(" ")[2].upper()
-		search_request = "/af-query.asp?String=exact&Acronym=%s&Find=Find" % search_term
-		connect = httplib.HTTPConnection('www.acronymfinder.com', 80)
-		headers = {"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)"}
-		connect.request("GET", search_request, None, headers)
-		response = connect.getresponse()
-		if response.status != 200:
-			msg = "%d: %s" % (response.status,response.reason)
-			self.debug(msg)
-			return Event("privmsg", "", target, [msg])
-		else:
-			listing = response.read().decode("latin1")
+		search_parms = urllib.urlencode({'Acronym': search_term,
+				 'Find': 'find',
+				 'string':'exact'})
+		response = urllib.urlopen('http://www.acronymfinder.com/af-query.asp?%s' % search_parms)
+		listing = response.read().decode("latin1")
 
-
-		search = re.compile("<td[^>]*><b>%s\s*</b></td>[^<]+<td[^>]*>((?:<b>)?[A-Za-z][^<\n\r]+(?:</b>)?)\s*</td>" % search_term)
+		search = re.compile("<td[^>]*>[^<>\n\r]*%s[^<>\n\r]*</td>\s*<td[^>]*>([A-Za-z][^<\n\r]+)\s*</td>" % search_term)
 		definitions = search.findall(listing)
 		if len(definitions) == 0:
 			line = "Could not find a definition for " + search_term
 		elif len(definitions) == 1:
 			line = search_term + " is " + definitions[0]
 		else:
-			line = search_term + " is one of the following: \"" + string.join(definitions,'", "') + "\""
-		line = line.replace("<b>", "\002").replace("</b>", "\002")
+			line = search_term + " is one of the following: \"" + '", "'.join(definitions) + "\""
+		line = line.replace("&nbsp;", " ")
 		return Event("privmsg", "", self.return_to_sender(args), [ line ])
 
 
@@ -690,9 +684,6 @@ class foldoc(MooBotModule):
 					return i
 
 	def handler(self, **args):
-		from irclib import Event
-		import urllib2
-		import re
 		target = self.return_to_sender(args)
 
 		try:
@@ -717,8 +708,6 @@ class pgpkey(MooBotModule):
 		self.regex = "^pgpkey .+$"
 
 	def handler(self, **args):
-		from irclib import Event
-		import string
 		self.return_to_sender(args)
 
 		import re
@@ -726,7 +715,7 @@ class pgpkey(MooBotModule):
 		domain = "pgp.mit.edu"
 		port=11371
 		search_request = "/pks/lookup?op=index&search="
-		search_request += string.join(search_terms, "+")
+		search_request += '+'.join(search_terms)
 		connect = httplib.HTTPConnection(domain, port)
 		connect.request("GET", search_request)
 		response = connect.getresponse()
@@ -747,7 +736,7 @@ class pgpkey(MooBotModule):
 				pgpkeys[keyid]=(email,'%s%s' % (url,path))
 			except AttributeError:
 				pass
-		line = "pgpkey matches for \"" + string.join(search_terms) + "\": "
+		line = "pgpkey matches for \"" + ' '.join(search_terms) + "\": "
 		count=0
 		if len(pgpkeys.keys()) == 0:
 			return Event("privmsg", "", self.return_to_sender(args), [ '%s'\
