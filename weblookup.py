@@ -44,7 +44,7 @@ class slashdot(MooBotModule):
 
 	def handler(self, **args):
 		"Gets headlines from slashdot.org"
-		from irclib import Event
+		
 		target = self.return_to_sender(args)
 
 		connect = httplib.HTTPConnection('slashdot.org', 80)
@@ -55,7 +55,7 @@ class slashdot(MooBotModule):
 			self.debug(msg)
 			return Event("privmsg", "", target, [msg])
 		else:
-			import re
+			
 			# Do the parsing here
 			listing = response.read()
 			listing = listing.split("\n")
@@ -154,7 +154,7 @@ class kernelStatus(MooBotModule):
 				line = line.split("to", 2)[0]
 				result += '%s: %s' % (line.strip(), version)
 
-		from irclib import Event
+		
 		target = self.return_to_sender(args)
 		return Event("privmsg", "", target, [ result ])
 
@@ -163,7 +163,7 @@ class dict(MooBotModule):
 	cache = {}
 	cache_old = {}
 	def __init__(self):
-		import re
+		
 		# have problem filtering out `|' character
 		self.regex = "^(dict |~)[^~\+\*/\\<>-]+"
 		self.rStrip = re.compile("(<.*?>)+")
@@ -182,7 +182,6 @@ class dict(MooBotModule):
 		self.rSearch = re.compile(u'^[^*?_%]{2,}[*?_%]')
 
  	def handler(self, **args):
- 		from irclib import Event
 		import dict
  		target = self.return_to_sender(args)
 		if args["text"].split()[1][0][0] == '~':
@@ -460,8 +459,6 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		self.block = 400
 
 	def handler(self, **args):
-		import httplib
-		from irclib import Event
 
 		target = self.return_to_sender(args)
 
@@ -571,8 +568,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		self.block_size = 400
 
 	def handler(self, **args):
-		import urllib
-		from irclib import Event
+		
 		target = self.return_to_sender(args)
 		self.version = ['stable', 'testing', 'unstable']
 		request = args["text"].split()[2:]
@@ -710,7 +706,7 @@ class pgpkey(MooBotModule):
 	def handler(self, **args):
 		self.return_to_sender(args)
 
-		import re
+		
 		search_terms = args["text"].split(" ")[2:]
 		domain = "pgp.mit.edu"
 		port=11371
@@ -754,11 +750,8 @@ class geekquote(MooBotModule):
 		self.regex = "^geekquote.*$"
 
 	def handler(self, **args):
-		from irclib import Event
+		
 		target = self.return_to_sender(args)
-
-		import urllib2
-		import re
 
 		quoteurl = "http://bash.org/?random1"
 		try:
