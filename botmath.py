@@ -112,7 +112,7 @@ class math(MooBotModule):
             return False
         else:
             number = re.split(operator, s_list[1])
-        for x in number:
-        if x != "":
-            break
-            return 1000 > eval(x)
+            for x in number:
+                if x != "" and eval(x) > 1000 :
+                    return False
+            return Ture

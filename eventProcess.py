@@ -30,14 +30,14 @@ class eventProcess(MooBotModule):
 
 	def handler(self, **args):
 		"""Does an appropriate action based on event"""
-		import string
+
 		bot = args["ref"]() # resolve the reference to the bot
 		event = args["event"]
-                if event.eventtype() == "privmsg" and event.target().lower() != bot.connection.get_nickname().lower():
-                        for line in string.split(event.arguments()[0], "\n"):
-				if line != "":
-					bot.connection.privmsg(event.target(), line)
-                elif event.eventtype() == "action":
-                        bot.connection.action(event.target(), event.arguments()[0])
-                elif event.eventtype() == "continue":
-                        return
+        if event.eventtype() == "privmsg" and event.target().lower() != bot.connection.get_nickname().lower():
+     		for line in event.arguments()[0].split("\n"):
+ 				if line != "":
+ 					bot.connection.privmsg(event.target(), line)
+        elif event.eventtype() == "action":
+            bot.connection.action(event.target(), event.arguments()[0])
+        elif event.eventtype() == "continue":
+            return
