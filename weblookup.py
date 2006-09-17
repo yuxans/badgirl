@@ -20,11 +20,11 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import re, httplib, urllib, urllib2, HTMLParser
+import re, httplib, urllib, urllib2, HTMLParser, weather
 from moobot_module import MooBotModule
 from irclib import Event
 
-handler_list = ["slashdot", "google", "kernelStatus", "dict", "acronym",
+handler_list = ["weathercn", "google", "kernelStatus", "dict", "acronym",
 		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
 		"geekquote"]
 
@@ -38,49 +38,132 @@ class IEURLopener(urllib.FancyURLopener):
 
 urllib._urlopener = IEURLopener()
 
-class slashdot(MooBotModule):
+class weathercn(MooBotModule):
+	"""weather module to get weather forecast infomation
+	
+	This module depends on weather.py, it use weather.py to
+	parse the html page of weathercn.com. Note, we must ignore
+	the HTMLParser.HTMLParseError because of the malformed
+	html pages.
+	"""
 	def __init__(self):
-		self.regex = "^slashdot$"
+		self.regex = "^(weather|w)( .+){0,2}"
 
 	def handler(self, **args):
-		"Gets headlines from slashdot.org"
+		"""Parse the received commandline arguments
+		
+		case length of the real arguments:
+		
+		zero, check database to see if the user already
+		      have a record. y: use it to get the forcast
+		      and setting change tips; n: print help 
+		      message.
+		   1, get and print the citylist.
+		   2, get the citylist, and then get the forecast
+		      accroding the second argument. print the
+		      result, save settings to database.
+
+		and any any any better throughts ;) --save to control
+		database operation?
+		"""
+ 
+		# TODO: ... save settings to database
+		# TODO: ... get settings from database
+
+		tmplist = args["text"].split(" ")
+		del(tmplist[0])
+		
+		if len(tmplist) > 1:
+			if len(tmplist[1]) < 2:
+				result_string = u"城市名称少于两个字符，请重新输入"
+			elif len(tmplist) >= 3 and not tmplist[2].isdigit():
+				result_string = u"地区索引“n“必须是数字"
+			else:
+				result_string = self.gogetit(tmplist)
+		else:
+			result_string = self._help()
 		
 		target = self.return_to_sender(args)
 
-		connect = httplib.HTTPConnection('slashdot.org', 80)
-		connect.request("GET", "/slashdot.rdf")
-		response = connect.getresponse()
-		if response.status != 200:
-			msg = "%d: %s" % (response.status, response.reason)
-			self.debug(msg)
-			return Event("privmsg", "", target, [msg])
+		return Event("privmsg", "", target, [result_string])
+	
+	def gogetit(self, l):
+		"""get the citylist or forecast
+		
+		get the citylist, return it if there is no 3rd arg.
+		check length against the 3rd arg if vailed, get the
+		weather forcast.
+		""" 
+		
+		citykeyword = l[1].lower()
+		search_parm = urllib.urlencode({"searchname": citykeyword})
+		print search_parm
+		try:
+			response = urllib.urlopen("http://www.weathercn.com/search/search.jsp",
+									  search_parm)
+		except IOError, e:
+			print e
+		
+		rp = weather.WeatherCNCITYParser()
+		try:
+			rp.feed(response.read().decode("gbk"))
+			print response.read()
+		except HTMLParser.HTMLParseError:
+			pass
+		
+		response.close()
+		
+		regionlist = rp.o()
+		
+		if len(l) < 3:
+			i = 1
+			result = ""
+			for c, u in regionlist:
+				result = ''.join((result, " =", str(i),"=> ", c))
+				i += 1
+			return result
+		elif len(regionlist) < int(l[2]):
+			return u"地区索引”n”大于地区总个数"
 		else:
-			
-			# Do the parsing here
-			listing = response.read()
-			listing = listing.split("\n")
-			regex = re.compile("^<title>.*</title>$", re.IGNORECASE)
-			match_count = 0
-			articles = []
-			for item in listing:
-				if regex.match(item):
-					match_count += 1
-					# ignore the first two
-					if match_count != 1 and match_count != 2:
-						item = re.sub("</*title>", "", item)
-						articles.append(item)
-			# Drop the last one as well
-			articles = articles[:len(articles)-1]
-			match_count -= 3
-			# now lets make it into a big string
-			string = "Slashdot Headlines (" + str(match_count) + " shown): "
-			for article in articles:
-				string += article + " ;; "
-			# and send it back
-			string = string[:len(string)-4] + "."
-			string = string.replace("amp;", "")
-			connect.close()
-			return Event("privmsg", "", target, [string])
+			c, u = regionlist[int(l[2])-1]
+			return self.getforcast(u)
+
+	def getforcast(self, url):
+		"""Get the weather forcast from the given url
+		
+		get and then parse the weather forcast, returns
+		the result string.
+		"""
+		try:
+			response = urllib.urlopen("http://www.weathercn.com%s" % url)
+		except IOError, e:
+			print e
+		
+		fp = weather.WeatherCNParser()
+		
+		try:
+			fp.feed(response.read().decode("gbk"))
+		except HTMLParser.HTMLParseError:
+			pass
+		
+		response.close()
+		
+		return " ".join(fp.o())
+
+	def _help(self, a="help"):
+		"""return help messages
+		"""
+		myhelpmsg = u"BadGirl 天气预报员模块！使用 <weather 你的城市> 获\
+取详细城市列表，使用 <weather 你的城市 n> 获取对应城市的天气信息。“你的\
+城市”可以是“城市的中文名，城市拼音缩写， 城市的邮政编码，城市的长途区号”；地区索引“n”是\
+<weather 你的城市> 返回的地区列表中区域对应的数字。"
+		mytipmsg = u"您可以重新执行 <weather 您想要查看的城市> 和\
+ <weather 您想要查看的城市 n> 来修改自己的首选城市。"
+ 		if a == "help":
+ 			msg = myhelpmsg
+ 		else:
+ 			msg = mytipmsg
+ 		return msg
 
 class google(MooBotModule):
 	"Does a search on google and returns the first 5 hits"
@@ -778,4 +861,4 @@ class geekquote(MooBotModule):
 
 		return Event("privmsg", "", target, [quote])
 
-# vim:ts=4:sw=4
+# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:

@@ -18,7 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import re, httplib, HTMLParser
+import re, HTMLParser
 #from moobot_module import MooBotModule
 
 # Without this, the HTMLParser won't accept Chinese attribute values
@@ -184,5 +184,5 @@ if __name__ == "__main__":
 		print u
 
 
-# vim:ts=4:sw=4:tw=80
+# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
 
