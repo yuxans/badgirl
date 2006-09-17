@@ -70,7 +70,7 @@ class weathercn(MooBotModule):
 		# TODO: ... save settings to database
 		# TODO: ... get settings from database
 
-		tmplist = args["text"].split(" ")
+		tmplist = args["text"].strip().split(" ")
 		del(tmplist[0])
 		
 		if len(tmplist) > 1:
@@ -84,6 +84,11 @@ class weathercn(MooBotModule):
 			result_string = self._help()
 		
 		target = self.return_to_sender(args)
+		
+		n = 400
+		while len(result_string) > n:
+			result_string = '\n'.join((result_string[:n],result_string[n:]))
+			n += 400
 
 		return Event("privmsg", "", target, [result_string])
 	
@@ -119,7 +124,7 @@ class weathercn(MooBotModule):
 			i = 1
 			result = ""
 			for c, u in regionlist:
-				result = ''.join((result, " =", str(i),"=> ", c))
+				result = "".join((result, "=", str(i),"=>", c))
 				i += 1
 			return result
 		elif len(regionlist) < int(l[2]):
