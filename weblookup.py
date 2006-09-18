@@ -47,7 +47,7 @@ class weathercn(MooBotModule):
 	html pages.
 	"""
 	def __init__(self):
-		self.regex = "^(weather|w)( .+){0,2}"
+		self.regex = "^(weather|w)( [^ ]+){0,2}"
 
 	def handler(self, **args):
 		"""Parse the received commandline arguments
@@ -72,17 +72,46 @@ class weathercn(MooBotModule):
 
 		tmplist = args["text"].strip().split(" ")
 		del(tmplist[0])
+
+		lenlist = len(tmplist)
 		
-		if len(tmplist) > 1:
-			if len(tmplist[1]) < 2:
-				result_string = u"城市名称少于两个字符，请重新输入"
-			elif len(tmplist) >= 3 and not tmplist[2].isdigit():
-				result_string = u"地区索引“n“必须是数字"
+		if lenlist in (2, 3):
+			len1 = len(tmplist[1])
+				
+			if lenlist == 3\
+					and not tmplist[2].isdigit():
+				result_string = u"区域索引”n“必须是数字，"\
+					u"请重新输入"
+			
+			elif len1 < 2:
+				result_string = u"“城市名称”不可少于两个字符，"\
+				u"请重新输入"
+			elif tmplist[1].isdigit():
+				if len1 not in (3, 4, 6) or tmplist[1][:2] == '00':
+					result_string = u"非法的区号或邮政编码，"\
+							u"请重新输入"
+				elif len1 == 6 and tmplist[1][3:] != '000':
+					result_string = u"请使用市级以上邮政编码，"\
+							u"TIP：将您的邮编后三位改为“000”"
+				elif len1 in (3, 4) \
+						and tmplist[1][0] != '0':
+					result_string = u"非法的电话区号, "\
+							u"请重新输入"
+				else: 
+					result_string = self.gogetit(tmplist)
+					
+			elif tmplist[1].isalpha() and len1 >= 4:
+				result_string = u"请给我一个”城市名或拼音缩写“多于"\
+				u" 4 个字符的理由"
 			else:
 				result_string = self.gogetit(tmplist)
+				
 		else:
 			result_string = self._help()
 		
+		if len(result_string.strip()) == 0:
+			result_string = u"未查到任何结果，请重试"
+
 		target = self.return_to_sender(args)
 		
 		n = 400
@@ -160,7 +189,7 @@ class weathercn(MooBotModule):
 		"""
 		myhelpmsg = u"BadGirl 天气预报员模块！使用 <weather 你的城市> 获\
 取详细城市列表，使用 <weather 你的城市 n> 获取对应城市的天气信息。“你的\
-城市”可以是“城市的中文名，城市拼音缩写， 城市的邮政编码，城市的长途区号”；地区索引“n”是\
+城市”可以是“城市的中文名，城市拼音缩写，城市的邮政编码，城市的长途区号”；地区索引“n”是\
 <weather 你的城市> 返回的地区列表中区域对应的数字。"
 		mytipmsg = u"您可以重新执行 <weather 您想要查看的城市> 和\
  <weather 您想要查看的城市 n> 来修改自己的首选城市。"
