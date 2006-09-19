@@ -100,8 +100,8 @@ class weathercn(MooBotModule):
 				else: 
 					result_string = self.gogetit(tmplist)
 					
-			elif tmplist[1].isalpha() and len1 >= 4:
-				result_string = u"请给我一个”城市名或拼音缩写“多于"\
+			elif tmplist[1].isalpha() and len1 > 4:
+				result_string = u"请给我一个“城市名或拼音缩写”多于"\
 				u" 4 个字符的理由"
 			else:
 				result_string = self.gogetit(tmplist)
@@ -130,7 +130,7 @@ class weathercn(MooBotModule):
 		""" 
 		
 		citykeyword = l[1].lower()
-		search_parm = urllib.urlencode({"searchname": citykeyword})
+		search_parm = urllib.urlencode({"searchname": citykeyword.encode("gbk")})
 		print search_parm
 		try:
 			response = urllib.urlopen("http://www.weathercn.com/search/search.jsp",
