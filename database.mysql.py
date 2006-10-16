@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pythkn
 
 # Copyright (c) 2002 Brad Stewart, et. al. 
 #
@@ -19,6 +19,7 @@
 
 """database.mysql.py - used for database interaction with PostgreSQL"""
 import MySQLdb
+import _mysql_exceptions
 import threading, thread, ConfigParser, sys
 import moobot
 from moobot import DebugErr
@@ -30,13 +31,12 @@ try:
 	dbport = int(parser.get("database", "port")) or 3306
 	dbencoding = parser.get("database", "encoding")
 	dbhostname = parser.get("database", "hostname")
-	dbport = int(parser.get("database", "port")) or 3306
-	dbencoding = parser.get("database", "encoding")
 	dbname = parser.get("database", "name")
 	dbuser = parser.get("database", "username")
 	dbpass = parser.get("database", "password")
-except ValueError:
-	print "Error: Bad port number in DB config"
+except ValueError, e:
+	print "Error: Bad port number in DB config or:"
+	print e
 	sys.exit(0)
 except ConfigParser.NoSectionError:
 	print "Error: Missing [database] section in config files."
@@ -46,7 +46,7 @@ except ConfigParser.NoOptionError:
 	sys.exit(0)
 
 
-num_connections = 4 # 4 different connections for different threads to
+num_connections = 1 # 4 different connections for different threads to
 		    # use, since two can't use the same one at the same
 		    # time
 botdbs = []
@@ -57,11 +57,14 @@ countLock = thread.allocate_lock()
 
 type = "mysql"
 
-print "initializing DB connections & locks"
-for j in range(num_connections):
-	conn = MySQLdb.connect(host = dbhostname, port = dbport, user = dbuser, db = dbname, passwd=dbpass,
+def newconnection():
+	return MySQLdb.connect(host = dbhostname, port = dbport, user = dbuser, db = dbname, passwd=dbpass,
 		read_default_file = "~/.my.cnf", read_default_group = "client",
 		use_unicode = True)
+
+print "initializing DB connections & locks"
+for j in range(num_connections):
+	conn = newconnection()
 	botdbs.append(conn)
 	dblocks.append(thread.allocate_lock())
 del conn
@@ -73,9 +76,21 @@ def doSQL(SQL):
 	connection_num = getAConnection()
 	#print moobot.RED + "got connection " + moobot.NORMAL + str(connection_num)
 	results = []
+	SQL = SQL.encode(dbencoding, "backslashreplace")
+	DebugErr("executing " + SQL)
 	try:
 		cur = botdbs[connection_num].cursor()
-		cur.execute(SQL.encode(dbencoding, "backslashreplace"))
+		cur.execute(SQL)
+# 		try:
+# 			cur.execute(SQL)
+# 		except Exception, message:
+# 			DebugErr(moobot.RED + "Exception occurred: " + moobot.BLUE + \
+# 				str(message) + moobot.NORMAL)
+# 			DebugErr("reconnecting")
+# 			conn = newconnection()
+# 			botdbs[connection_num] = conn
+# 			cur = conn.cursor()
+# 			cur.execute(SQL)
 		results = cur.fetchall() or []
 	except Exception, message:
 		DebugErr(moobot.RED + "There was an error with the database"+\
@@ -103,9 +118,7 @@ def getAConnection():
 			botdbs.append('')
 		elif cnum >= num_connections:
 			print "Not enough connections, spawning a new one."
-			conn = MySQLdb.connect(host = dbhostname, user = dbuser, db = dbname, passwd=dbpass,
-				read_default_file = "~/.my.cnf", read_default_group = "client",
-				use_unicode = True)
+			conn = newconnection()
 			botdbs[cnum] = conn
 			printFreeConnections()
 
