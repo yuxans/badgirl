@@ -37,11 +37,10 @@ class dunno(MooBotModule):
 		if database.type == "pgsql":
 			dunno_query = "select data from data where type='dunno' order " \
 				+ "by random() limit 1"
-			line = database.doSQL(dunno_query)[0][0]
 		elif database.type == "mysql":
 			dunno_query = "select data from data where type='dunno' order " \
 				+ "by rand() limit 1"
-			line = database.doSQL(dunno_query)[0][0]
+		line = (database.doSQL(dunno_query) or [['dunno']])[0][0]
 
 		line = string.replace(line, "WHO", nm_to_n(args["source"]))
 		target = self.return_to_sender(args)
