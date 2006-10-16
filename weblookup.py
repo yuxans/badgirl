@@ -47,7 +47,7 @@ class weathercn(MooBotModule):
 	html pages.
 	"""
 	def __init__(self):
-		self.regex = "^(weather|w)( [^ ]+){0,2}"
+		self.regex = "^(weather|w)($|( [^ ]+){1,2})"
 
 	def handler(self, **args):
 		"""Parse the received commandline arguments
@@ -113,11 +113,6 @@ class weathercn(MooBotModule):
 			result_string = u"未查到任何结果，请重试"
 
 		target = self.return_to_sender(args)
-		
-		n = 400
-		while len(result_string) > n:
-			result_string = '\n'.join((result_string[:n],result_string[n:]))
-			n += 400
 
 		return Event("privmsg", "", target, [result_string])
 	
@@ -150,12 +145,18 @@ class weathercn(MooBotModule):
 		regionlist = rp.o()
 		
 		if len(l) < 3:
-			i = 1
-			result = ""
-			for c, u in regionlist:
-				result = "".join((result, "=", str(i),"=>", c))
-				i += 1
-			return result
+			if len(regionlist) == 1:
+				c, u = regionlist[0]
+				return self.getforcast(u)
+			else:
+				i = 1
+				result = ""
+				for c, u in regionlist:
+					result = "".join((result, "=", str(i),"=>", c))
+					if i % 10 == 0:
+						result = "".join((result, '\n'))
+					i += 1
+				return result
 		elif len(regionlist) < int(l[2]):
 			return u"地区索引”n”大于地区总个数"
 		else:
@@ -193,11 +194,11 @@ class weathercn(MooBotModule):
 <weather 你的城市> 返回的地区列表中区域对应的数字。"
 		mytipmsg = u"您可以重新执行 <weather 您想要查看的城市> 和\
  <weather 您想要查看的城市 n> 来修改自己的首选城市。"
- 		if a == "help":
- 			msg = myhelpmsg
- 		else:
- 			msg = mytipmsg
- 		return msg
+		if a == "help":
+			msg = myhelpmsg
+		else:
+			msg = mytipmsg
+		return msg
 
 class google(MooBotModule):
 	"Does a search on google and returns the first 5 hits"
@@ -290,17 +291,18 @@ class dict(MooBotModule):
 		self.ymap = {"slash": "/", "quote": "'", "_e_": "2", "_a": "a:", "int": "S"}
 		self.cmap = {"\\\\": "\\", "5": "'", "E": "2"}
 		self.rNx = re.compile(u"找不到和您查询的")
-		self.rCtoE = re.compile(u"简明汉英词典(.*)", re.M)
-		self.rBlue = re.compile("<font color=blue>", re.I)
-		self.rEtoC = re.compile(u"简明英汉词典</div>(.*?)</div>", re.S)
+		self.rCtoE = re.compile(u"简明汉英词典")
+		self.rRwWord = re.compile('rwWord\("([^"]+)"\)')
+
+		self.rEtoC = re.compile(u"简明英汉词典")
+		self.rExplain = re.compile('explain_item">(.*?)</div>', re.S)
 		self.rSpell = re.compile("str2img\('([^']+)", re.I)
-		self.rExpl = re.compile(u'class="explain_(?:attr|item)">(.*)', re.I)
 		self.ciba_failed = 1
 		self.rSearch = re.compile(u'^[^*?_%]{2,}[*?_%]')
 
- 	def handler(self, **args):
+	def handler(self, **args):
 		import dict
- 		target = self.return_to_sender(args)
+		target = self.return_to_sender(args)
 		if args["text"].split()[1][0][0] == '~':
 			word = " ".join(args["text"].split()[1:])[1:]
 		else:
@@ -338,32 +340,33 @@ class dict(MooBotModule):
 			self.cache[word] = self.cache_old[word]
 			result = self.cache[word]
 		else:
-			if self.ciba_failed <= 0:
- 				result = self.lookup_ciba(word)
-				if result == "error":
-					self.ciba_failed = 5
- 					result = self.lookup_yahoo(word)
-			else:
- 				result = self.lookup_yahoo(word)
-				self.ciba_failed = self.ciba_failed - 1
+			#if self.ciba_failed <= 0:
+			#	result = self.lookup_ciba(word)
+			#	if result == "error":
+			#		self.ciba_failed = 5
+			#		result = self.lookup_yahoo(word)
+			#else:
+			#	result = self.lookup_yahoo(word)
+			#	self.ciba_failed = self.ciba_failed - 1
+			result = self.lookup_ciba(word)
 			result = result.replace("&lt;","<").replace("&gt;",">")
- 			if len(result) == 0:
- 				result = "Could not find definition for " + word
+			if len(result) == 0:
+				result = "Could not find definition for " + word
 			elif result == "error":
 				pass
 			else:
 				self.cache[word] = result
 
- 		return Event("privmsg", "", target, [ result ])
+		return Event("privmsg", "", target, [ result ])
 
 	def lookup_ciba(self, word):
-		connect = httplib.HTTPConnection('cb.kingsoft.com', 80)
+		connect = httplib.HTTPConnection('www.iciba.com', 80)
 		connect.request("GET", "/search?s=%s&t=word&lang=utf-8" % (word.encode("UTF-8"), ))
 		response = connect.getresponse()
 		if response.status != 200:
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
-			self.debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
+			self.Debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
 			return "error"
 		else:
 			# Do the parsing here
@@ -373,28 +376,27 @@ class dict(MooBotModule):
 	
 			m = self.rCtoE.search(html)
 			if m:
-				m = self.rBlue.split(m.group(1))[1:]
-				words = []
-				for i in m:
-					words.append(i[:i.find("<")])
-				return word + ": " + ", ".join(words)
-	
+				m = self.rRwWord.findall(html)
+				if m:
+					result = word + ':'
+					for i in m:
+						result += ' ' + i
+					return result
+
 			m = self.rEtoC.search(html)
 			if m:
-				html = m.group(1)
 				result = word + ":"
+
 				m = self.rSpell.search(html)
 				if m:
 					spell = m.group(1)
 					for k in self.cmap:
 						spell = spell.replace(k, self.cmap[k])
 					result += " /" + spell + "/"
-				m = self.rExpl.search(html)
+
+				m = self.rExplain.search(html)
 				if m:
-					html = m.group(1)
-					html = self.rStrip.sub(" ", html)
-					result += " "
-					result += html
+					result += ' ' + m.group(1).strip()
 				return result
 				
 			return ""
@@ -408,7 +410,8 @@ class dict(MooBotModule):
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
 
-			if re.compile("/error").match(loc):
+			self.Debug(loc)
+			if loc and re.compile("/error").match(loc):
 				return ""
 			else:
 				self.debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
@@ -483,7 +486,7 @@ class babelfish(MooBotModule):
 	def help(self, args):
 		langs = " ".join(self.languages.keys())
 		trans = " ".join(self.languages.values())
- 		return Event("privmsg", "", self.return_to_sender(args), [
+		return Event("privmsg", "", self.return_to_sender(args), [
 			"Usage: translate <FROM_LANGUAGE> to <TO_LANGUAGE> TEXT\r\nAvailable LANGUAGES are \"%s\"" % (langs)
 			+ "\r\nSynonyms: {LN_LN} TEXT\r\nWhere LNs are \"%s\"" % (trans)
 			])
@@ -895,4 +898,4 @@ class geekquote(MooBotModule):
 
 		return Event("privmsg", "", target, [quote])
 
-# vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
+# vim:set shiftwidth=4 softtabstop=4
