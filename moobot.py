@@ -30,7 +30,7 @@ progress.
 DEBUG = 0
 
 import string, thread, threading
-
+import sys
 
 from utilities import *
 from os import environ
@@ -42,8 +42,11 @@ import string, thread, threading
 class MooBot(SingleServerIRCBot):
 	class MooBotException(Exception): pass
 	class HandlerExists(MooBotException): pass
-	config_files = [environ['HOME']+'/.moobot.conf', 'moobot.conf',
-            '/etc/moobot.conf']
+	config_files = [len(sys.argv) > 1 \
+						and  sys.argv[1] \
+						or ''.join((environ['HOME'], '/etc/moobot.conf')),
+					'moobot.conf',
+					'/etc/moobot.conf']
 
 	def __init__(self, channels=[], nickname="", password="", realname="", server="", port=6667, module_list=[], encoding=""):
 		"""MooBot initializer - gets values from config files and uses those
@@ -91,9 +94,10 @@ class MooBot(SingleServerIRCBot):
 
 	def on_welcome(self, c, e):
 		"""Whenever this bot joins a server, this is executed"""
+		"""And replace frist ':' to space join +k channel,by Yuxans Yao 2007/07/13 11:45"""
 		for channel in self.channels.keys():
 			Debug("Joining", channel)
-			c.join(channel)
+			c.join(channel.replace(':',' ',1))
 
 	def on_privmsg(self, c, e):
 		"""Whenever someone sends a /msg to our bot, this is executed"""
@@ -417,9 +421,6 @@ def main():
 	bot.start()
 
 # config_files is needed by database
-import sys
-if len(sys.argv) > 1:
-	MooBot.config_files = [sys.argv[1]] + MooBot.config_files
 
 if __name__ == '__main__':
 	main()
