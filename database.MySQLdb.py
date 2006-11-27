@@ -70,19 +70,15 @@ def doSQL(SQL):
 #	DebugErr("executing " + SQL)
 
 	try:
-		try:
-			dbconn = dbConPool.get()
-			cur = dbconn.cursor()
-			cur.execute(SQL)
-		except Exception, message:
-			DebugErr(moobot.RED + "Exception occurred: " + moobot.BLUE + \
-				str(message) + moobot.NORMAL + ", retrying ...")
-			dbconn = dbConPool.get()
-			cur = dbconn.cursor()
-			cur.execute(SQL)
+		dbconn = dbConPool.get()
+		# See "pydoc MySQLdb.connection" /ping(/ for details
+		dbconn.ping()
+		cur = dbconn.cursor()
+		cur.execute(SQL)
 
 		results = cur.fetchall() or []
 		cur.close()
+		dbconn.commit()
 		dbConPool.put(dbconn)
 	except Exception, message:
 		DebugErr(moobot.RED + "There was an error with the database"+\
