@@ -57,7 +57,8 @@ ctor = Pool.Constructor(MySQLdb.connect,
 						passwd=dbpass,
 						read_default_file = "~/.my.cnf",
 						read_default_group = "client",
-						use_unicode = True)
+						use_unicode = True,
+						charset = dbencoding)
 
 dbConPool = Pool.Pool(ctor)
 
@@ -66,7 +67,7 @@ def doSQL(SQL):
 	containing the results"""
 
 	results = []
-	SQL = SQL.encode(dbencoding, "backslashreplace")
+#	SQL = SQL.encode(dbencoding, "backslashreplace")
 #	DebugErr("executing " + SQL)
 
 	try:
@@ -85,6 +86,7 @@ def doSQL(SQL):
 			" when executing " + moobot.BLUE + SQL + moobot.NORMAL)
 		DebugErr(moobot.RED + "Exception occurred: " + moobot.BLUE + \
 			str(message) + moobot.NORMAL)
+		raise
 
 	return results
 
