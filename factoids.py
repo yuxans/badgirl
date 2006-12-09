@@ -25,6 +25,7 @@ handler_list = ["augment", "cookie", "list_keys", "info", "delete", "lock", "loo
 
 
 from moobot_module import MooBotModule
+import database
 
 class factoidClass(MooBotModule):
 	"""Base class for all factoid classes, encapsulates a lot of common
@@ -137,11 +138,11 @@ class lookup(factoidClass):
 		self.priority = 18
 	def handler(self, **args):
 		""" gets the factoid_value field from the database """
-		import string, database, time
+		import string, time
 		from irclib import Event, nm_to_n
 
 		# Store the ref
-		ref = args["ref"]()
+# 		ref = args["ref"]()
 
 		# If we were /msg'ed this, /msg it back, otherwise send it to the
 		# channel
@@ -209,12 +210,12 @@ class lookup(factoidClass):
 
 		# Message format:
 		# nickname!username@localhost privmsg #channel_name :factoid_text
-		self.debug("%s!%s@%s" % (ref.connection.ircname, 
-			ref.connection.username, ref.connection.localhost))
-#		msg_length = len(text) + len(" privmsg # :") + len(target) + \
-#			len(ref.connection.nickname) + len(ref.connection.username) + \
-#			len(ref.connection.localhost)
-#		self.debug(msg_length)
+# 		self.debug("%s!%s@%s" % (ref.connection.ircname, 
+# 			ref.connection.username, ref.connection.localhost))
+# #		msg_length = len(text) + len(" privmsg # :") + len(target) + \
+# #			len(ref.connection.nickname) + len(ref.connection.username) + \
+# #			len(ref.connection.localhost)
+# #		self.debug(msg_length)
 
 
 		# by default we will just say something to the target, but if the
@@ -263,7 +264,7 @@ class cookie(factoidClass):
 	def handler(self, **args):
 		""" gets a random factoid from the database"""
 		from irclib import nm_to_n, Event
-		import database, string
+		import string
 
 		# Standard return_to_sender target, talk to who talks to us
 		target = self.return_to_sender(args)
@@ -290,7 +291,7 @@ class delete(factoidClass):
 		self.priority = 17
 	def handler(self, **args):
 		"Remove a factoid from the database"
-		import database, priv
+		import priv
 		from irclib import Event
 
 
@@ -371,7 +372,7 @@ class add(factoidClass):
 		# factoid is already there, we will see how long it is anyway and not
 		# have to delete anything anyway when we just delete all factoids
 		# created by "factoid-length-check"
-		import database
+		
 		factoid_key = "a"*512	# 512 is the max chars in an IRC msg, from RFC
 		created_by = "factoid-length-check"
 		query = "insert into factoids(factoid_key, created_by) values('" + \
@@ -388,7 +389,7 @@ class add(factoidClass):
 
 	def handler(self, **args):
 		"""adds a factoid"""
-		import database, time
+		import time
 		from irclib import Event
 
 		target = self.return_to_sender(args)
@@ -455,7 +456,7 @@ class list_keys(factoidClass):
 		self.priority = 17
 	def handler(self, **args):
 		"""searches factoid keys"""
-		import database
+		
 		from irclib import Event
 
 		# Strip bot name and "list*" from the text we get
@@ -544,7 +545,7 @@ class replace(factoidClass):
 
 	def handler(self, **args):
 		""" replaces an existing factoid (no factoid is text> """
-		import database, priv
+		import priv
 		from irclib import Event
 		from time import time
 
@@ -612,7 +613,7 @@ class lock(factoidClass):
 		self.priority = 17
 	def handler(self, **args):
 		""" lock and unlock factoids """
-		import database, priv, time
+		import priv, time
 		from irclib import Event, nm_to_n
 
 		# Change the target based on how we were called
@@ -676,7 +677,7 @@ class info(factoidClass):
 		self.priority = 17
 	def handler(self, **args):
 		"""Return information about a factoid to the person requesting it"""
-		import database, time
+		import time
 		from irclib import Event
 
 		target = self.return_to_sender(args)
@@ -732,7 +733,7 @@ class augment(factoidClass):
 	def handler(self, **args):
 		"""Allows someone to add material onto a factoid (that isn't locked) by
 		saying "foo is also bar", for example"""
-		import priv, database
+		import priv
 		from irclib import Event
 		from time import time
 		target = self.return_to_sender(args)
@@ -801,7 +802,7 @@ class alter(factoidClass):
 	def handler(self, **args):
 		"""Allows someone to alter material in a factoid by using a regular
 		expression.  Invoked like: "moobot: foo =~ s/moo/bar/"."""
-		import priv, database, re, string, time
+		import priv, re, string, time
 		from irclib import Event
 		target = self.return_to_sender(args)
 		
