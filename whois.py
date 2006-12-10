@@ -27,6 +27,7 @@ handler_list = ["whois"]
 
 class whois(MooBotModule):
 	branchServer = "whois.arin.net"
+	equalxxx = re.compile("""with "=xxx" to receive a full display for each record.""")
 
 	def __init__(self):
 		# init regex
@@ -676,17 +677,22 @@ class whois(MooBotModule):
 				else:
 					host = self.branchServer
 					branch = True
+			# Referral Server
 			m = self.preferral.search(response)
 			if m:
-				self.Debug(response)
-				self.Debug(m.group(0))
+# 				self.Debug(response)
+# 				self.Debug(m.group(0))
 				host = m.group(1).strip()
 				port = int(m.group(2) or 43)
 				continue
-
+			# =xxx handling
+			m = self.equalxxx.search(response)
+			if m:
+				query_str = "".join(("=", query_str))
+				continue
+			# Extract what we want.
 			result = []
 			dones = {}
-
 			matches = self.pdata.findall(response)
 			if matches:
 				for m in matches:
@@ -710,7 +716,7 @@ class whois(MooBotModule):
 
 	def whois(self, server, port, q):
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.Debug("connecting %s:%d" % (server, port))
+# 		self.Debug("connecting %s:%d" % (server, port))
 		s.connect((server, port))
 		s.send(q + "\r\n")
 
