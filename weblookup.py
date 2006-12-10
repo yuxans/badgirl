@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding:gbk -*-
 
+
+
+# Copyright (C) 2005, 2006 by FKtPp, baa
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
-# Copyright (C) 2005 by baa
-# Copyright (C) 2005 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License

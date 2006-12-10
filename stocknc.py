@@ -1,9 +1,8 @@
 # grabs stock quotes
 # -*- coding:gbk -*-
 
+# Copyright (C) 2004, 2005, 2006 by FKtPp, baa
 # Copyright (c) 2002 Brett Kelly
-# Copyright (C) 2004 by FKtPp
-# Copyright (C) 2005 by baa
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License

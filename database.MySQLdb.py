@@ -1,5 +1,6 @@
-#!/usr/bin/env pythkn
-
+#!/usr/bin/env python
+# 
+# Copyright (C) 2006 by FKtPp
 # Copyright (c) 2002 Brad Stewart, et. al. 
 #
 # This program is free software; you can redistribute it and/or

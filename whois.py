@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2004, 2005 by FKtPp, baa
+# Copyright (C) 2004, 2005, 2006 by FKtPp, baa
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -725,23 +725,22 @@ class whois(MooBotModule):
 		return response.replace("\r", "")
 
 	def _prepare_str(self, query_str):
-		possible_hostname_list = ["www", "ftp", "whois", "bbs",
-					  "mx", "mail", "pop", "smtp",
-					  "imap", "chat", "irc", "reader",
-					  "docs", "doc", "paste", "rss",
-					  "blog", "support", "news",
-					  "mirror", "web",
-					  ""]
-		phl_re = "".join(("^(",
-				  "\d{0,2}|".join(possible_hostname_list),
-				  ")"))
-		phl_re = re.compile(phl_re)
+		possible_hostname = "|".join(["www", "ftp", "whois", "bbs",
+					      "mx", "mail", "pop", "smtp",
+					      "imap", "chat", "irc", "reader",
+					      "docs", "doc", "paste", "rss",
+					      "blog", "support", "news",
+					      "mirror", "web"])
+		ph_re = "".join(("^(",
+				 possible_hostname,
+				 ")\d{0,2}"))
+		ph_re = re.compile(ph_re)
 
 		query_str = query_str.lower()
 		q_str_list = query_str.split(".")
 
 		if len(q_str_list) >= 3:
-			if phl_re.match(q_str_list[0]):
+			if ph_re.match(q_str_list[0]):
 				del q_str_list[0]
 
 		return ".".join(q_str_list)
