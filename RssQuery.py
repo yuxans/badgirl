@@ -102,19 +102,17 @@ class RssRecord:
         # {{{ parse
         # try ... except ...
         tmp_data = feedparser.parse(self.datas["r_url"])
-
+ 
         datas = []
-        for i in range(self.max_entries < len(tmp_data) 
-                       and self.max_entries
-                       or len(tmp_data)):
-            try:
-                datas.append((tmp_data.entries[i].title, 
-                              tmp_data.entries[i].link, 
-                              tmp_data.entries[i].summary))
-            except:
-                datas.append((tmp_data.entries[i].title,
-                              tmp_data.entries[i].link,
-                              "(empty)"))
+        for i in range(self.max_entries < len(tmp_data.entries) \
+                           and self.max_entries or len(tmp_data.entries)):
+            datas.append((tmp_data.entries[i].has_key("title") and \
+                              tmp_data.entries[i].title or "(empty)", 
+                          tmp_data.entries[i].has_key("link") and \
+                              tmp_data.entries[i].link or "(empty)", 
+                          tmp_data.entries[i].has_key("summary") and \
+                              tmp_data.entries[i].summary or "(empty)"))
+
         # }}}
 
         data = pickle.dumps(datas)
