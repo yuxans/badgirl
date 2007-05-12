@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:gbk -*-
 
-# Copyright (C) 2005, 2006 by FKtPp
+# Copyright (C) 2005, 2006, 2007 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -102,13 +102,18 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 #		print data.encode("gbk")
 
 	def o(self):
-		self.we = u'转'.join(self.we)
-		self.result_list.append(self.city)
-		self.result_list.append(self.daterange)
-		self.result_list.append(self.we)
-		self.result_list.append(self.wind)
-		self.temp = "".join((u'气温：', self.temp))
-		self.result_list.append(self.temp)
+		if self.we:
+			self.we = u'转'.join(self.we)
+			self.result_list.append(self.city)
+			self.result_list.append(self.daterange)
+			self.result_list.append(self.we)
+			self.result_list.append(self.wind)
+			self.temp = "".join((u'气温：', self.temp))
+			self.result_list.append(self.temp)
+		else:
+			self.result_list.append(u'无')
+			self.result_list.append(self.city)
+			self.result_list.append(u'预报信息')
 		return self.result_list
 
 
@@ -173,15 +178,24 @@ class WeatherCNCITYParser(HTMLParser.HTMLParser):
 		return self.result_list
 
 if __name__ == "__main__":
-	p = WeatherCNCITYParser()
-	f = file("qhd.html", "r")
+	p = WeatherCNParser()
+	f = file("test.html", "r")
 	try:
 		p.feed(f.read().decode("gbk"))
 	except HTMLParser.HTMLParseError:
 		pass
-	for c, u in p.o():
+	for c in p.o():
 		print c
-		print u
+
+# 	pc = WeatherCNCITYParser()
+# 	f = file("test.html", "r")
+# 	try:
+# 		pc.feed(f.read().decode("gbk"))
+# 	except HTMLParser.HTMLParseError:
+# 		pass
+# 	for c, u in pc.o():
+# 		print c
+# 		print u
 
 
 # vim:set shiftwidth=4 softtabstop=4 expandtab textwidth=79:
