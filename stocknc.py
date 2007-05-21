@@ -1,7 +1,7 @@
 # grabs stock quotes
 # -*- coding:gbk -*-
 
-# Copyright (C) 2004, 2005, 2006 by FKtPp, baa
+# Copyright (C) 2004, 2005, 2006, 2007 by FKtPp, baa
 # Copyright (c) 2002 Brett Kelly
 #
 # This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import re, httplib, urllib, urllib2, sys, HTMLParser
+import re, httplib, urllib, sys, HTMLParser
 from irclib import Event 
 from moobot_module import MooBotModule
 
@@ -37,12 +37,10 @@ class stockQuote(MooBotModule):
 		target = self.return_to_sender(args)
 		requested_code = args["text"].split()[2]
 		quote_method = args["text"].split()[1]
-		
-		if quote_method == "stockquote":
-			quote = self.quote_cn_yahoo(requested_code)
-		else:
-			quote = self.eastmoney(requested_code, \
-					       self.long_short(target))
+
+		quote = self.eastmoney(requested_code,
+                                       self.long_short(target))
+
 		return Event("privmsg", "", target, [quote])
 
 	def long_short(self, target):
@@ -50,34 +48,6 @@ class stockQuote(MooBotModule):
 		if not re.compile("^#.*").match(target):
 			default_short = False
 		return default_short
-
-	def quote_cn_yahoo(self, symbol):
-		if self.ss.match(symbol):
-			mode = '&m=c'
-		elif self.sz.match(symbol):
-			mode = '&m=z'
-		else:
-			return "Please use formal STOCK ID to query, exp. 600000 or 000001"
-
-		newsymbol = symbol.encode("gbk").upper()
-		base = 'http://cn.finance.yahoo.com/d/quotes.csv?s='
-		tail = '&f=nsl1d1t1c1ohgv&e=.csv' 
-		url = base+symbol+mode+tail 
-		try:    
-			quote = urllib2.urlopen(url).read()
-		except Exception, e:
-			self.debug(e)
-			sys.exit()
-		splitquote = quote.decode("gbk", "replace").split(',')
-		if splitquote[1] != "0.00":    
-			result = "The current price of %s(%s) is %s" % \
-			    (splitquote[0].strip('"').rstrip(), \
-			     (splitquote[1])[1:-4], \
-			     splitquote[2])
-		else:
-			result = "Sorry, I couldn't find that one"
-
-		return result
 
 	def eastmoney(self, symbol, short_style):
 		err_msg =  "Please use formal STOCK ID to query, exp. 600000 or 000001. Or you can view this link http://quote.eastmoney.com/q.asp?StockCode=%s" % symbol
