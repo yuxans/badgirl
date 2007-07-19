@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding:gbk -*-
+# -*- coding:gb2312 -*-
 
 # Copyright (C) 2005, 2006, 2007 by FKtPp, baa
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
@@ -754,8 +754,13 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 			self.is_result_table = False
 
 class acronym(MooBotModule):
-	"""
-	Does a search on www.acronymfinder.com and returns all definitions
+	""" Does a search on www.acronymfinder.com and returns all definitions
+
+	TODO. According to http://www.acronymfinder.com/terms.htm , we
+	must switch to other sites. like:
+
+	http://silmaril.ie/cgi-bin/uncgi/acronyms
+	http://acronyms.thefreedictionary.com/
 	"""
 	def __init__(self):
 		self.regex = "^explain [a-zA-Z]+"
