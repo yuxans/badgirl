@@ -761,6 +761,9 @@ class acronym(MooBotModule):
 
 	http://silmaril.ie/cgi-bin/uncgi/acronyms
 	http://acronyms.thefreedictionary.com/
+	TODO. http://www.gaarde.org/acronyms/?lookup=ASAP
+	TODO. http://www.urbandictionary.com/define.php?term=ASAP
+	TODO. Parser
 	"""
 	def __init__(self):
 		self.regex = "^explain [a-zA-Z]+"
