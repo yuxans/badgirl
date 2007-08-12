@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding:gbk -*-
+# -*- coding:gb2312 -*-
 
 # Copyright (C) 2005, 2006, 2007 by FKtPp
 #
@@ -37,9 +37,11 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 	def __init__(self):
 		HTMLParser.HTMLParser.__init__(self)
 		self.ruler = 0
+		self.city_re = re.compile(u'\{.*\}')
 		self.city = ""
 		self.we = []
 		self.temp = ""
+		self.temp_re = re.compile(u'^\d+¡æ')
 		self.wind = ""
 		self.daterange =""
 		self.result_list = []
@@ -57,21 +59,14 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 			else:
 				for n, v in attrs:
 					if n == "width" and tag == "table":
-						if v == "189":
-							self.ruler = 130
-						elif v == "294":
+						if v == "294":
 							self.ruler = 160
-					elif n == "width" and tag == "td":
-						if v == "182":
-							self.ruler = 140
-					elif n == "class" and tag == "td":
-						if v == "eng":
-							self.ruler = 150
 					elif n == "src" and tag == "img":
 						if v == "image/1.gif":
 							self.ruler = 170
 					elif n == "alt" and tag == "img":
 							self.we.append(v)
+							self.ruler = 150
 
 	def handle_endtag(self, tag):
 		if self.ruler > 171:
@@ -83,16 +78,15 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 				self.ruler += 1
 
 	def handle_data(self, data):
-		if self.ruler < 24:
-			pass
-		elif self.ruler > 171:
+		if self.ruler > 171:
 			pass
 		else:
-			if data == "CAL();":
+			if self.ruler < 120 and data == "CAL();":
 				self.ruler = 120
-			elif self.ruler == 131:
+			elif self.ruler < 130 and self.city_re.match(data):
 				self.city = data.strip('{}')
-			elif self.ruler == 150:
+				self.ruler = 130
+			elif self.ruler >= 150 and self.temp_re.match(data):
 				self.temp = data
 			elif self.ruler == 161:
 				self.daterange = data
@@ -185,7 +179,7 @@ if __name__ == "__main__":
 	except HTMLParser.HTMLParseError:
 		pass
 	for c in p.o():
-		print c
+		print ''.join((c, '<>'))
 
 # 	pc = WeatherCNCITYParser()
 # 	f = file("test.html", "r")
