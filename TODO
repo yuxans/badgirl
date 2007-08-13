@@ -31,3 +31,17 @@
 * README
 
   import the wiki page
+
+* GeoIP module
+
+  Check ChunZhen IP database from web interface
+    Very Simple: query url then strip result.
+  Check GeoIP from locale installed GeoIP database
+    Need addational GeoIP installation
+    API level coding.
+
+  CommandLine sample: <Sombody> ~geoip xx.xx[.xx][.xx]
+    [.xx][.xx] default to .0.1
+    [.xx] default to .1
+
+  Result sample: <BadGirl> xx.xx.xx.xx: location
