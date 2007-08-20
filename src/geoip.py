@@ -54,11 +54,17 @@ class chunzhen(MooBotModule):
 	False
 	>>> r.match('geoip 1.') and True or False
 	False
+	>>> r.match('geoip 1.0') and True or False
+	True
 	>>> r.match('geoip 1.1') and True or False
+	True
+	>>> r.match('geoip 1.1.0') and True or False
 	True
 	>>> r.match('geoip 1.1.1') and True or False
 	True
 	>>> r.match('geoip 1.1.1.1') and True or False
+	True
+	>>> r.match('geoip 1.0.0.1') and True or False
 	True
 	>>> r.match('geoip 1.1.1.1.1') and True or False
 	False
@@ -79,8 +85,11 @@ class chunzhen(MooBotModule):
 	>>> 
 	"""
         # ipv4 pattern initialization
-        num0_254 = '(?:25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?)'
-        ipv4part = '(?:%s(?:\.%s){1,3})' % (num0_254, num0_254)
+        num0_254 = '(?:25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?|0)'
+	num1_254 = '(?:25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?)'
+        ipv4part = '(?:%s(?:\.%s){1,2}(?:\.%s)?)' % (num1_254,
+						     num0_254,
+						     num1_254)
 
         self.regex='^geoip\s+%s$' % (ipv4part)
 
@@ -101,7 +110,7 @@ class chunzhen(MooBotModule):
         geoinfo = (m and m.group(1) or 'Not Found')
 
         target = self.return_to_sender(args)
-        result = Event('privmsg', '', target, [ ''.join(query_str, ': ', geoinfo)])
+        result = Event('privmsg', '', target, [ ''.join((query_str, ': ', geoinfo))])
 
         return result
 
