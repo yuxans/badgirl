@@ -106,7 +106,8 @@ class chunzhen(MooBotModule):
 	geo_re = re.compile('document.write\("(.*)"\);')
 
 	m = geo_re.search(f.read().decode('gbk'))
-	
+	f.close()
+
         geoinfo = (m and m.group(1) or 'Not Found')
 
         target = self.return_to_sender(args)
