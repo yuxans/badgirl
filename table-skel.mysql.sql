@@ -151,5 +151,6 @@ CREATE TABLE url (
   nick varchar(64) NOT NULL,
   time timestamp NOT NULL,
   string text NOT NULL,
-  url_id integer AUTO_INCREMENT
+  url_id integer AUTO_INCREMENT,
+  PRIMARY KEY(url_id)
 ) TYPE=MyISAM;
