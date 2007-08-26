@@ -15,7 +15,7 @@ def sqlEscape(text):
 
 def lookup(dk):
 	import database
-	rs = database.doSQL("SELECT d_value FROM dict WHERE d_key='%s'" % dk)
+	rs = database.doSQL("SELECT d_value FROM dict WHERE d_key='%s'" % sqlEscape(dk))
 	try:
 		return rs[0][0] or False
 	except:
