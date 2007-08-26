@@ -122,17 +122,17 @@ class listPriv(MooBotModule):
 
 	def handler(self, **args):
 		""" gives a nick/host mask a privileve """
-		from irclib import Event
+		from irclib import Event, IrcStringIO
 		import database
 	
 		if checkPriv(args["source"], "list_priv") == 0:
 			return Event("privmsg", "", self.return_to_sender(args), [ "You don't have permission to do that." ])
 	
 		privs = database.doSQL("SELECT priv_type,hostmask FROM grants")
-		p = []
+		buffer = IrcStringIO()
 		for i in privs:
-			p.append(i[0] + ': ' + i[1])
-		return Event("privmsg", "", self.return_to_sender(args), [ "\r\n".join(p) ])
+			buffer.write('[' + i[0] + '] ' + i[1] + ' ;; ')
+		return Event("privmsg", "", self.return_to_sender(args), [ buffer.getvalue() ])
 	
 class showPriv(MooBotModule):
 	def __init__(self):
