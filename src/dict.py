@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2005 by baa
+# Copyright (C) 2005 by moo
 
 from moobot_module import MooBotModule
 
