@@ -154,3 +154,19 @@ CREATE TABLE url (
   url_id integer AUTO_INCREMENT,
   PRIMARY KEY(url_id)
 ) TYPE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS `ability` (
+  `abilityid` smallint(5) unsigned NOT NULL auto_increment,
+  `name` varchar(20) NOT NULL,
+  PRIMARY KEY  (`abilityid`)
+) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS `userability` (
+  `nick` varchar(30) NOT NULL,
+  `abilityid` smallint(6) unsigned NOT NULL,
+  `channel` varchar(32) NOT NULL,
+  `score` smallint(5) unsigned NOT NULL,
+  `bynick` varchar(30) NOT NULL,
+  PRIMARY KEY  (`nick`,`channel`,`abilityid`),
+  KEY `channel` (`channel`(3))
+) ENGINE=MyISAM:
