@@ -283,10 +283,5 @@ class AbilityProfile(MooBotModule):
 			else:
 				reply = "AbilityProfile: " + " ;; ".join(self.helps.values())
 
-		#if type(reply) is list:
-		#	result = []
-		#	for r in reply:
-		#		result.append(Event("privmsg", "", channel, [r]))
-		#else:
 		result = Event("privmsg", "", channel, [reply])
 		return result
