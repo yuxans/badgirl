@@ -175,7 +175,7 @@ class AbilityProfile(MooBotModule):
 
 				abilityid = self.getAbilityId(ability, True)
 				self.setUserAbilityScore(nick, channel, abilityid, score, yournick)
-				reply = "%s's %s is set to %d" % (nick, ability, score)
+				reply = "%s's %s ability is set to %d" % (nick, ability, score)
 			elif cmd == "despise":
 				if argc != 2:
 					raise StopReply()
@@ -268,10 +268,7 @@ class AbilityProfile(MooBotModule):
 							reply = nick + " doesn't have any ability, is he/she disabled?"
 						else:
 							from irclib import IrcStringIO
-							if len(ability_scores) == 1:
-								buffer = IrcStringIO(nick + "'s ability is")
-							else:
-								buffer = IrcStringIO(nick + "'s abilities are:")
+							buffer = IrcStringIO(nick + "'s is capable of")
 							for ability_score in ability_scores:
 								buffer.write(" %s*%s" % ability_score)
 							reply = buffer.getvalue()
