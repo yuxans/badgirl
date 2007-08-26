@@ -85,7 +85,7 @@ class grantPriv(MooBotModule):
 
 		database.doSQL("insert into grants(hostmask, priv_type) values('" + mask + "', '" + privilege  + "')")
 		flushPriv()
-		return Event("privmsg", "", target, [ "Granted " + privilege + " to " + mask + "." ])
+		return Event("privmsg", "", target, [ "Granted " + privilege + " to " + mask ])
 	
 class revokePriv(MooBotModule):
 	def __init__(self):
