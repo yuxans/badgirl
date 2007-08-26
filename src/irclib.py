@@ -865,6 +865,36 @@ class SimpleIRCClient:
 		"""Start the IRC client."""
 		self.ircobj.process_forever()
 
+class IrcStringIO(list):
+	def __init__(self, head = ""):
+		from StringIO import StringIO
+		self.head    = head
+		self.wbuffer = StringIO()
+		if self.head:
+			self.wbuffer.write(self.head)
+		self.curlen  = 0
+		self.headlen = len(self.head)
+
+	def write(self, string):
+		l = len(string)
+		if l + self.curlen > 450:
+			self.append(self.wbuffer.getvalue())
+			from StringIO import StringIO
+			self.wbuffer = StringIO()
+			if self.head:
+				self.wbuffer.write(self.head)
+			self.curlen = l + self.headlen
+		else:
+			self.curlen += l
+
+		self.wbuffer.write(string)
+
+	def getvalue(self):
+		if self.curlen:
+			self.append(self.wbuffer.getvalue())
+			self.wbuffer.truncate()
+		return "\n".join(self)
+
 class Event:
 	"""Class representing an IRC event."""
 	def __init__(self, eventtype, source, target, arguments=None, rawdata=None):
