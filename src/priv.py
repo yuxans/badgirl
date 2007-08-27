@@ -128,10 +128,15 @@ class listPriv(MooBotModule):
 		if checkPriv(args["source"], "list_priv") == 0:
 			return Event("privmsg", "", self.return_to_sender(args), [ "You don't have permission to do that." ])
 	
-		privs = database.doSQL("SELECT priv_type,hostmask FROM grants")
-		buffer = IrcStringIO()
+		privs = database.doSQL("SELECT priv_type,hostmask FROM grants ORDER BY priv_type,hostmask")
+		buffer = IrcStringIO("Privileges List:")
+		last = None
 		for i in privs:
-			buffer.write('[' + i[0] + '] ' + i[1] + ' ;; ')
+			if last == i[0]:
+				buffer.write(' ' + i[1] + ' ;;')
+			else:
+				last = i[0]
+				buffer.write(' [' + i[0] + '] ' + i[1] + ' ;;')
 		return Event("privmsg", "", self.return_to_sender(args), [ buffer.getvalue() ])
 	
 class showPriv(MooBotModule):
