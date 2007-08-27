@@ -204,7 +204,7 @@ class AbilityProfile(MooBotModule):
 				else:
 					abilityid = self.getAbilityId(ability, True)
 					self.setUserAbilityScore(yournick, channel, abilityid, score, yournick)
-					reply = "%s has despise himself to %d on %s ability" % (yournick, score, ability)
+					reply = "%s has despise him/herself to %d on %s ability" % (yournick, score, ability)
 			elif cmd == "top" or cmd == "help":
 				if cmd == "help":
 					if argc != 1:
