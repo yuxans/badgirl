@@ -20,7 +20,7 @@
 """priv.py - used for checking privelages on certain functions from a database """
 
 from moobot_module import MooBotModule
-handler_list = ["grantPriv", "revokePriv", "listPriv", "showPriv"]
+handler_list = ["grantPriv", "revokePriv", "listPriv", "showPriv", "reloadPriv"]
 
 privCache = None
 
@@ -155,3 +155,10 @@ class showPriv(MooBotModule):
 		text = re.sub(", $", "", text)
 		return Event("privmsg", "", self.return_to_sender(args), [ "Your privs are : " + text ])
 		
+class reloadPriv(MooBotModule):
+	regex = "^reloadpriv$"
+
+	def handler(self, **args):
+		flushPriv()
+		from irclib import Event
+		return Event("privmsg", "", self.return_to_sender(args), [ "privilege reloaded" ])

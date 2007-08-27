@@ -26,7 +26,7 @@ handler_list = ["reload", "load", "unload", "processLoadUnload"]
 class reload(MooBotModule):
 	""" returns events to unload and load specified modules"""
 	def __init__(self):
-		self.regex="^reload\s?(.+)?$"
+		self.regex="^reload(\s+.+)?$"
 		self.priority=-20
 
 	def handler(self, **args):
