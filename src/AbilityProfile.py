@@ -109,7 +109,7 @@ class AbilityProfile(MooBotModule):
 	def getTopAbilities(self, channel):
 		import database
 
-		return database.doSQL("SELECT a.name,SUM(score) AS score \
+		return database.doSQL("SELECT a.name,SUM(score) AS score,COUNT(score) AS usercount \
 				FROM userability ua \
 				LEFT JOIN ability a ON a.abilityid=ua.abilityid \
 				WHERE channel='%s' \
@@ -223,14 +223,14 @@ class AbilityProfile(MooBotModule):
 					for user_score in user_scores:
 						buffer.write(" %s*%s" % user_score)
 				elif argc == 0:
-					ability_scores = self.getTopAbilities(channel)
-					if not ability_scores:
+					abilityScoreUsers = self.getTopAbilities(channel)
+					if not abilityScoreUsers:
 						reply = "no one is superman"
 						raise StopReply()
 					from irclib import IrcStringIO
 					buffer = IrcStringIO("top abilities:")
-					for ability_score in ability_scores:
-						buffer.write(" %s*%s" % ability_score)
+					for abilityScoreUser in abilityScoreUsers:
+						buffer.write(" %s*%s/%s" % abilityScoreUser)
 				reply = buffer.getvalue()
 			else:
 				nick    = None
