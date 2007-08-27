@@ -153,7 +153,6 @@ class AbilityProfile(MooBotModule):
 				import priv
 				nick, ability, score = argv
 				try:
-					print "/%s/" % score
 					score = IntValueModifier(score)
 				except ValueError:
 					reply = "%s: score must be number" % yournick
