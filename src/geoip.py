@@ -149,8 +149,8 @@ class chunzhen(MooBotModule):
         return '.'.join(parts)
 
 def _test():
-    import doctest
-    doctest.testmod()
+	import doctest
+	doctest.testmod()
 
 if __name__ == "__main__":
-    _test()
+	_test()

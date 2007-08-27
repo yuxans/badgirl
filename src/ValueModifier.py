@@ -36,8 +36,8 @@ class IntValueModifier(ValueModifier):
 		ValueModifier.__init__(self, modifier, int(intValueModifier))
 
 def _test():
-    import doctest
-    doctest.testmod()
+	import doctest
+	doctest.testmod()
 
 if __name__ == "__main__":
-    _test()
+	_test()
