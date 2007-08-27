@@ -123,8 +123,9 @@ class AbilityProfile(MooBotModule):
 		import string
 		from irclib import Event
 		import priv
+		from utilities import trim
 
-		argv = self.spaces.split(args["text"])
+		argv = self.spaces.split(trim(args["text"]))
 		# case: ~ab
 		if len(argv) < 3:
 			cmd = None
