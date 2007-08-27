@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2005 by moo
+# Copyright (C) 2005, 2007 by moo
 # Copyright (C) 2007 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
@@ -123,9 +123,8 @@ class AbilityProfile(MooBotModule):
 		import string
 		from irclib import Event
 		import priv
-		from utilities import trim
 
-		argv = self.spaces.split(trim(args["text"]))
+		argv = self.spaces.split((args["text"]).strip())
 		# case: ~ab
 		if len(argv) < 3:
 			cmd = None
