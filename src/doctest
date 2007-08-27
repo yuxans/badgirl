@@ -1,0 +1,7 @@
+#!/bin/sh
+for i in *.py; do
+	if test -x "$i" && grep 'import doctest' "$i" >/dev/null; then
+		echo Testing "$i"
+		./"$i"
+	fi
+done
