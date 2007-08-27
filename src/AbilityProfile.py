@@ -56,7 +56,7 @@ class AbilityProfile(MooBotModule):
 		return database.doSQL("SELECT ab.name,score \
 				FROM userability ua \
 				LEFT JOIN ability ab ON ab.abilityid=ua.abilityid \
-				WHERE nick='%s' AND channel='%s'
+				WHERE nick='%s' AND channel='%s' \
 				ORDER BY score DESC"
 				% (self.sqlEscape(nick), self.sqlEscape(channel))
 				)
