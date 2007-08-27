@@ -279,10 +279,10 @@ class AbilityProfile(MooBotModule):
 			pass
 
 		if not reply:
-			if self.helps.has_key(cmd):
-				reply = "AbilityProfile: " + self.helps[cmd]
-			else:
+			if cmd == "help" and argc == 0 or not self.helps.has_key(cmd):
 				reply = "AbilityProfile: " + " ;; ".join(self.helps.values())
+			else:
+				reply = "AbilityProfile: " + self.helps[cmd]
 
 		result = Event("privmsg", "", channel, [reply])
 		return result
