@@ -143,6 +143,7 @@ class AbilityProfile(MooBotModule):
 		yournick = nm_to_n(args['source'])
 		try:
 			from irclib import is_channel
+			from ValueModifier import IntValueModifier
 			if not is_channel(channel):
 				reply = "this is a channel only command"
 			elif cmd == "grant":
@@ -152,11 +153,14 @@ class AbilityProfile(MooBotModule):
 				import priv
 				nick, ability, score = argv
 				try:
-					score = int(score)
+					print "/%s/" % score
+					score = IntValueModifier(score)
 				except ValueError:
 					reply = "%s: score must be number" % yournick
 					raise StopReply()
 
+				curscore = self.getUserAbilityScore(nick, channel, ability) or 0
+				score = score.apply(curscore)
 				# normal users?
 				if priv.checkPriv(args["source"], "ab_admin_priv") == 0 \
 					and priv.checkPriv(args["source"], "all_priv") == 0:
@@ -169,7 +173,6 @@ class AbilityProfile(MooBotModule):
 						reply = "You don't have enough ability score, %s" % yournick
 						raise StopReply()
 
-					curscore = self.getUserAbilityScore(nick, channel, ability)
 					if curscore >= score:
 						reply = "%s's %s ability is %d already" % (nick, ability, curscore)
 						raise StopReply()
@@ -182,7 +185,7 @@ class AbilityProfile(MooBotModule):
 					raise StopReply()
 				ability, score = argv
 				try:
-					score = int(score)
+					score = IntValueModifier(score)
 				except ValueError:
 					reply = "%s: score must be number" % yournick
 					raise StopReply()
@@ -190,7 +193,10 @@ class AbilityProfile(MooBotModule):
 				curscore = self.getUserAbilityScore(yournick, channel, ability)
 				if not curscore:
 					reply = "%s: You have no %s ability despise for" % (ability, yournick)
-				elif curscore == score:
+					raise StopReply()
+
+				score = score.apply(curscore)
+				if curscore == score:
 					reply = "%s: You're yourself" % yournick
 				elif curscore <= score:
 					reply = "%s: Are you conceited?" % yournick
