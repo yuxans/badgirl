@@ -25,10 +25,12 @@ class IntValueModifier(ValueModifier):
 	"""
 	def __init__(self, intValueModifier):
 		modifier = '='
-		if len(intValueModifier) > 2:
+		if len(intValueModifier) >= 2:
 			modifier = intValueModifier[0]
 			if modifier == '+' or modifier == '-':
 				intValueModifier = intValueModifier[1:]
+			else:
+				modifier = '='
 
 		# plain value
 		ValueModifier.__init__(self, modifier, int(intValueModifier))
