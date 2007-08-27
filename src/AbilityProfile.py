@@ -170,8 +170,10 @@ class AbilityProfile(MooBotModule):
 					yourscore = self.getUserAbilityScore(yournick, channel, ability)
 					# apply rules
 					if not yourscore or yourscore < score:
-						reply = "You don't have enough ability score, %s" % yournick
-						raise StopReply()
+						yourscore = self.getUserAbilityScore(yournick, channel, '*')
+						if not yourscore or yourscore < score:
+							reply = "You don't have enough ability score, %s" % yournick
+							raise StopReply()
 
 					if curscore >= score:
 						reply = "%s's %s ability is %d already" % (nick, ability, curscore)
