@@ -243,6 +243,8 @@ class AbilityProfile(MooBotModule):
 						name = cmd
 					else:
 						nick = yournick
+				elif cmd != "query":
+					raise StopReply()
 				elif argc == 1:
 					# "query $nick"
 					name = argv[0]
