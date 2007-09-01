@@ -26,7 +26,7 @@ from moobot_module import MooBotModule
 handler_list = ['chunzhen',]
 
 class IEURLopener(urllib.FancyURLopener):
-	version = "Mozilla/4.0 (compatible; MSIE 6.0)"
+	version = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
 
 urllib._urlopener = IEURLopener()
 

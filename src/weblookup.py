@@ -33,7 +33,7 @@ HTMLParser.attrfind=re.compile(
                r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
 
 class IEURLopener(urllib.FancyURLopener):
-	version = "Mozilla/4.0 (compatible; MSIE 6.0)"
+	version = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
 
 urllib._urlopener = IEURLopener()
 
@@ -776,7 +776,7 @@ class acronym(MooBotModule):
 				 'Find': 'find',
 				 'string':'exact'})
 		response = urllib.urlopen('http://www.acronymfinder.com/af-query.asp?%s' % search_parms)
-		listing = response.read().decode("latin1")
+		listing = response.read().decode("UTF-8")
 
 		search = re.compile("<td[^>]*>[^<>\n\r]*%s[^<>\n\r]*</td>\s*<td[^>]*>([A-Za-z][^<\n\r]+)\s*</td>" % search_term)
 		definitions = search.findall(listing)
