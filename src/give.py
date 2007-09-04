@@ -28,7 +28,7 @@ class give(MooBotModule):
 		import re
 		from irclib import Event, nm_to_n
 
-		who = "".join(args["text"].split(" ")[2:])
+		who = " ".join(args["text"].split(" ")[2:])
 		name_w_spaces = " " + nm_to_n(args["source"]) + " "
 		text = re.sub("(\sme\s|\sme$|^me\s)", name_w_spaces, who)
 		text = re.sub("(^\s+|\s+$)", "", text)

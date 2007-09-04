@@ -64,7 +64,7 @@ class wordgame(MooBotModule):
 			cmd = 'none'
 
 		try:
-			rest = "".join(input[3:])
+			rest = " ".join(input[3:])
 		except IndexError:
 			rest = 'none'
 
@@ -113,7 +113,7 @@ class wordgame(MooBotModule):
 		elif cmd in ['show', 's']:
 			self.letters = map(lambda x: x, self.letters)
 			self.letters.sort()
-			self.letters = "".join(self.letters).strip()
+			self.letters = " ".join(self.letters).strip()
 			message = self.clue + ' guessed: ' + self.letters
 
 		elif cmd in ['answer', 'a']:

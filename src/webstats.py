@@ -40,7 +40,7 @@ class count_speak_times(MooBotModule):
 	
 		# Get nick and quote text
 		nick = nm_to_n(args["source"]).lower()
-		quote = self.sqlEscape("".join(args["text"].split()[1:]))
+		quote = self.sqlEscape(" ".join(args["text"].split()[1:]))
 		channel = args["channel"].lower()
 		if args["type"] == "privmsg": target = nm_to_n(args["source"])
 		else: target = args["channel"]

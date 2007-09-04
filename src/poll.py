@@ -64,7 +64,7 @@ class vote(MooBotModule):
 			target=nm_to_n(args["source"])
 	
 		poll_num = args["text"].split()[2]
-		option_key = "".join(args["text"].split()[3:])
+		option_key = " ".join(args["text"].split()[3:])
 		#first we check to make sure the requested poll exists.
 		if database.doSQL("select count(poll_num) from poll where poll_num =" +poll_num)[0][0] == 0:
 			return Event("privmsg", "", target, [ "No such poll." ])
@@ -101,7 +101,7 @@ class add_poll(MooBotModule):
 		if priv.checkPriv(args["source"], "poll_priv") == 0:
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
-		poll_question = "".join(args["text"].split()[3:])
+		poll_question = " ".join(args["text"].split()[3:])
 		poll_question = self.sqlEscape(poll_question)
 		database.doSQL("Insert into poll(question) values('" + poll_question + "')")
 		poll_num = database.doSQL("select poll_num from poll where question = '" + poll_question + "'")[0][0]
@@ -128,9 +128,9 @@ class add_poll_option(MooBotModule):
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
 		poll_num = args["text"].split()[3]
-		option = "".join(args["text"].split()[4:])
+		option = " ".join(args["text"].split()[4:])
 		option_key = self.sqlEscape(option.split(":")[0])
-		option_text = self.sqlEscape("".join(option.split(":")[1:]))
+		option_text = self.sqlEscape(" ".join(option.split(":")[1:]))
 		if database.doSQL("select count(poll_num) from poll where poll_num =" + poll_num )[0][0] == 0:
 			return Event("privmsg", "", target, [ "No such poll." ])
 	

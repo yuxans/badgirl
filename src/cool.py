@@ -31,7 +31,7 @@ class cool(MooBotModule):
 
 		# Split the string and take every word after the first two as the
 		# words to "cool-ify" (first two are the bot name and "cool")
-		who = "".join(args["text"].split(" ")[2:])
+		who = " ".join(args["text"].split(" ")[2:])
 
 		# Surround whatever with ":cool:" tags
 		text = ":cool: " + who + " :cool:"

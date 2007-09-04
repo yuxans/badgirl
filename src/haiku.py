@@ -136,7 +136,7 @@ def pp_haiku(list):
     lines = []
 
     for a in list:
-        lines.append("".join(a))
+        lines.append(" ".join(a))
     return " / ".join(lines)
 
 

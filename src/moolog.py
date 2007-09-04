@@ -54,7 +54,7 @@ def log_ev_to_file(ev):
 		args["type"] = ev.eventtype().upper()
 		args["src"] = ev.source()
 		args["dst"] = ev.target()
-		args["args"] = "".join(ev.arguments())
+		args["args"] = " ".join(ev.arguments())
 
 
 		if args["type"] in ["JOIN", "NICK"]:
@@ -150,7 +150,7 @@ def log_ev_to_stdout(ev):
 	args["type"] = ev.eventtype().upper()
 	args["src"] = ev.source()
 	args["dst"] = ev.target()
-	args["args"] = "".join(ev.arguments())
+	args["args"] = " ".join(ev.arguments())
 
 	if args["src"]:
 		hostmask = args["src"].split("!")

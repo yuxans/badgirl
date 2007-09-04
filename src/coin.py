@@ -36,7 +36,7 @@ class coin(MooBotModule):
 		from irclib import Event
 
 		# Strip "botname: coin" off the front.
-		str = "".join(args["text"].split()[2:])
+		str = " ".join(args["text"].split()[2:])
 
 		# Attempt some rudimentary first-to-second person changes.
 		str = re.sub('\b([Ii]|[Mm][Ee])\b', 'you', str)

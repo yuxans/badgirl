@@ -33,7 +33,7 @@ class factoidClass(MooBotModule):
 	def strip_words(self, str, num):
 		"""Strips a certain number of words from the beginning of a string"""
 
-		str = "".join(str.split()[num:])
+		str = " ".join(str.split()[num:])
 		return str
 		
 	def strip_punctuation(self, str):
@@ -94,7 +94,7 @@ class factoidClass(MooBotModule):
 					stack.append(token)
 				else:
 					stack.append(stack.pop() + token)
-		return "".join(stack)
+		return " ".join(stack)
 
 	def get_token(self, text):
 		""" gets the next token for SAR parsing from text """
@@ -808,7 +808,7 @@ class alter(factoidClass):
 		
 		# Grab the factoid to change:
 		# first, drop the bot name
-		factoid_key = "".join(args["text"].split()[1:])
+		factoid_key = " ".join(args["text"].split()[1:])
 		# Now split on " =~ " and take the left half
 		factoid_key = factoid_key.split(" =~ ", 1)[0]
 		

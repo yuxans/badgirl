@@ -585,7 +585,7 @@ class ServerConnection(Connection):
 
 	def admin(self, server=""):
 		"""Send an ADMIN command."""
-		self.send_raw("".join(["ADMIN", server]).strip())
+		self.send_raw(" ".join(["ADMIN", server]).strip())
 
 	def ctcp(self, ctcptype, target, parameter=""):
 		"""Send a CTCP command."""
@@ -620,11 +620,11 @@ class ServerConnection(Connection):
 
 	def info(self, server=""):
 		"""Send an INFO command."""
-		self.send_raw("".join(["INFO", server]).strip())
+		self.send_raw(" ".join(["INFO", server]).strip())
 
 	def invite(self, nick, channel):
 		"""Send an INVITE command."""
-		self.send_raw("".join(["INVITE", nick, channel]).strip())
+		self.send_raw(" ".join(["INVITE", nick, channel]).strip())
 
 	def ison(self, nicks):
 		"""Send an ISON command.

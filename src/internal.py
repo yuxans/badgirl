@@ -83,7 +83,7 @@ class join_nopriv(MooBotModule):
 		#	target=nm_to_n(args["source"])
 		self.debug("join")
 		channel = args["text"]
-		channel = "".join(channel.split(" ")[2:])
+		channel = " ".join(channel.split(" ")[2:])
 		result = Event("internal", "", channel, [ "join" ] )
 		return result
 
@@ -120,7 +120,7 @@ class part_nopriv(MooBotModule):
 		#	target=nm_to_n(args["source"])
 		self.debug("part")
 		channel = args["text"]
-		channel = "".join(channel.split(" ")[2:])
+		channel = " ".join(channel.split(" ")[2:])
 		result = Event("internal", "", channel, [ "part" ] )
 		return result
 
@@ -170,7 +170,7 @@ class list_modules(MooBotModule):
 		target=nm_to_n(args["source"])
 		# Strip name and 'module(s)' from text
 
-		msg = "".join(args["text"].split(" ")[2:])
+		msg = " ".join(args["text"].split(" ")[2:])
 		return Event("internal", "", target, [ "modules", msg ])
 
 class send_raw(MooBotModule):

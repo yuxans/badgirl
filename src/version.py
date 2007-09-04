@@ -32,7 +32,7 @@ class version(MooBotModule):
 		import urllib2, re
 
 		# Get the name of the software and put the name in all lowercase
-		name	= "".join(args["text"].split()[2:])
+		name	= " ".join(args["text"].split()[2:])
 		name	= name.lower()
 		name	= name.replace(" ", "+")
 

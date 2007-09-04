@@ -128,7 +128,7 @@ class SingleServerIRCBot(SimpleIRCClient):
 
 	def _on_mode(self, c, e):
 		"""[Internal]"""
-		modes = parse_channel_modes("".join(e.arguments()))
+		modes = parse_channel_modes(" ".join(e.arguments()))
 		t = e.target()
 		if is_channel(t):
 			ch = self.channels[t]

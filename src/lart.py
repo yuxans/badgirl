@@ -73,7 +73,7 @@ class add(MooBotModule):
 		from irclib import Event
 		import database
 		type = args["text"].split()[2]
-		value = "".join(args["text"].split()[3:])
+		value = " ".join(args["text"].split()[3:])
 		self.debug(value)
 		if args["type"] == "privmsg":
 			from irclib import nm_to_n

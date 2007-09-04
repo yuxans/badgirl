@@ -143,7 +143,7 @@ class seen(MooBotModule):
 
 		result = ""
 
-		nick = "".join(args["text"].split()[2:])
+		nick = " ".join(args["text"].split()[2:])
 		safenick = escape_quotes(nick.lower())
 		line = database.doSQL("SELECT nick, time, message, type " + \
 				      "FROM seen WHERE nick = '" + safenick + \

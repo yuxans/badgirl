@@ -43,7 +43,7 @@ class stack(MooBotModule):
 			cmd = 'none'
 
 		try:
-			item = "".join(words[3:])
+			item = " ".join(words[3:])
 		except IndexError:
 			item = 'none'
 		
