@@ -120,7 +120,6 @@ class AbilityProfile(MooBotModule):
 				)
 
 	def handler(self, **args):
-		import string
 		from irclib import Event
 		import priv
 

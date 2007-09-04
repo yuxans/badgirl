@@ -32,11 +32,11 @@ class coin(MooBotModule):
 		"""If given a list of alternatives separated by 'or', picks
 		from among them.  Otherwise picks either heads or tails from a
 		virtual coin."""
-		import random, re, string;
+		import random, re
 		from irclib import Event
 
 		# Strip "botname: coin" off the front.
-		str = string.join(args["text"].split()[2:])
+		str = "".join(args["text"].split()[2:])
 
 		# Attempt some rudimentary first-to-second person changes.
 		str = re.sub('\b([Ii]|[Mm][Ee])\b', 'you', str)

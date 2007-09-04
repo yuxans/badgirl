@@ -35,12 +35,12 @@ class count_speak_times(MooBotModule):
 		many times a person has spoken.  Also stores a random quote from the
 		person (basically 10% chance a given quote is going to be chosen for the
 		"random quote" in the database."""
-		import database, time, random, string
+		import database, time, random
 		from irclib import Event, nm_to_n
 	
 		# Get nick and quote text
 		nick = nm_to_n(args["source"]).lower()
-		quote = self.sqlEscape(string.joinfields(args["text"].split()[1:]))
+		quote = self.sqlEscape("".join(args["text"].split()[1:]))
 		channel = args["channel"].lower()
 		if args["type"] == "privmsg": target = nm_to_n(args["source"])
 		else: target = args["channel"]
@@ -97,10 +97,10 @@ class get_quote(MooBotModule):
 
 	def handler(self, **args):
 		from irclib import Event, nm_to_n
-		import database, string
+		import database
 		nick = args["text"].split()[2].lower() # name
-		nick = string.replace(nick, "\\", "\\\\")
-		nick = string.replace(nick, "'", "\\'")
+		nick = nick.replace("\\", "\\\\")
+		nick = nick.replace("'", "\\'")
 		record = database.doSQL("select * from webstats where nick = '" + nick + "' and channel = '" + args["channel"] + "'")
 		quote = ""
 		if record:

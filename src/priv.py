@@ -68,7 +68,7 @@ class grantPriv(MooBotModule):
 		from irclib import Event
 		from irclib import nm_to_n
 		import database
-		import string
+
 		target=args["channel"]
 		if args["type"] == "privmsg":
 			target=nm_to_n(args["source"])
@@ -79,7 +79,7 @@ class grantPriv(MooBotModule):
 		if checkPriv(args["source"], "grant_priv") == 0 or checkPriv(args["source"], privilege) == 0:
 			return Event("privmsg", "", target, [ "You don't have permission to do that." ])
 	
-		mask = string.replace(mask, "*", "%")
+		mask = mask.replace("*", "%")
 		if checkPriv(mask , privilege) != 0:
 			return Event("privmsg", "", target, [ mask + " already has " + privilege +"." ])
 
@@ -96,7 +96,7 @@ class revokePriv(MooBotModule):
 		from irclib import Event
 		from irclib import nm_to_n
 		import database
-		import string
+
 		target=args["channel"]
 		if args["type"] == "privmsg":
 			target=nm_to_n(args["source"])
@@ -107,7 +107,7 @@ class revokePriv(MooBotModule):
 		if checkPriv(args["source"], "grant_priv") == 0 or checkPriv(args["source"], privilege) == 0:
 			return Event("privmsg", "", target, [ "You don't have permission to do that." ])
 	
-		mask = string.replace(mask, "*", "%")
+		mask = mask.replace("*", "%")
 	
 		if checkPriv(mask , privilege) == 0:
 			return Event("privmsg", "", target, [ mask + " does not have " + privilege +"." ])

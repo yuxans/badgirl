@@ -138,13 +138,13 @@ class seen(MooBotModule):
 
 	def handler(self, **args):
 		"""Report when someone was last seen."""
-		import database, string
+		import database
 		from alias import whois
 
 		result = ""
 
-		nick = string.join(args["text"].split()[2:])
-		safenick = escape_quotes(string.lower(nick))
+		nick = "".join(args["text"].split()[2:])
+		safenick = escape_quotes(nick.lower())
 		line = database.doSQL("SELECT nick, time, message, type " + \
 				      "FROM seen WHERE nick = '" + safenick + \
 				      "'")
@@ -167,19 +167,19 @@ class seen(MooBotModule):
 
 
 def  escape_quotes(text):
-	import string
-	text = string.replace(text, "\\", "\\\\")
-	text = string.replace(text, "'", "\\'")
+
+	text = text.replace("\\", "\\\\")
+	text = text.replace("'", "\\'")
 	return text
 
 
 def add_seen(hostmask, type, message):
 	from irclib import nm_to_n
 	from alias import whois
-	import database, time, string
+	import database, time
 	
 	message = escape_quotes(message)
-	nick = string.lower(escape_quotes(nm_to_n(hostmask)))
+	nick = escape_quotes(nm_to_n(hostmask)).lower()
 	whois(nick)
 
 	if len(database.doSQL("SELECT * FROM seen " + \
@@ -208,7 +208,7 @@ def t2s_add_unit(timediff, timelist, period, name):
 
 
 def time2str(timeticks):
-	import time, string
+	import time
 
 	timelist = []
 	timediff = (time.time() - timeticks)
@@ -230,9 +230,9 @@ def time2str(timeticks):
 	elif (len(timelist) == 1):
 		timename = timelist[0]
 	elif (len(timelist) == 2):
-		timename = string.join(timelist, " and ")
+		timename = " and ".join(timelist)
 	else:
-		timename = string.join(timelist[0:len(timelist)-1], ", ") + \
+		timename = ", ".join(timelist[0:len(timelist)-1]) + \
 			   ", and " + timelist[len(timelist)-1]
 
 	return timename

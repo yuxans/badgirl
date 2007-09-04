@@ -27,7 +27,7 @@ write simpler bots.
 VERSION = (0, 7, 0)
 
 import sys
-import string
+
 from UserDict import UserDict
 
 from irclib import SimpleIRCClient
@@ -128,7 +128,7 @@ class SingleServerIRCBot(SimpleIRCClient):
 
 	def _on_mode(self, c, e):
 		"""[Internal]"""
-		modes = parse_channel_modes(string.join(e.arguments()))
+		modes = parse_channel_modes("".join(e.arguments()))
 		t = e.target()
 		if is_channel(t):
 			ch = self.channels[t]
@@ -150,7 +150,7 @@ class SingleServerIRCBot(SimpleIRCClient):
 		# e.arguments()[2] == nick list
 
 		ch = e.arguments()[1]
-		for nick in string.split(e.arguments()[2]):
+		for nick in e.arguments()[2].split():
 			if nick[0] == "@":
 				nick = nick[1:]
 				self.channels[ch].set_mode("o", nick)

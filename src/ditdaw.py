@@ -17,7 +17,6 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import string
 from moobot_module import MooBotModule
 handler_list=["ditdaw","dawdit"]
 
@@ -76,7 +75,7 @@ class ditdaw(MooBotModule):
 	
 		# Strip botname and command
 		message = args["text"].split()
-		message = string.join(message[2:], " ") 
+		message = " ".join(message[2:]) 
 	
 		n_message = ""
 		

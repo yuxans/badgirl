@@ -29,7 +29,7 @@ progress.
 # Debugging turns stack traces on (allows bot crash)
 DEBUG = 0
 
-import string, thread, threading
+import thread, threading
 import sys
 
 from utilities import *
@@ -37,7 +37,7 @@ from os import environ
 from ircbot import SingleServerIRCBot, IRCDict, Channel
 from irclib import irc_lower, Debug, DebugErr
 from handler import Handler
-import string, thread, threading
+import thread, threading
 
 class MooBot(SingleServerIRCBot):
 	class MooBotException(Exception): pass
@@ -109,7 +109,7 @@ class MooBot(SingleServerIRCBot):
 		args["source"] = e.source()
 		args["channel"] = e.target()
 		args["event"] = e
-		msg = string.strip(msg)
+		msg = msg.strip()
 		from irclib import nm_to_n
 		# Debug(what was said to the stdout with a bit of colour.)
 		Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" + \
@@ -151,7 +151,7 @@ class MooBot(SingleServerIRCBot):
 	def process_pubmsg(self, msg, args):
 		"""Process messages into the channel"""
 		from re import compile
-		import string
+
 		eventlist = self.get_global_handler(msg, args)
 		if eventlist != []:
 			for event in eventlist:
@@ -164,13 +164,13 @@ class MooBot(SingleServerIRCBot):
 		shortregex = compile(shortname)
 		replace_str = self.connection.get_nickname() + ": "
 		if shortregex.search(msg):
-			msg = string.replace(msg, self.configs["shorthand"], replace_str, 1)
+			msg = msg.replace(self.configs["shorthand"], replace_str, 1)
 			args["text"] = msg
 		# Now, check and see if we are being spoken too
 		ourname = "^" + self.connection.get_nickname()
 		regex = compile(ourname)
 		if regex.search(msg):
-			msg = string.strip(msg[string.find(msg, " "):])
+			msg = msg[msg.find(" "):].strip()
 			eventlist = self.get_local_handler(msg, args)
 			if eventlist != []:
 				for event in eventlist:

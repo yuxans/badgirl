@@ -42,10 +42,9 @@ class join(MooBotModule):
 				target=nm_to_n(args["source"])
 			return Event("privmsg", "", target, [ "You do not have permission to do that." ])
 
-		import string
 		channel = args["text"]
-		channel = channel[string.find(channel, " ")+1:]
-		channel = channel[string.find(channel, " ")+1:]
+		channel = channel[channel.find(" ")+1:]
+		channel = channel[channel.find(" ")+1:]
 		result = [Event("internal", "", channel, [ "join" ] )]
 		result.append(Event("privmsg","", channel, ["Ok, I'm here, now what are your other two wishes?"]))
 		return result
@@ -65,10 +64,9 @@ class nick(MooBotModule):
 				target=nm_to_n(args["source"])
 			return Event("privmsg", "", target, [ "You do not have permission to do that." ])
 
-		import string
 		channel = args["text"]
-		channel = channel[string.find(channel, " ")+1:]
-		channel = channel[string.find(channel, " ")+1:]
+		channel = channel[channel.find(" ")+1:]
+		channel = channel[channel.find(" ")+1:]
 		result = Event("internal", "", channel, [ "nick" ] )
 		return result
 
@@ -83,10 +81,9 @@ class join_nopriv(MooBotModule):
 		#if args["type"] == "privmsg":
 		#	from irclib import nm_to_n
 		#	target=nm_to_n(args["source"])
-		import string
 		self.debug("join")
 		channel = args["text"]
-		channel = string.joinfields(channel.split(" ")[2:])
+		channel = "".join(channel.split(" ")[2:])
 		result = Event("internal", "", channel, [ "join" ] )
 		return result
 
@@ -104,10 +101,9 @@ class part(MooBotModule):
 				from irclib import nm_to_n
 				target=nm_to_n(args["source"])
 			return Event("privmsg", "", target, [ "You do not have permission to do that." ])
-		import string
 		channel = args["text"]
-		channel = channel[string.find(channel, " ")+1:]
-		channel = channel[string.find(channel, " ")+1:]
+		channel = channel[channel.find(" ")+1:]
+		channel = channel[channel.find(" ")+1:]
 		result = Event("internal", "", channel, [ "part" ] )
 		return result
 
@@ -122,10 +118,9 @@ class part_nopriv(MooBotModule):
 		#if args["type"] == "privmsg":
 		#	from irclib import nm_to_n
 		#	target=nm_to_n(args["source"])
-		import string
 		self.debug("part")
 		channel = args["text"]
-		channel = string.joinfields(channel.split(" ")[2:])
+		channel = "".join(channel.split(" ")[2:])
 		result = Event("internal", "", channel, [ "part" ] )
 		return result
 
@@ -143,11 +138,10 @@ class kick(MooBotModule):
 				from irclib import nm_to_n
 				target=nm_to_n(args["source"])
 			return Event("privmsg", "", target, [ "You do not have permission to do that." ])
-		import string
 		user = args["text"]
-		user = user[string.find(user, " ")+1:]
-		user = user[string.find(user, " ")+1:]
-		result = Event("internal", "", string.split(user)[1], [ "kick" ,string.split(user)[0]] )
+		user = user[user.find(" ")+1:]
+		user = user[user.find(" ")+1:]
+		result = Event("internal", "", user.split()[1], [ "kick" ,user.split()[0]] )
 		return result
 
 class op(MooBotModule):
@@ -160,11 +154,10 @@ class op(MooBotModule):
 		import priv
 		if priv.checkPriv(args["source"], "op_priv") == 0:
 			return Event("privmsg", "", self.return_to_sender(args), [ "You do not have permission to do that." ])
-		import string
 		user = args["text"]
-		user = user[string.find(user, " ")+1:]
-		user = user[string.find(user, " ")+1:]
-		result = Event("internal", "", string.split(user)[1], [ "op", string.split(user)[0]] )
+		user = user[user.find(" ")+1:]
+		user = user[user.find(" ")+1:]
+		result = Event("internal", "", user.split()[1], [ "op", user.split()[0]] )
 		return result
 
 class list_modules(MooBotModule):
@@ -176,8 +169,8 @@ class list_modules(MooBotModule):
 		from irclib import Event, nm_to_n
 		target=nm_to_n(args["source"])
 		# Strip name and 'module(s)' from text
-		from string import joinfields
-		msg = joinfields(args["text"].split(" ")[2:])
+
+		msg = "".join(args["text"].split(" ")[2:])
 		return Event("internal", "", target, [ "modules", msg ])
 
 class send_raw(MooBotModule):
@@ -185,13 +178,13 @@ class send_raw(MooBotModule):
 		self.regex = "^send raw\s+.*"
 	
 	def handler(self, **args):
-		import priv, string
+		import priv
 		from irclib import Event
 		if (priv.checkPriv(args["source"], "all_priv") == 0):
 			return Event("privmsg", "", self.return_to_sender(args), ["You can't do that!"])
 
-		self.Debug(string.split(args["text"], " ", 3)[3])
-		return Event("internal", "send_raw", "", ["send_raw", string.split(args["text"], " ", 3)[3] ])
+		self.Debug(args["text"].split(" ", 3)[3])
+		return Event("internal", "send_raw", "", ["send_raw", args["text"].split(" ", 3)[3] ])
 
 class internalEventProcess(MooBotModule):
 	def __init__(self):

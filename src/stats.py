@@ -39,22 +39,22 @@ class increment(MooBotModule):
 		count for that thing is incremented by this function"""
 		from irclib import Event
 		import database
-		import string
+
 		import re
 		from irclib import nm_to_n
 		
 		content = args["text"]
-		lower_content = string.lower(content)
+		lower_content = content.lower()
 		
 		count = 0	# Init count to 0.
 		for scope in stats_scope:
 			if content.find(scope) >= 0 and len(content) != len("~" + scope + "stats") \
-			and (lower_content.startswith(string.lower(bot_nick)) == 0 or content.endswith(scope + "stats") == 0 \
+			and (lower_content.startswith(bot_nick.lower()) == 0 or content.endswith(scope + "stats") == 0 \
 			or len(content) - len(bot_nick) - content.count(" ") - len(scope + "stats") - 2 > 0 ):
 				count = content.count(scope)
 				keyword = scope
 				
-				keyword = string.lower(keyword)
+				keyword = keyword.lower()
 				
 				results=database.doSQL("select counter from stats where nick = '" + nm_to_n(args["source"]) + "' and type = '" + keyword + "'")
 				if len(results) == 0:
@@ -86,7 +86,7 @@ class stats(MooBotModule):
 		type = args["text"].split(" ")[1][:-5]
 		
 		#type = args["text"]
-		#type = type[string.find(type, " ")+1:]
+		#type = type[type.find(" ")+1:]
 		#type = type[:len(type)-5]
 		
 		# Grab the top 3

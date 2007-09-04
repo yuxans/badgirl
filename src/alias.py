@@ -29,9 +29,8 @@ class whois_cmd(MooBotModule):
 
 	def handler(self, **args):
 		from irclib import Event
-		import string
 
-		nick = string.split(args["text"], " ")[2]
+		nick = args["text"].split(" ")[2]
 		realnick = whois(nick)
 		return Event("privmsg", "", self.return_to_sender(args),
 			     [nick + " is " + realnick])
@@ -45,10 +44,10 @@ class alias_nickchange(MooBotModule):
 
 	def handler(self, **args):
 		from irclib import Event
-		import database, string
+		import database
 
-		oldnick = string.lower(args["event"].source())
-		newnick = string.lower(args["event"].target())
+		oldnick = args["event"].source().lower()
+		newnick = args["event"].target().lower()
 		oldrealnick = whois(oldnick)
 		newrealnick = whois(newnick)
 
@@ -87,10 +86,10 @@ class alias_nickchange(MooBotModule):
 
 
 def whois(fullnick):
-	import database, string
+	import database
 
-	fullnick = string.lower(fullnick)
-	nick = string.split(fullnick, "!")[0]
+	fullnick = fullnick.lower()
+	nick = fullnick.split("!")[0]
 
 	line = database.doSQL("SELECT realnick FROM alias " + \
 			      "WHERE nick = '" + nick + "'")
@@ -101,16 +100,16 @@ def whois(fullnick):
 			return whois(line[0][0])
 
 	line = database.doSQL("SELECT regex, realnick FROM aliasregex")
-	import re, string
+	import re
 	# Split into two similar for loops for speed reasons.
-	if (string.find(fullnick, "!") and string.find(fullnick, "@")):
+	if (fullnick.find("!") and fullnick.find("@")):
 		for item in line:
-			if (not string.find(item[0], "!") and \
-			    not string.find(item[0], "@")):
+			if (not item[0].find("!") and \
+			    not item[0].find("@")):
 				item[0] += "![^@]+@.+"
-			elif (not string.find(item[0], "!")):
+			elif (not item[0].find("!")):
 				item[0] = "[^!]+!" + item[0]
-			elif (not string.find(item[0], "@")):
+			elif (not item[0].find("@")):
 				item[0] += "@.+"
 			if (re.search("^" + item[0] + "$", fullnick)):
 				database.doSQL("INSERT INTO alias " + \

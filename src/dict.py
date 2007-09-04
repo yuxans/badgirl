@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2005 by moo
+# Copyright (C) 2005, 2007 by moo
 
 from moobot_module import MooBotModule
 
 maxsearch = 30
 def sqlEscape(text):
 	""" escapes \ and 's in strings for SQL """
-	import string
-	text = string.replace(text, "\\", "\\\\")
-	text = string.replace(text, '"', '\\"')
-	text = string.replace(text, "'", "\\'")
+	text = text.replace("\\", "\\\\")
+	text = text.replace('"', '\\"')
+	text = text.replace("'", "\\'")
 	return text
 
 def lookup(dk):

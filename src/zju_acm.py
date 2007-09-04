@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2005 by FKtPp
+# Copyright (C) 2005, 2007 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -47,7 +47,6 @@ class zju_acm(MooBotModule, HTMLParser.HTMLParser):
 		"""
 		it's just dirty
 		"""
-		import string
 		from irclib import Event
 		self.problem = args["text"].split(None, 2)[2]
 		if self.r.match(self.problem):

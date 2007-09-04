@@ -31,7 +31,7 @@ class dunno(MooBotModule):
 	def handler(self, **args):
 		"""grabs a random reply from the database"""
 		from irclib import Event
-		import database, string
+		import database
 		from irclib import nm_to_n
                 # Different names; same function.  Sigh.
 		if database.type == "pgsql":
@@ -42,6 +42,6 @@ class dunno(MooBotModule):
 				+ "by rand() limit 1"
 		line = (database.doSQL(dunno_query) or [['dunno']])[0][0]
 
-		line = string.replace(line, "WHO", nm_to_n(args["source"]))
+		line = line.replace("WHO", nm_to_n(args["source"]))
 		target = self.return_to_sender(args)
 		return Event("privmsg", "", target, [ line ])

@@ -31,7 +31,7 @@ class quotegrab(MooBotModule):
 		self.regex="^(qg|quotegrab)(\s.+)?$"
 
 	def handler(self, **args):
-		import database, priv, string
+		import database, priv
 		from irclib import Event, nm_to_n
 		# if we don't have a nick supplied, get the second most recent form the DB
 		# (the most recent would be the person saying "~qg"
@@ -60,6 +60,6 @@ class quotegrab(MooBotModule):
 		if type not in ["privmsg", "action"]:
 			return Event("privmsg", "", self.return_to_sender(args), [ "Last event seen was not a message or action, not grabbing quote for %s" % user ])
 		#update their webstats entry with the new info
-		database.doSQL("update webstats set quote = '%s', quote_time = %s, type= '%s' where nick = '%s' and channel = '%s'" % (string.replace(string.replace(quote, "\\", "\\\\"), "'", "\\'"), str(time), type, user, args["channel"]))
+		database.doSQL("update webstats set quote = '%s', quote_time = %s, type= '%s' where nick = '%s' and channel = '%s'" % (quote.replace("\\", "\\\\").replace("'", "\\'"), str(time), type, user, args["channel"]))
 			
 		return Event("privmsg", "", self.return_to_sender(args), [ "Grabbing quote for %s" % (user) ])

@@ -27,10 +27,9 @@ class reverse(MooBotModule):
         self.regex = "^reverse .+"
 
     def handler(self, **args):
-        "gnirts a sesreveR"
-    
-        from string import join
-        orig_string = join(args["text"].split(" ")[2:])
+        """gnirts a sesreveR"""
+
+        orig_string = "".join(args["text"].split(" ")[2:])
         newstring = ""
         for i in range(1, len(orig_string)+1):
             newstring += orig_string[-i]

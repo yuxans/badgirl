@@ -69,11 +69,11 @@ class add(MooBotModule):
 	def handler (self, **args):
 		"""adds larts and praises"""
 		import priv
-		import string
+
 		from irclib import Event
 		import database
-		type = string.split(args["text"])[2]
-		value = string.join(string.split(args["text"])[3:])
+		type = args["text"].split()[2]
+		value = "".join(args["text"].split()[3:])
 		self.debug(value)
 		if args["type"] == "privmsg":
 			from irclib import nm_to_n
@@ -83,23 +83,23 @@ class add(MooBotModule):
 		if priv.checkPriv(args["source"], "add_lart_priv") == 0:
 			return Event("privmsg", "", target, [ "You do not have permission to do that.  " ])
 	
-        	value = string.replace (value, "\\", "\\\\")
-        	value = string.replace (value, "\"", "\\\"")
-        	value = string.replace (value, "'", "\\'")
+        	value = value.replace ("\\", "\\\\")
+        	value = value.replace ("\"", "\\\"")
+        	value = value.replace ("'", "\\'")
 		database.doSQL("insert into data values('" + value + "', '" + type + "', '" + args["source"] + "')")
 		return Event("privmsg", "", target, [ "Adding: \"" + value + "\" as " + type + "." ])
 	
 def makeline(type, target):
 	"""Larts.  usage:  Moobot:  lart <user>"""
-	import string, database, re
+	import database, re
 	target = re.sub("^[^ ]* *(lart|praise|punish)\s+", "", target)
-	targets = string.split(target, " for ")
+	targets = target.split(" for ")
 
 	if database.type == "mysql":
 		line = database.doSQL("select data from data where type='" + type + "' order by rand() limit 1")[0][0]
 	elif database.type=="pgsql":
 		line = database.doSQL("select data from data where type='" + type + "' order by random() limit 1")[0][0]
-	line = string.replace(line, "WHO", targets[0])
+	line = line.replace("WHO", targets[0])
 	for reason in range(1, len(targets)):
 		line = line + " for " + targets[reason]
 	return line

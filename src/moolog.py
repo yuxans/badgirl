@@ -51,10 +51,10 @@ def log_ev_to_file(ev):
 
 	if logfile != None:
 		args = {}
-		args["type"] = string.upper(ev.eventtype())
+		args["type"] = ev.eventtype().upper()
 		args["src"] = ev.source()
 		args["dst"] = ev.target()
-		args["args"] = string.join(ev.arguments())
+		args["args"] = "".join(ev.arguments())
 
 
 		if args["type"] in ["JOIN", "NICK"]:
@@ -96,7 +96,7 @@ def log_ev_to_file(ev):
 			print >> logfile, ":%s %s %s" % (
 				args["src"], args["type"], args["dst"])
 		elif args["type"] in ["PRIVMSG", "PUBMSG"]:
-			for line in string.split(args["args"], "\n"):
+			for line in args["args"].split("\n"):
 				if line != "":
 					print >> logfile, time.strftime("%Y-%m-%d %H:%M:%S"),
 					print >> logfile, ":%s %s %s :%s" % (
@@ -147,13 +147,13 @@ def log_ev_to_stdout(ev):
 	"""Displays an event in nice colors."""
 
 	args = {}
-	args["type"] = string.upper(ev.eventtype())
+	args["type"] = ev.eventtype().upper()
 	args["src"] = ev.source()
 	args["dst"] = ev.target()
-	args["args"] = string.join(ev.arguments())
+	args["args"] = "".join(ev.arguments())
 
 	if args["src"]:
-		hostmask = string.split(args["src"], "!")
+		hostmask = args["src"].split("!")
 		nick = hostmask[0]
 		if len(hostmask) > 1:
 			host = hostmask[1]
@@ -274,7 +274,7 @@ def log_ev_to_stdout(ev):
 			  GREEN + "-" + NORMAL + " " + \
 			  args["args"]
 	elif args["type"] in ["PRIVMSG", "PUBMSG"]:
-		for line in string.split(args["args"], "\n"):
+		for line in args["args"].split("\n"):
 			if line != "":
 				print time.strftime("%H:%M:%S"),
 				print GREEN + "<" + NORMAL + \

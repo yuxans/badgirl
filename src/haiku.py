@@ -132,12 +132,12 @@ def guess_sy_count(word):
 def pp_haiku(list):
     """Pretty-print a list made up lists of lists of word syllable pairs as a
     human-readable verse."""
-    import string
+
     lines = []
 
     for a in list:
-        lines.append(string.join(a))
-    return string.join(lines, " / ")
+        lines.append("".join(a))
+    return " / ".join(lines)
 
 
 cmudict=''

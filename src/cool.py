@@ -27,12 +27,11 @@ class cool(MooBotModule):
 
 	def handler(self, **args):
 		"""it's just silly"""
-		import string
 		from irclib import Event
 
 		# Split the string and take every word after the first two as the
 		# words to "cool-ify" (first two are the bot name and "cool")
-		who = string.join(args["text"].split(" ")[2:])
+		who = "".join(args["text"].split(" ")[2:])
 
 		# Surround whatever with ":cool:" tags
 		text = ":cool: " + who + " :cool:"

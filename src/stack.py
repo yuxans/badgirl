@@ -33,7 +33,7 @@ class stack(MooBotModule):
 
 	def handler(self, **args):
 		from irclib import Event
-		import string
+
 		
 		message = 'invalid stack command'
 		words = args['text'].split()
@@ -43,7 +43,7 @@ class stack(MooBotModule):
 			cmd = 'none'
 
 		try:
-			item = string.join(words[3:])
+			item = "".join(words[3:])
 		except IndexError:
 			item = 'none'
 		

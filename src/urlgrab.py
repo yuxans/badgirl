@@ -51,10 +51,10 @@ class outgoingurl(MooBotModule):
 
     def handler(self, **args):
         """Looks for urls in text the bot sends."""
-        import re, string
+        import re
 
         event = args["event"]
-        str = string.join(event.arguments())
+        str = "".join(event.arguments())
         # Only things to channels are used.  Nothing private.  And, of course,
         # we need to check to see if the line actually contains a URL.
         if (re.search('^#', event.target()) and re.search(urlregex, str)):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2005 by moo
+# Copyright (C) 2005, 2007 by moo
 # Copyright (C) 2007 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
@@ -30,11 +30,12 @@ class RssRecord:
     max_entries = 10
 
     def sqlEscape(self, text):
-        """ escapes \ and 's in strings for SQL """
-        import string
-        text = string.replace(text, "\\", "\\\\")
-        text = string.replace(text, '"', '\\"')
-        text = string.replace(text, "'", "\\'")
+        """ escapes \ and 's in strings for SQL
+        needed?
+        """
+        text = text.replace("\\", "\\\\")
+        text = text.replace('"', '\\"')
+        text = text.replace("'", "\\'")
         return text
 
     def getName(self):
@@ -156,7 +157,6 @@ class RssQuery(MooBotModule):
         self.pdescstrip = re.compile("(<[^>]+>|\r|\n)")
 
     def handler(self, **args):
-        import string
         from irclib import Event
         import priv
 

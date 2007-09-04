@@ -51,7 +51,6 @@ class wordgame(MooBotModule):
 	def handler(self, **args):
 		""" handle a wordgame message """
 		from irclib import Event, nm_to_n
-		import string
 
 		message = "crap on a stick"
 		input = args["text"].split()
@@ -65,7 +64,7 @@ class wordgame(MooBotModule):
 			cmd = 'none'
 
 		try:
-			rest = string.join(input[3:])
+			rest = "".join(input[3:])
 		except IndexError:
 			rest = 'none'
 
@@ -114,7 +113,7 @@ class wordgame(MooBotModule):
 		elif cmd in ['show', 's']:
 			self.letters = map(lambda x: x, self.letters)
 			self.letters.sort()
-			self.letters = string.join(self.letters).strip()
+			self.letters = "".join(self.letters).strip()
 			message = self.clue + ' guessed: ' + self.letters
 
 		elif cmd in ['answer', 'a']:
@@ -181,8 +180,6 @@ class wordgame(MooBotModule):
 	def do_guess(self, guess, who):
 		""" process a guess """
 
-		import string
-		
 		answer_letters = map(lambda x: x, self.answer)
 		clue_letters = map(lambda x: x, self.clue)
 
@@ -196,8 +193,8 @@ class wordgame(MooBotModule):
 			answer_letters[x].lower() == guess.lower():
 			   clue_letters[x] = answer_letters[x]
 
-		if string.join(clue_letters, '') != self.clue:
-			self.clue = string.join(clue_letters, '')
+		if "".join(clue_letters) != self.clue:
+			self.clue = "".join(clue_letters)
 			self.score(who, 'GUESS', self.clue.count(guess))
 			if BLANK not in self.clue:
 				self.reset()

@@ -29,12 +29,12 @@ class version(MooBotModule):
 		"""
 		This will go on freshmeat to look for a software version
 		"""
-		import string, urllib2, re
+		import urllib2, re
 
 		# Get the name of the software and put the name in all lowercase
-		name	= string.joinfields(args["text"].split()[2:])
+		name	= "".join(args["text"].split()[2:])
 		name	= name.lower()
-		name	= string.replace(name, " ", "+")
+		name	= name.replace(" ", "+")
 
 		# The URL
 		url	 = "http://freshmeat.net/projects-xml/" + name

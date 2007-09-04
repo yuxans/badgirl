@@ -492,11 +492,11 @@ class ServerConnection(Connection):
 					self.real_server_name = prefix
 
 			if m.group("command"):
-				command = string.lower(m.group("command"))
+				command = m.group("command").lower()
 
 			if m.group("argument"):
-				a = string.split(m.group("argument"), " :", 1)
-				arguments = string.split(a[0])
+				a = m.group("argument").split(" :", 1)
+				arguments = a[0].split()
 				if len(a) == 2:
 					arguments.append(a[1])
 
@@ -585,11 +585,11 @@ class ServerConnection(Connection):
 
 	def admin(self, server=""):
 		"""Send an ADMIN command."""
-		self.send_raw(string.strip(string.join(["ADMIN", server])))
+		self.send_raw("".join(["ADMIN", server]).strip())
 
 	def ctcp(self, ctcptype, target, parameter=""):
 		"""Send a CTCP command."""
-		ctcptype = string.upper(ctcptype)
+		ctcptype = ctcptype.upper()
 		self.privmsg(target, "\001%s%s\001" % (ctcptype, parameter and (" " + parameter) or ""))
 
 	def ctcp_reply(self, target, parameter):
@@ -620,11 +620,11 @@ class ServerConnection(Connection):
 
 	def info(self, server=""):
 		"""Send an INFO command."""
-		self.send_raw(string.strip(string.join(["INFO", server])))
+		self.send_raw("".join(["INFO", server]).strip())
 
 	def invite(self, nick, channel):
 		"""Send an INVITE command."""
-		self.send_raw(string.strip(string.join(["INVITE", nick, channel])))
+		self.send_raw("".join(["INVITE", nick, channel]).strip())
 
 	def ison(self, nicks):
 		"""Send an ISON command.
@@ -633,7 +633,7 @@ class ServerConnection(Connection):
 
 			nicks -- List of nicks.
 		"""
-		self.send_raw("ISON " + string.join(nicks, ","))
+		self.send_raw("ISON " + ",".join(nicks))
 
 	def join(self, channel, key=""):
 		"""Send a JOIN command."""
@@ -656,7 +656,7 @@ class ServerConnection(Connection):
 		"""Send a LIST command."""
 		command = "LIST"
 		if channels:
-			command = command + " " + string.join(channels, ",")
+			command = command + " " + ",".join(channels)
 		if server:
 			command = command + " " + server
 		self.send_raw(command)
@@ -675,7 +675,7 @@ class ServerConnection(Connection):
 
 	def names(self, channels=None):
 		"""Send a NAMES command."""
-		self.send_raw("NAMES" + (channels and (" " + string.join(channels, ",")) or ""))
+		self.send_raw("NAMES" + (channels and (" " + ",".join(channels)) or ""))
 
 	def nick(self, newnick):
 		"""Send a NICK command."""
@@ -695,7 +695,7 @@ class ServerConnection(Connection):
 		if type(channels) == types.StringType or type(channels) == types.UnicodeType:
 			self.send_raw("PART " + channels)
 		else:
-			self.send_raw("PART " + string.join(channels, ","))
+			self.send_raw("PART " + ",".join(channels))
 
 	def pass_(self, password):
 		"""Send a PASS command."""
@@ -717,7 +717,7 @@ class ServerConnection(Connection):
 	def privmsg_many(self, targets, text):
 		"""Send a PRIVMSG command to multiple targets."""
 		# Should limit len(text) here!
-		self.send_raw("PRIVMSG %s :%s" % (string.join(targets, ","), text))
+		self.send_raw("PRIVMSG %s :%s" % (",".join(targets), text))
 
 	def quit(self, message=""):
 		"""Send a QUIT command."""
@@ -729,15 +729,15 @@ class ServerConnection(Connection):
 		  port and (" " + port),
 		  server and (" " + server)))
 
-	def send_raw(self, string):
+	def send_raw(self, raw_string):
 		"""Send raw string to the server.
 
 		The string will be padded with appropriate CR LF.
 		"""
 		try:
-			self.socket.send(string.encode(self.encoding, "ignore") + "\r\n")
+			self.socket.send(raw_string.encode(self.encoding, "ignore") + "\r\n")
 			if DEBUG:
-				DebugErr("TO SERVER:", string)
+				DebugErr("TO SERVER:", raw_string)
 		except socket.error:
 			# Aouch!
 			self.disconnect("Connection reset by peer.")
@@ -771,7 +771,7 @@ class ServerConnection(Connection):
 
 	def userhost(self, nicks):
 		"""Send a USERHOST command."""
-		self.send_raw("USERHOST " + string.join(nicks, ","))
+		self.send_raw("USERHOST " + ",".join(nicks))
 
 	def users(self, server=""):
 		"""Send a USERS command."""
@@ -791,7 +791,7 @@ class ServerConnection(Connection):
 
 	def whois(self, targets):
 		"""Send a WHOIS command."""
-		self.send_raw("WHOIS " + string.join(targets, ","))
+		self.send_raw("WHOIS " + ",".join(targets))
 
 	def whowas(self, nick, max=None, server=""):
 		"""Send a WHOWAS command."""
@@ -959,19 +959,19 @@ def mask_matches(nick, mask):
 	"""
 	nick = irc_lower(nick)
 	mask = irc_lower(mask)
-	mask = string.replace(mask, "\\", "\\\\")
+	mask = mask.replace("\\", "\\\\")
 	for ch in ".$|[](){}+":
-		mask = string.replace(mask, ch, "\\" + ch)
-	mask = string.replace(mask, "?", ".")
-	mask = string.replace(mask, "*", ".*")
+		mask = ch.replace("\\" + ch)
+	mask = mask.replace("?", ".")
+	mask = mask.replace,("*", ".*")
 	r = re.compile(mask, re.IGNORECASE)
 	return r.match(nick)
 
 ### TODO fix for unicode
 _alpha = "abcdefghijklmnopqrstuvwxyz"
 _special = "-[]\\`^{}"
-nick_characters = _alpha + string.upper(_alpha) + string.digits + _special
-_ircstring_translation = string.maketrans(string.upper(_alpha) + "[]\\^",
+nick_characters = _alpha + _alpha.upper() + string.digits + _special
+_ircstring_translation = string.maketrans(_alpha.upper() + "[]\\^",
 										  _alpha + "{}|~")
 
 def irc_lower(s):
@@ -1012,7 +1012,7 @@ def _ctcp_dequote(message):
 	else:
 		# Split it into parts.	(Does any IRC client actually *use*
 		# CTCP stacking like this?)
-		chunks = string.split(message, _CTCP_DELIMITER)
+		chunks = message.split(_CTCP_DELIMITER)
 
 		messages = []
 		i = 0
@@ -1023,7 +1023,7 @@ def _ctcp_dequote(message):
 
 			if i < len(chunks)-2:
 				# Aye!	CTCP tagged data ahead!
-				messages.append(tuple(string.split(chunks[i+1], " ", 1)))
+				messages.append(tuple(chunks[i+1].split(" ", 1)))
 
 			i = i + 2
 
@@ -1048,29 +1048,29 @@ def nm_to_n(s):
 
 	(The source of an Event is a nickmask.)
 	"""
-	return string.split(s, "!")[0]
+	return s.split("!")[0]
 
 def nm_to_uh(s):
 	"""Get the userhost part of a nickmask.
 
 	(The source of an Event is a nickmask.)
 	"""
-	return string.split(s, "!")[1]
+	return s.split("!")[1]
 
 def nm_to_h(s):
 	"""Get the host part of a nickmask.
 
 	(The source of an Event is a nickmask.)
 	"""
-	return string.split(s, "@")[1]
+	return s.split("@")[1]
 
 def nm_to_u(s):
 	"""Get the user part of a nickmask.
 
 	(The source of an Event is a nickmask.)
 	"""
-	s = string.split(s, "!")[1]
-	return string.split(s, "@")[0]
+	s = s.split("!")[1]
+	return s.split("@")[0]
 
 def parse_nick_modes(mode_string):
 	"""Parse a nick mode string.
@@ -1110,7 +1110,7 @@ def _parse_modes(mode_string, unary_modes=""):
 	# State variable.
 	sign = ""
 
-	a = string.split(mode_string)
+	a = mode_string.split()
 	if len(a) == 0:
 		return []
 	else:

@@ -34,13 +34,13 @@ class eightball(MooBotModule):
 	   	not-so-fortunate
 		"""
 		self.debug("eightball", args["text"])
-		import string
+
 		from irclib import Event
 	
 		args["text"] = stripTextHeader(args["text"])
 	
 		if len(args["text"]) > 0:
-			if string.find(args["text"], '?') != -1:
+			if args["text"].find('?') != -1:
 				if len(args["text"]) == 1:
 					line = 'Just enter the yes/no question, followed by a ' + \
 					   	'question mark, and I\'ll give you a prediction.'
@@ -72,8 +72,8 @@ def makeline(type):
 def stripTextHeader(text):
 	"""strips off the moobot: and 8ball thingie
 	"""
-	import string
-	text = text[string.find(text, "8ball")+5:]
+
+	text = text[text.find("8ball")+5:]
 	while text[0] == ' ':
 	  text = text[1:]
 

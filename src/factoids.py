@@ -32,8 +32,8 @@ class factoidClass(MooBotModule):
 	functions into one base class"""
 	def strip_words(self, str, num):
 		"""Strips a certain number of words from the beginning of a string"""
-		import string
-		str = string.join(str.split()[num:])
+
+		str = "".join(str.split()[num:])
 		return str
 		
 	def strip_punctuation(self, str):
@@ -51,7 +51,7 @@ class factoidClass(MooBotModule):
 		return target
 
 	def parse_sar(self, text):
-		import random, string
+		import random
 		stack = []
 		# continue as long as text still has stuff in it
 		while len(text) > 0:
@@ -94,7 +94,7 @@ class factoidClass(MooBotModule):
 					stack.append(token)
 				else:
 					stack.append(stack.pop() + token)
-		return string.join(stack, "")
+		return "".join(stack)
 
 	def get_token(self, text):
 		""" gets the next token for SAR parsing from text """
@@ -116,19 +116,19 @@ class factoidClass(MooBotModule):
 		return text[:length+1]
 
 	def escape_regex(self, line):
-		import string
-		line = string.replace(line, "[", "[\[")
-		line = string.replace(line, "]", "[\]]")
-		line = string.replace(line, "[\[", "[\[]")
-		line = string.replace(line, "+", "[+]")
-		line = string.replace(line, "*", "[*]")
-		line = string.replace(line, ".", "\\.")
-		line = string.replace(line, "?", "[?]")
-		line = string.replace(line, "{", "[{]")
-		line = string.replace(line, "}", "[}]")
-		line = string.replace(line, "(", "[(]")
-		line = string.replace(line, ")", "[)]")
-		line = string.replace(line, "|", "[|]")
+
+		line = line.replace("[", "[\[")
+		line = line.replace("]", "[\]]")
+		line = line.replace("[\[", "[\[]")
+		line = line.replace("+", "[+]")
+		line = line.replace("*", "[*]")
+		line = line.replace(".", "\\.")
+		line = line.replace("?", "[?]")
+		line = line.replace("{", "[{]")
+		line = line.replace("}", "[}]")
+		line = line.replace("(", "[(]")
+		line = line.replace(")", "[)]")
+		line = line.replace("|", "[|]")
 		return line
 
 
@@ -138,7 +138,7 @@ class lookup(factoidClass):
 		self.priority = 18
 	def handler(self, **args):
 		""" gets the factoid_value field from the database """
-		import string, time
+		import time
 		from irclib import Event, nm_to_n
 
 		# Store the ref
@@ -233,15 +233,15 @@ class lookup(factoidClass):
 							# we do NOT parse
 			
 			# Strip spaces from the left-hand side
-			text = string.lstrip(text)
+			text = text.lstrip()
 
 			# Parse parentheses and pipes to come up with one random string
 			# from many choices specified in the factoid 
 			text = self.parse_sar(text)
 
 			# Replace $who and $nick with the person requesting the factoid
-			text = string.replace(text, "$who", nm_to_n(args["source"]))
-			text = string.replace(text, "$nick", nm_to_n(args["source"]))
+			text = text.replace("$who", nm_to_n(args["source"]))
+			text = text.replace("$nick", nm_to_n(args["source"]))
 
 			# If the new string (after previous replacements) begins with
 			# "<action>" or "<reply>" (case insensitive), then we strip them
@@ -255,7 +255,7 @@ class lookup(factoidClass):
 			else:
 				text = factoid_key + " is " + text
 	
-		return Event(eventtype, "", target, [ string.strip(text) ])
+		return Event(eventtype, "", target, [ text.strip() ])
 
 class cookie(factoidClass):
 	def __init__(self):
@@ -264,7 +264,7 @@ class cookie(factoidClass):
 	def handler(self, **args):
 		""" gets a random factoid from the database"""
 		from irclib import nm_to_n, Event
-		import string
+
 
 		# Standard return_to_sender target, talk to who talks to us
 		target = self.return_to_sender(args)
@@ -278,7 +278,7 @@ class cookie(factoidClass):
 
 		factoid = database.doSQL(factoid_query)[0]
 		factoid_key = factoid[0]
-		factoid_value = self.parse_sar(string.lstrip(factoid[1]))
+		factoid_value = self.parse_sar(factoid[1].lstrip())
 		factoid_value = factoid_value.replace("$who", nm_to_n(args["source"]))
 
 		return Event("privmsg", "", target, \
@@ -802,13 +802,13 @@ class alter(factoidClass):
 	def handler(self, **args):
 		"""Allows someone to alter material in a factoid by using a regular
 		expression.  Invoked like: "moobot: foo =~ s/moo/bar/"."""
-		import priv, re, string, time
+		import priv, re, time
 		from irclib import Event
 		target = self.return_to_sender(args)
 		
 		# Grab the factoid to change:
 		# first, drop the bot name
-		factoid_key = string.join(args["text"].split()[1:])
+		factoid_key = "".join(args["text"].split()[1:])
 		# Now split on " =~ " and take the left half
 		factoid_key = factoid_key.split(" =~ ", 1)[0]
 		

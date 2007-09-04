@@ -57,10 +57,10 @@ Event.  Should be overridden for every module."""
 	
 	def sqlEscape(self, text):
 		""" escapes \ and 's in strings for SQL """
-		import string
-		text = string.replace(text, "\\", "\\\\")
-		text = string.replace(text, '"', '\\"')
-		text = string.replace(text, "'", "\\'")
+
+		text = text.replace("\\", "\\\\")
+		text = text.replace('"', '\\"')
+		text = text.replace("'", "\\'")
 		return text
 			
 	def Debug(self, *args):

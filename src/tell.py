@@ -33,7 +33,7 @@ way as normal tell, but with "faketell" instead."""
 
 	def handler(self, **args):
 		import database, priv
-		from string import join, replace
+
 		from irclib import Event, nm_to_n
 		# The target will always be a privmsg, and always to the person
 		# we are telling it to.
@@ -47,7 +47,7 @@ way as normal tell, but with "faketell" instead."""
 				faketell = 1
 	
 		# Get the factoid
-		factoid_key = join(args["text"].split()[4:])
+		factoid_key = "".join(args["text"].split()[4:])
 	
 		# Check if it exists first
 		count_query = "select count(factoid_key) from" \
@@ -64,8 +64,8 @@ way as normal tell, but with "faketell" instead."""
 			+ " lower(factoid_key) = '" + factoid_key.lower() + "'"
 		factoid = self.parse_sar(database.doSQL(factoid_query)[0][0])
 		# Replace $who and $nick with the target
-		factoid = replace(factoid, "$who", target)
-		factoid = replace(factoid, "$nick", target)
+		factoid = factoid.replace("$who", target)
+		factoid = factoid.replace("$nick", target)
 	
 		# If the factoid begins with <reply> then just tell it to them
 		# otherwise, tell them what factoid and who sent it
@@ -83,7 +83,7 @@ way as normal tell, but with "faketell" instead."""
 		return Event("privmsg", "", target, [message])
 
 	def parse_sar(self, text):
-		import random, string
+		import random
 		stack = []
 		# continue as long as text still has stuff in it
 		while len(text) > 0:
@@ -119,7 +119,7 @@ way as normal tell, but with "faketell" instead."""
 					stack.append(token)
 				else:
 					stack.append(stack.pop() + token)
-		return string.join(stack, "")
+		return "".join(stack)
 
 	def get_token(self, text):
 			""" gets the next token for SAR parsing from text """

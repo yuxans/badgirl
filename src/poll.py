@@ -28,7 +28,7 @@ class show_poll(MooBotModule):
 
 	def handler(self, **args):
 		"""displays a poll"""
-		import database, string
+		import database
 		from irclib import Event
 		target=args["channel"]
 		if args["type"] == "privmsg":
@@ -44,7 +44,7 @@ class show_poll(MooBotModule):
 		# and return them.
 		text = database.doSQL("select question from poll where poll_num =" + poll_num)[0][0] + "  :  "
 		for question in database.doSQL("select * from poll_options where poll_num =" + poll_num + " order by option_key"):
-			text += question[1] + ")" + question[2] + " (" + str(database.doSQL("select count(voter_nickmask) from poll_votes where poll_num =" + poll_num + " and option_key = '"+ string.replace(question[1], "'", "\\'")  +"'")[0][0])+ " votes)  ;;  "
+			text += question[1] + ")" + question[2] + " (" + str(database.doSQL("select count(voter_nickmask) from poll_votes where poll_num =" + poll_num + " and option_key = '"+ question[1].replace("'", "\\'")  +"'")[0][0])+ " votes)  ;;  "
 	
 		return Event("privmsg", "", target, [ text ])
 	
@@ -55,7 +55,7 @@ class vote(MooBotModule):
 	def handler(self, **args):
 		"""votes on a poll."""
 		import database
-		import string
+
 		from irclib import Event
 		from irclib import nm_to_h, nm_to_u
 		target=args["channel"]
@@ -64,13 +64,13 @@ class vote(MooBotModule):
 			target=nm_to_n(args["source"])
 	
 		poll_num = args["text"].split()[2]
-		option_key = string.join(args["text"].split()[3:])
+		option_key = "".join(args["text"].split()[3:])
 		#first we check to make sure the requested poll exists.
 		if database.doSQL("select count(poll_num) from poll where poll_num =" +poll_num)[0][0] == 0:
 			return Event("privmsg", "", target, [ "No such poll." ])
 	
 		#now we check to make sure the user hasn't voted in that poll
-		checkmask = "%!" + nm_to_u(args["source"]) + "@%" + nm_to_h(args["source"])[string.find(nm_to_h(args["source"]), "."):]
+		checkmask = "%!" + nm_to_u(args["source"]) + "@%" + nm_to_h(args["source"])[nm_to_h(args["source"]).find("."):]
 		if database.doSQL("select count(option_key) from poll_votes where poll_num =" + poll_num + " and voter_nickmask like '" + checkmask + "'")[0][0] != 0:
 			return Event("privmsg", "", target, [ "You already voted in that poll." ])
 	
@@ -92,7 +92,6 @@ class add_poll(MooBotModule):
 		""" Adds a new poll. """
 		import database
 		import priv
-		import string
 		from irclib import Event
 		target=args["channel"]
 		if args["type"] == "privmsg":
@@ -102,7 +101,7 @@ class add_poll(MooBotModule):
 		if priv.checkPriv(args["source"], "poll_priv") == 0:
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
-		poll_question = string.join(args["text"].split()[3:])
+		poll_question = "".join(args["text"].split()[3:])
 		poll_question = self.sqlEscape(poll_question)
 		database.doSQL("Insert into poll(question) values('" + poll_question + "')")
 		poll_num = database.doSQL("select poll_num from poll where question = '" + poll_question + "'")[0][0]
@@ -119,7 +118,6 @@ class add_poll_option(MooBotModule):
 		moobot:  add option 1 a: yes"""
 		import database
 		import priv
-		import string
 		from irclib import Event
 		target=args["channel"]
 		if args["type"] == "privmsg":
@@ -130,9 +128,9 @@ class add_poll_option(MooBotModule):
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
 		poll_num = args["text"].split()[3]
-		option = string.join(args["text"].split()[4:])
+		option = "".join(args["text"].split()[4:])
 		option_key = self.sqlEscape(option.split(":")[0])
-		option_text = self.sqlEscape(string.join(option.split(":")[1:]))
+		option_text = self.sqlEscape("".join(option.split(":")[1:]))
 		if database.doSQL("select count(poll_num) from poll where poll_num =" + poll_num )[0][0] == 0:
 			return Event("privmsg", "", target, [ "No such poll." ])
 	
@@ -196,7 +194,6 @@ class remove_poll_option(MooBotModule):
 		moobot:  remove option <pollnum> <option> """
 		import database
 		import priv
-		import string
 		from irclib import Event
 		target=args["channel"]
 		if args["type"] == "privmsg":
@@ -206,7 +203,7 @@ class remove_poll_option(MooBotModule):
 		if priv.checkPriv(args["source"], "poll_priv") == 0:
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
-		option_key = string.join(args["text"].split()[4:])
+		option_key = "".join(args["text"].split()[4:])
 		poll_num = self.sqlEscape(args["text"].split()[3])
 	
 		database.doSQL("delete from poll_options where poll_num = " + poll_num + " and option_key = '" + option_key + "'")
