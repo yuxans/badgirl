@@ -584,19 +584,24 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		## Parse the request
 		# A branch can be specified as the first argument, and multiple
 		# packages can be requested.
-		branches = ['stable', 'testing', 'unstable']
+		branches = ['oldstable',
+			    'stable',
+			    'testing',
+			    'unstable',
+			    'experimental',
+			    'all']
 
 		request = args["text"].split()[2:]
 		if request[0] in branches:
 			branch = request[0]
 			del request[0]
 		else:
-			branch = None
+			branch = 'testing'
 
 		# Now, they may have forgotten to specify a package if
 		# they provided a branch (the regex will still match)
 		if len(request) != 1:
-			msg = "Usage: debpackage [stable|testing|unstable] PackageName"
+			msg = "Usage: debpackage [oldstable|stable|testing|unstable|experimental|all] PackageName"
 			return Event("privmsg", "", target, [msg])
 		else:
 			self.package = request[0]
@@ -604,25 +609,21 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		# Otherwise, request should now contain a list of
 		# packages We'll step through them one by one and
 		# display them all at once at the end.
-		host = "packages.debian.org"
-		page = "/cgi-bin/search_packages.pl"
-		msg = ""
+		form_action = "http://packages.debian.org/search?%s"
+		form_inputs = urllib.urlencode ({"keywords": self.package,
+						 "searchon": "names",
+						 "exact": 1,
+						 "suite": branch,
+						 "section": "all"})
 		# build the request
-		cgi_params = \
-			"?keywords=%s&searchon=names&version=%s&release=all" % (
-				self.package, branch or "all")
-		conn = httplib.HTTPConnection(host)
-		# self.debug(page + cgi_params)
-		conn.request("GET", page + cgi_params)
-		response = conn.getresponse()
-		if response.status != 200:
-			msg = "Bad response from packages.debian.org: %d" % \
-				response.status
-			return Event("privmsg", "", target, [msg])
+		try:
+			response = urllib.urlopen(form_action % form_inputs)
+		except Exception, e:
+			self.Debug(e)
 		else:
 			self.reset()
 			self.feed(response.read())
-		conn.close()
+		response.close()
 		return Event("privmsg", "", target, [self.list])
 
 	def handle_starttag(self, tag, attrs):
@@ -689,7 +690,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 	def handler(self, **args):
 		
 		target = self.return_to_sender(args)
-		self.version = ['stable', 'testing', 'unstable']
+		self.version = ['oldstable', 'stable', 'testing', 'unstable']
 		request = args["text"].split()[2:]
 		if request[0] in self.version:
 			self.version = request[0]
@@ -697,15 +698,15 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		else:
 			self.version = "testing"
 		if len(request) != 1:
-			msg = "Usage: debfile [stable|testing|unstable] filename"
+			msg = "Usage: debfile [oldstable|stable|testing|unstable] filename"
 			return Event("privmsg", "", target, [msg])
 		self.file = request[0]
-		form_action = "http://packages.debian.org/cgi-bin/search_contents.pl?%s"
-		form_inputs = urllib.urlencode({"word": self.file,
-						"searchmode": "searchfiles",
-						"case": "insensitive",
-						"version": self.version,
-						"architecture": "i386"})
+		form_action = "http://packages.debian.org/search?%s"
+		form_inputs = urllib.urlencode({"searchon": "contents",
+						"keywords": self.file,
+						"mode": "path",
+						"suite": self.version,
+						"arch": "i386"})
 		try:
 			result = urllib.urlopen(form_action % form_inputs)
 		except Exception, e:
@@ -719,7 +720,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 	def handle_starttag(self, tag, attrs):
 		if tag == "div":
 			for a_name, a_value in attrs:
-				if a_name == "id" and a_value == "inner":
+				if a_name == "id" and a_value == "pcontentsres":
 					self.inner_div = True
 		elif tag == "hr" and self.inner_div:
 			self.after_hr = True
