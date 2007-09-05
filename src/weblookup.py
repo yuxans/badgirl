@@ -780,7 +780,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 	def handle_data(self, data):
 		if self.hit <= self.__max_hit:
 			if self.tag_structs['span']['s']:
-				self.o.write(' =%d=> ' % self.hit)
+				self.o.write(' =%d=> ' % (self.hit + 1))
 				self.o.write(data + ' ')
 			elif self.tag_structs['a']['s']:
 				self.o.write(data)
