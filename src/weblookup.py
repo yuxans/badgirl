@@ -21,7 +21,7 @@
 
 import re, httplib, urllib, urllib2, HTMLParser, weather
 from moobot_module import MooBotModule
-from irclib import Event
+from irclib import Event, IrcStringIO
 
 handler_list = ["weathercn", "google", "kernelStatus", "dict", "acronym",
 		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
@@ -668,6 +668,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 	"""
 	Does a file search on http://packages.debian.org and returns top 10 matched package names
 	"""
+
 	def __init__(self):
 		self.regex = "^debfile .+"
 		self.file = ""
@@ -676,17 +677,36 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 
 	def reset(self):
 		HTMLParser.HTMLParser.reset(self)
-		self.list = "%s(%s): " % (self.file, self.version)
-		self.inner_div = False
-		self.after_hr = False
-		self.is_result_table = False
-		self.in_box = False
-		self.hit = 0
-		self.__max_hit = 10
-		self.over = False
-		self.block = 400
-		self.block_size = 400
+		self.o = IrcStringIO("%s(%s):" % (self.file, self.version))
+		
+		# s stands for stats, True means inside that tag
+		# p stands for parent
+		# c stands for children
+		self.tag_structs = {'div': {'s': False,
+					    'p': None,
+					    'c': ('table',),
+					    'id': 'pcontentsres'},
+				    'table': {'s': False,
+					      'p': 'div',
+					      'c': ('tr',)},
+				    'tr': {'s': False,
+					   'p': 'table',
+					   'c': ('td',)},
+				    'td': {'s': False,
+					   'p': 'tr',
+					   'c': ('span', 'a')},
+				    'span': {'s': False,
+					     'p': 'td',
+					     'c': None},
+				    'a': {'s': False,
+					  'p': 'td',
+					  'c': None}}
 
+
+		# first raw is table header <th>
+		self.hit = -1
+		self.__max_hit = 10
+		
 	def handler(self, **args):
 		
 		target = self.return_to_sender(args)
@@ -715,44 +735,56 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 			self.reset()
 			self.feed(result.read())
 			result.close()
-			return Event("privmsg", "", target, [self.list])
+			return Event("privmsg", "", target, [self.o.getvalue()])
+
+
+	def _check_stat(self, tag):
+		"""To see if we can change tag's inside/outside stat
+
+		return True if we can change it, or return False.
+		"""
+		# out of parent tag, we do nothing
+		if self.tag_structs[tag]['p'] and \
+		   not self.tag_structs[self.tag_structs[tag]['p']]['s']:
+			return False
+
+		# must be out of all chilren tags or we do nothing
+		elif self.tag_structs[tag]['c']:
+			for c in self.tag_structs[tag]['c']:
+				if self.tag_structs[c]['s']:
+					return False
+
+		return True
 
 	def handle_starttag(self, tag, attrs):
-		if tag == "div":
-			for a_name, a_value in attrs:
-				if a_name == "id" and a_value == "pcontentsres":
-					self.inner_div = True
-		elif tag == "hr" and self.inner_div:
-			self.after_hr = True
-		elif tag == "pre" and self.after_hr:
-			self.is_result_table = True
+		if self.tag_structs.has_key(tag):
+			if attrs:
+				for a, v in attrs:
+					if self.tag_structs[tag].has_key(a) and \
+						    self.tag_structs[tag][a] != v:
+						return
+
+			if self._check_stat(tag) and \
+				    not self.tag_structs[tag]['s']:
+				self.tag_structs[tag]['s'] = True
+
+				
+	def handle_endtag(self, tag):
+		if self.tag_structs.has_key(tag):
+			if self._check_stat(tag) and \
+				    self.tag_structs[tag]['s']:
+				self.tag_structs[tag]['s'] = False
+				if tag == 'tr':
+					self.hit += 1
 
 	def handle_data(self, data):
-		if not self.over:
-			if self.is_result_table:
-				if '\n' in data:
-					data = data.strip()
-					if len(self.list)+len(data) >= self.block:
-						self.list += "\n%s(%s): " % (self.file, self.version)
-						self.block += self.block_size
-					self.hit += 1
-					if self.hit == self.__max_hit:
-						self.over = True
-					elif not data == "":
-						self.list += "=%d=> " % self.hit
-						self.list += data
-				else:
-					self.list += data.strip()
-				if '[' in data:
-					self.in_box = True
-				elif ']' in data:
-					self.in_box = False
-				if not self.in_box:
-					self.list += " "
+		if self.hit <= self.__max_hit:
+			if self.tag_structs['span']['s']:
+				self.o.write(' =%d=> ' % self.hit)
+				self.o.write(data + ' ')
+			elif self.tag_structs['a']['s']:
+				self.o.write(data)
 
-	def handle_endtag(self, tag):
-		if tag == "pre" and self.after_hr:
-			self.is_result_table = False
 
 class acronym(MooBotModule):
 	""" Does a search on www.acronymfinder.com and returns all definitions
