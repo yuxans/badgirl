@@ -570,12 +570,12 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		self.__max_hit = 10
 		self.inner_div = False
 		self.in_ul = False
-		self.list = "%s:" % self.package
+
+		self.o = IrcStringIO("%s:" % self.package)
+
 		self.li = 0
 		self.li_over = False
 		self.after_br = False
-		self.block_size = 400
-		self.block = 400
 
 	def handler(self, **args):
 
@@ -624,7 +624,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 			self.reset()
 			self.feed(response.read())
 		response.close()
-		return Event("privmsg", "", target, [self.list])
+		return Event("privmsg", "", target, [self.o.getvalue()])
 
 	def handle_starttag(self, tag, attrs):
 		if tag == "div":
@@ -637,16 +637,13 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 			self.li += 1
 			self.after_br = False
 			if self.li <= self.__max_hit:
-				if len(self.list) >= self.block:
-					self.list += "\n%s:" % self.package
-					self.block += self.block_size
-				self.list += " =%d=> " % self.li
+				self.o.write(" =%d=> " % self.li)
 			else:
 				self.li_over = True
 		elif tag == "a" and self.in_ul and not self.li_over:
 			for a_name, a_value in attrs:
 				if a_name == "href":
-					self.list += "http://packages.debian.org%s " % a_value
+					self.o.write("http://packages.debian.org%s " % a_value)
 					self.in_a = True
 		elif tag == "br" and self.in_ul:
 			self.after_br = True
@@ -662,7 +659,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 			if not self.li_over:
 				if not self.in_a:
 					if not self.after_br:
-						self.list += data.strip()
+						self.o.write(data.strip())
 
 class debfile(MooBotModule, HTMLParser.HTMLParser):
 	"""
