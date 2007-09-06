@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2002 Daniel DiPaolo 
+# Copyright (C) 2007 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -48,11 +49,38 @@ Event.  Should be overridden for every module."""
 		""" Used for sorting the modules by priority"""
 		return cmp(self.priority, other.priority)
 
-	def return_to_sender(self, args):
-		"""Returns target for a given event, assuming we want to return it to the sender"""
+	def return_to_sender(self, args, select='auto'):
+		"""Returns target for a given event
+
+		assuming we want to return it to the sender, select
+		can be one of `auto', `nick', `channel':
+		
+		auto: returns nick while return to a privmsg, 
+		      or returns #channel
+
+		nick, channel: returns its named value
+		
+		>>> import moobot_module
+		>>> x = moobot_module.MooBotModule()
+		>>> arg = {'source': 'nick!name@host', 'channel': '#channel', 'type': 'privmsg'}
+		>>> x.return_to_sender(arg)
+		'nick'
+		>>> x.return_to_sender(arg, 'channel')
+		'#channel'
+		>>> arg = {'source': 'nick!name@host', 'channel': '#channel', 'type': 'notice'}
+		>>> x.return_to_sender(arg)
+		'#channel'
+		>>> x.return_to_sender(arg, 'nick')
+		'nick'
+
+		"""
 		from irclib import nm_to_n
-		if args["type"] == "privmsg": target = nm_to_n(args["source"])
-		else: target = args["channel"]
+		if (args["type"] == "privmsg" and \
+			    select == 'auto') or \
+			    select == 'nick':
+			target = nm_to_n(args["source"])
+		else: 
+			target = args["channel"]
 		return target.lower()
 	
 	def sqlEscape(self, text):
@@ -74,3 +102,10 @@ Event.  Should be overridden for every module."""
 			return obj
 		else:
 			return str(obj)
+
+def _test():
+	import doctest
+	doctest.testmod()
+
+if __name__ == "__main__":
+	_test()
