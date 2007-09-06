@@ -563,6 +563,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 	def __init__(self):
 		self.regex="^debpackage .+"
 		self.package = ""
+		self.branch = ""
 		HTMLParser.HTMLParser.__init__(self)
 
 	def reset(self):
@@ -571,7 +572,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		self.inner_div = False
 		self.in_ul = False
 
-		self.o = IrcStringIO("%s:" % self.package)
+		self.o = IrcStringIO("%s(%s):" % (self.package, self.branch))
 
 		self.li = 0
 		self.li_over = False
@@ -593,10 +594,10 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 
 		request = args["text"].split()[2:]
 		if request[0] in branches:
-			branch = request[0]
+			self.branch = request[0]
 			del request[0]
 		else:
-			branch = 'testing'
+			self.branch = 'testing'
 
 		# Now, they may have forgotten to specify a package if
 		# they provided a branch (the regex will still match)
@@ -613,7 +614,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		form_inputs = urllib.urlencode ({"keywords": self.package,
 						 "searchon": "names",
 						 "exact": 1,
-						 "suite": branch,
+						 "suite": self.branch,
 						 "section": "all"})
 		# build the request
 		try:
@@ -655,11 +656,11 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 			self.in_a = False
 
 	def handle_data(self, data):
-		if self.in_ul:
-			if not self.li_over:
-				if not self.in_a:
-					if not self.after_br:
-						self.o.write(data.strip())
+		if self.in_ul and \
+			    not self.li_over and \
+			    not self.in_a and \
+			    not self.after_br:
+			self.o.write(data.strip())
 
 class debfile(MooBotModule, HTMLParser.HTMLParser):
 	"""
