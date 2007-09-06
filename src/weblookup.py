@@ -707,6 +707,9 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		self.hit = -1
 		self.__max_hit = 10
 		
+		self.file_td_head = False
+		self.file_td_tail = False
+
 	def handler(self, **args):
 		
 		target = self.return_to_sender(args)
@@ -768,21 +771,50 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 				    not self.tag_structs[tag]['s']:
 				self.tag_structs[tag]['s'] = True
 
-				
+				if tag == 'span':
+					assert self.file_td_head
+					self.file_td_head = False
+
+
+				for a, v in attrs:
+					if tag == 'td' and \
+						    a == 'class' and\
+						    v == 'file':
+						assert not self.file_td_head
+						self.file_td_head = True
+
 	def handle_endtag(self, tag):
 		if self.tag_structs.has_key(tag):
 			if self._check_stat(tag) and \
 				    self.tag_structs[tag]['s']:
 				self.tag_structs[tag]['s'] = False
+
 				if tag == 'tr':
 					self.hit += 1
 
+				elif tag == 'span':
+					assert not self.file_td_head
+					assert not self.file_td_tail
+					self.file_td_tail = True
+
+				elif tag == 'td' and self.file_td_tail:
+					self.file_td_tail = False
+					
+
 	def handle_data(self, data):
-		if self.hit <= self.__max_hit:
+		if self.hit < self.__max_hit:
+			if self.tag_structs['td']['s']:
+				if self.file_td_head:
+					self.o.write(' =%d=> ' % (self.hit + 1))
+					self.o.write(data)
+				elif self.file_td_tail:
+					self.o.write(data + ' ')
+
 			if self.tag_structs['span']['s']:
-				self.o.write(' =%d=> ' % (self.hit + 1))
-				self.o.write(data + ' ')
-			elif self.tag_structs['a']['s']:
+				self.o.write(data)
+
+			if self.tag_structs['a']['s']:
+				self.o.write(' ')
 				self.o.write(data)
 
 
