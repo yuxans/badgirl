@@ -47,6 +47,8 @@ class weathercn(MooBotModule):
 	"""
 	def __init__(self):
 		self.regex = "^(weather|w)($|( [^ ]+){1,2})"
+		self.result = {'notice': '',
+			       'msg': ''}
 
 	def handler(self, **args):
 		"""Parse the received commandline arguments
@@ -69,58 +71,62 @@ class weathercn(MooBotModule):
 		# TODO: ... save settings to database
 		# TODO: ... get settings from database
 
-		tmplist = args["text"].strip().split(" ")
-		del(tmplist[0])
+		tmp_args_list = args["text"].strip().split(" ")
+		del(tmp_args_list[0])
 
-		lenlist = len(tmplist)
+		lenlist = len(tmp_args_list)
 		
 		if lenlist in (2, 3):
-			len1 = len(tmplist[1])
+			len1 = len(tmp_args_list[1])
 				
 			if lenlist == 3\
-					and not tmplist[2].isdigit():
-				result_string = u"区域索引”n“必须是数字，"\
+					and not tmp_args_list[2].isdigit():
+				self.result['notice'] = u"区域索引”n“必须是数字，"\
 					u"请重新输入"
 			
 			elif len1 < 2:
-				result_string = u"“城市名称”不可少于两个字符，"\
+				self.result['notice'] = u"“城市名称”不可少于两个字符，"\
 				u"请重新输入"
-			elif tmplist[1].isdigit():
-				if len1 not in (3, 4, 6) or tmplist[1][:2] == '00':
-					result_string = u"非法的区号或邮政编码，"\
+			elif tmp_args_list[1].isdigit():
+				if len1 not in (3, 4, 6) or tmp_args_list[1][:2] == '00':
+					self.result['notice'] = u"非法的区号或邮政编码，"\
 							u"请重新输入"
-				elif len1 == 6 and tmplist[1][3:] != '000':
-					result_string = u"请使用市级以上邮政编码，"\
+				elif len1 == 6 and tmp_args_list[1][3:] != '000':
+					self.result['notice'] = u"请使用市级以上邮政编码，"\
 							u"TIP：将您的邮编后三位改为“000”"
 				elif len1 in (3, 4) \
-						and tmplist[1][0] != '0':
-					result_string = u"非法的电话区号, "\
+						and tmp_args_list[1][0] != '0':
+					self.result['notice'] = u"非法的电话区号, "\
 							u"请重新输入"
 				else: 
-					result_string = self.gogetit(tmplist)
+					self.gogetit(tmp_args_list)
 					
-			elif tmplist[1].isalpha() and len1 > 4:
-				result_string = u"请给我一个“城市名或拼音缩写”多于"\
+			elif tmp_args_list[1].isalpha() and len1 > 4:
+				self.result['notice'] = u"请给我一个“城市名或拼音缩写”多于"\
 				u" 4 个字符的理由"
 			else:
-				result_string = self.gogetit(tmplist)
+				self.gogetit(tmp_args_list)
 				
 		else:
-			result_string = self._help()
+			self.result['notice'] = self._help()
 		
-		if len(result_string.strip()) == 0:
-			result_string = u"未查到任何结果，请重试"
+		if len(self.result['notice'].strip()) == 0:
+			self.result['notice'] = u"未查到任何结果，请重试"
 
-		target = self.return_to_sender(args)
+		if self.result['notice']:
+			target = self.return_to_sender(args, 'nick')
+			return Event("notice", "", target, [self.result['notice']])
 
-		return Event("privmsg", "", target, [result_string])
-	
+		if self.result['msg']:
+			target = self.return_to_sender(args)
+			return Event("privmsg", "", target, [self.result['msg']])
+
 	def gogetit(self, l):
-		"""get the citylist or forecast
+		"""get back the citylist or recursively invoke getforecast
 		
-		get the citylist, return it if there is no 3rd arg.
-		check length against the 3rd arg if vailed, get the
-		weather forcast.
+		get the citylist, setup notice message it if there is
+		no 3rd arg.  check length against the 3rd arg, invoke
+		getforcast if valid.
 		""" 
 		
 		citykeyword = l[1].lower()
@@ -146,27 +152,26 @@ class weathercn(MooBotModule):
 		if len(l) < 3:
 			if len(regionlist) == 1:
 				c, u = regionlist[0]
-				return self.getforcast(u)
+				self.getforcast(u)
 			else:
 				i = 1
-				result = ""
+				result = IrcStringIO('%s: ' % citykeyword)
 				for c, u in regionlist:
-					result = "".join((result, "=", str(i),"=>", c))
-					if i % 10 == 0:
-						result = "".join((result, '\n'))
+					result.write("".join((result, "=", str(i),"=>", c)))
 					i += 1
-				return result
+				self.result['notice'] = result.getvalue()
+
 		elif len(regionlist) < int(l[2]):
-			return u"地区索引”n”大于地区总个数"
+			self.result['notice'] = u"地区索引”n”大于地区总个数"
 		else:
 			c, u = regionlist[int(l[2])-1]
-			return self.getforcast(u)
+			self.getforcast(u)
 
 	def getforcast(self, url):
 		"""Get the weather forcast from the given url
 		
-		get and then parse the weather forcast, returns
-		the result string.
+		get and then parse the weather forcast, setup the
+		result message
 		"""
 		try:
 			response = urllib.urlopen("http://www.weathercn.com%s" % url)
@@ -182,7 +187,7 @@ class weathercn(MooBotModule):
 		
 		response.close()
 		
-		return " ".join(fp.o())
+		self.result['msg'] = " ".join(fp.o())
 
 	def _help(self, a="help"):
 		"""return help messages
@@ -197,6 +202,7 @@ class weathercn(MooBotModule):
 			msg = myhelpmsg
 		else:
 			msg = mytipmsg
+
 		return msg
 
 class google(MooBotModule):
