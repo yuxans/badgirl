@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2002 Brad Stewart and Daniel DiPaolo
-#
+# Copyright (C) 2007 by moo
+# Copyright (C) 2007 by FKtPp
+# 
+# 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
 # as published by the Free Software Foundation; either version 2
@@ -41,14 +44,6 @@ class factoidClass(MooBotModule):
 		while len(str) > 1 and (str[-1] == "!" or str[-1] == "?"):
 			str = str[:-1]
 		return str	
-
-	def return_to_sender(self, args):
-		"""Returns target for a given event, assuming we want to return it to
-		the sender"""
-		from irclib import nm_to_n
-		if args["type"] == "privmsg": target = nm_to_n(args["source"])
-		else: target = args["channel"]
-		return target
 
 	def parse_sar(self, text):
 		import random
