@@ -110,8 +110,8 @@ class weathercn(MooBotModule):
 		else:
 			self.result['notice'] = self._help()
 		
-		if len(self.result['notice'].strip()) == 0:
-			self.result['notice'] = u"未查到任何结果，请重试"
+# 		print self.result['notice'].encode('utf8')
+# 		print self.result['msg'].encode('utf8')
 
 		if self.result['notice']:
 			target = self.return_to_sender(args, 'nick')
