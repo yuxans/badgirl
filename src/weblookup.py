@@ -157,7 +157,7 @@ class weathercn(MooBotModule):
 				i = 1
 				result = IrcStringIO('%s: ' % citykeyword)
 				for c, u in regionlist:
-					result.write("".join((result, "=", str(i),"=>", c)))
+					result.write("".join(("=", str(i),"=>", c)))
 					i += 1
 				self.result['notice'] = result.getvalue()
 
