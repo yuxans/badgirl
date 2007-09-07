@@ -39,7 +39,7 @@ class eventProcess(MooBotModule):
 				if line != "":
 					bot.connection.privmsg(event.target(), line)
 		
-		elif eventtype() == "notice" and event.target().lower() != bot.connection.get_nickname().lower():
+		elif event.eventtype() == "notice" and event.target().lower() != bot.connection.get_nickname().lower():
 			for line in event.arguments()[0].split("\n"):
 				if line != "":
 					bot.connection.notice(event.target(), line)
