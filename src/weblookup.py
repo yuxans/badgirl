@@ -155,7 +155,7 @@ class weathercn(MooBotModule):
 				self.getforcast(u)
 			else:
 				i = 1
-				result = IrcStringIO('%s: ' % citykeyword, 400)
+				result = IrcStringIO('%s: ' % citykeyword, 200)
 				for c, u in regionlist:
 					result.write("".join(("=", str(i),"=>", c)))
 					i += 1
