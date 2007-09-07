@@ -113,7 +113,7 @@ class weathercn(MooBotModule):
 # 		print self.result['notice'].encode('utf8')
 # 		print self.result['msg'].encode('utf8')
 
-		if self.result['notice']:
+		if self.result['notice'] and not self.result['msg']:
 			target = self.return_to_sender(args, 'nick')
 			return Event("notice", "", target, [self.result['notice']])
 
@@ -155,7 +155,7 @@ class weathercn(MooBotModule):
 				self.getforcast(u)
 			else:
 				i = 1
-				result = IrcStringIO('%s: ' % citykeyword)
+				result = IrcStringIO('%s: ' % citykeyword, 400)
 				for c, u in regionlist:
 					result.write("".join(("=", str(i),"=>", c)))
 					i += 1
