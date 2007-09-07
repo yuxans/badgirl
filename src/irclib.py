@@ -1,4 +1,5 @@
 # Copyright (C) 1999, 2000 Joel Rosdahl
+# Copyright (C) 2007 by mOo, FKtPp
 # 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -866,7 +867,7 @@ class SimpleIRCClient:
 		self.ircobj.process_forever()
 
 class IrcStringIO(list):
-	def __init__(self, head = ""):
+	def __init__(self, head = "", cl=450):
 		from StringIO import StringIO
 		self.head    = head
 		self.wbuffer = StringIO()
@@ -874,10 +875,11 @@ class IrcStringIO(list):
 			self.wbuffer.write(self.head)
 		self.curlen  = 0
 		self.headlen = len(self.head)
+		self.chunklen = cl
 
 	def write(self, string):
 		l = len(string)
-		if l + self.curlen > 450:
+		if l + self.curlen > self.chunklen:
 			self.append(self.wbuffer.getvalue())
 			from StringIO import StringIO
 			self.wbuffer = StringIO()
