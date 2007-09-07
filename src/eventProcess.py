@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Copyright (c) 2002 Brad Stewart
+# Copyright (C) 2007 by FKtPp
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,7 +38,12 @@ class eventProcess(MooBotModule):
 			for line in event.arguments()[0].split("\n"):
 				if line != "":
 					bot.connection.privmsg(event.target(), line)
-					
+		
+		elif eventtype() == "notice" and event.target().lower() != bot.connection.get_nickname().lower():
+			for line in event.arguments()[0].split("\n"):
+				if line != "":
+					bot.connection.notice(event.target(), line)
+
 		elif event.eventtype() == "action":
 			bot.connection.action(event.target(), event.arguments()[0])
 		elif event.eventtype() == "continue":
