@@ -47,8 +47,6 @@ class weathercn(MooBotModule):
 	"""
 	def __init__(self):
 		self.regex = "^(weather|w)($|( [^ ]+){1,2})"
-		self.result = {'notice': '',
-			       'msg': ''}
 
 	def handler(self, **args):
 		"""Parse the received commandline arguments
@@ -70,6 +68,9 @@ class weathercn(MooBotModule):
  
 		# TODO: ... save settings to database
 		# TODO: ... get settings from database
+
+		self.result = {'notice': '',
+			       'msg': ''}
 
 		tmp_args_list = args["text"].strip().split(" ")
 		del(tmp_args_list[0])
