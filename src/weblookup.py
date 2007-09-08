@@ -835,9 +835,19 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 					self.hit += 1
 
 				elif tag == 'span':
+					# YES, it's unreliable. But if
+					# there's no 'span' there
+					# would be no
+					# file_td_head/tail either,
+					# there would be only one
+					# file_td
 					self.in_file_td_tail = True
 
-				elif tag == 'td' and self.in_file_td_tail:
+				elif tag == 'td' and \
+					    (self.in_file_td_head or \
+						     self.in_file_td_tail):
+					# span is unreliable
+					self.in_file_td_head = False
 					self.in_file_td_tail = False
 					
 
