@@ -46,6 +46,38 @@ class weathercn(MooBotModule):
 	html pages.
 	"""
 	def __init__(self):
+		"""
+		>>> import re
+		>>> from weblookup import weathercn
+		>>> a = weathercn()
+		>>> r = re.compile(a.regex)
+		>>> r.match("w") and True or False
+		True
+		>>> r.match("weather") and True or False
+		True
+		>>> r.match("w 0335") and True or False
+		True
+		>>> r.match("weather 0335") and True or False
+		True
+		>>> r.match("wo03335") and True or False
+		False
+		>>> r.match("w 10086") and True or False
+		True
+		>>> r.match(u"w 通化") and True or False
+		True
+		>>> r.match(u"weather 通辽") and True or False
+		True
+		>>> r.match(u"w 北京") and True or False
+		True
+		>>> r.match(u"w 通化 8") and True or False
+		True
+		>>> r.match(u"weather 通辽 9") and True or False
+		True
+		>>> r.match(u"w 北京 37") and True or False
+		True
+		>>> r.match("who") and True or False
+		False
+		"""
 		self.regex = "^(weather|w)($|( [^ ]+){1,2})"
 
 	def handler(self, **args):
@@ -702,7 +734,8 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 					   'c': ('span', 'a')},
 				    'span': {'s': False,
 					     'p': 'td',
-					     'c': None},
+					     'c': None,
+					     'class': 'keyword'},
 				    'a': {'s': False,
 					  'p': 'td',
 					  'c': None}}
@@ -712,8 +745,9 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		self.hit = -1
 		self.__max_hit = 10
 		
-		self.file_td_head = False
-		self.file_td_tail = False
+		self.in_file_td_head = False
+		self.file_td_head = ''
+		self.in_file_td_tail = False
 
 	def handler(self, **args):
 		
@@ -776,17 +810,17 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 				    not self.tag_structs[tag]['s']:
 				self.tag_structs[tag]['s'] = True
 
-				if tag == 'span':
-					assert self.file_td_head
-					self.file_td_head = False
-
-
 				for a, v in attrs:
 					if tag == 'td' and \
 						    a == 'class' and\
 						    v == 'file':
-						assert not self.file_td_head
-						self.file_td_head = True
+						self.in_file_td_head = True
+					elif tag == 'span' and \
+						    a == 'class' and \
+						    v == 'keyword':
+						self.in_file_td_head = False
+
+
 
 	def handle_endtag(self, tag):
 		if self.tag_structs.has_key(tag):
@@ -798,24 +832,26 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 					self.hit += 1
 
 				elif tag == 'span':
-					assert not self.file_td_head
-					assert not self.file_td_tail
-					self.file_td_tail = True
+					self.in_file_td_tail = True
 
-				elif tag == 'td' and self.file_td_tail:
-					self.file_td_tail = False
+				elif tag == 'td' and self.in_file_td_tail:
+					self.in_file_td_tail = False
 					
 
 	def handle_data(self, data):
 		if self.hit < self.__max_hit:
 			if self.tag_structs['td']['s']:
-				if self.file_td_head:
-					self.o.write(' =%d=> ' % (self.hit + 1))
-					self.o.write(data)
-				elif self.file_td_tail:
+				if self.in_file_td_head:
+					# handle_data wouldn't be invoked if there's no data
+					# between <td class="file"> and <span class="keyword">
+					self.file_td_head = data
+				elif self.in_file_td_tail:
 					self.o.write(data + ' ')
 
 			if self.tag_structs['span']['s']:
+				self.o.write(' =%d=> ' % (self.hit + 1))
+				if self.file_td_head:
+					self.o.write(self.file_td_head)
 				self.o.write(data)
 
 			if self.tag_structs['a']['s']:
@@ -974,5 +1010,14 @@ class geekquote(MooBotModule):
 		quote=re.sub('<br />','',quote)
 
 		return Event("privmsg", "", target, [quote])
+
+
+def _test():
+	import doctest
+	doctest.testmod()
+
+if __name__ == "__main__":
+	_test()
+
 
 # vim:set shiftwidth=4 softtabstop=4
