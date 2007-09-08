@@ -83,7 +83,7 @@ class grantPriv(MooBotModule):
 		if checkPriv(mask , privilege) != 0:
 			return Event("privmsg", "", target, [ mask + " already has " + privilege +"." ])
 
-		database.doSQL("insert into grants(hostmask, priv_type) values('" + mask + "', '" + privilege  + "')")
+		database.doSQL("insert into grants(hostmask, priv_type) values('" + self.sqlEscape(mask) + "', '" + self.sqlEscape(privilege)  + "')")
 		flushPriv()
 		return Event("privmsg", "", target, [ "Granted " + privilege + " to " + mask ])
 	
@@ -112,7 +112,7 @@ class revokePriv(MooBotModule):
 		if checkPriv(mask , privilege) == 0:
 			return Event("privmsg", "", target, [ mask + " does not have " + privilege +"." ])
 	
-		database.doSQL("delete from grants where hostmask = '" + mask + "' and priv_type = '" + privilege +"'")
+		database.doSQL("delete from grants where hostmask = '" + self.sqlEscape(mask) + "' and priv_type = '" + self.sqlEscape(privilege) +"'")
 		flushPriv()
 		return Event("privmsg", "", target, [ "Revoked " + privilege + " from " + mask + "." ])
 		
