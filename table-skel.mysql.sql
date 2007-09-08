@@ -170,3 +170,11 @@ CREATE TABLE IF NOT EXISTS `userability` (
   PRIMARY KEY  (`nick`,`channel`,`abilityid`),
   KEY `channel` (`channel`(3))
 ) ENGINE=MyISAM:
+
+-- used by ims module
+CREATE TABLE `birthday` (
+  `nick` varchar(20) NOT NULL default '',
+  `birthday` date NOT NULL default '0000-00-00',
+  PRIMARY KEY  (`nick`)
+) ENGINE=MyISAM;
+
