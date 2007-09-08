@@ -748,6 +748,9 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		self.in_file_td_head = False
 		self.file_td_head = ''
 		self.in_file_td_tail = False
+		self.file_td_tail = ''
+
+		self.file_keyword = ''
 
 	def handler(self, **args):
 		
@@ -842,19 +845,22 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		if self.hit < self.__max_hit:
 			if self.tag_structs['td']['s']:
 				if self.in_file_td_head:
-					# handle_data wouldn't be invoked if there's no data
-					# between <td class="file"> and <span class="keyword">
 					self.file_td_head = data
 				elif self.in_file_td_tail:
-					self.o.write(data + ' ')
+					self.file_td_tail = data
 
 			if self.tag_structs['span']['s']:
+				self.file_keyword = data
+
+			if self.tag_structs['a']['s']:
 				self.o.write(' =%d=> ' % (self.hit + 1))
 				if self.file_td_head:
 					self.o.write(self.file_td_head)
-				self.o.write(data)
-
-			if self.tag_structs['a']['s']:
+				if self.file_keyword:
+					self.o.write(self.file_keyword)
+				if self.file_td_tail:
+					self.o.write(self.file_td_tail)
+				
 				self.o.write(' ')
 				self.o.write(data)
 
