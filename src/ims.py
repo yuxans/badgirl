@@ -83,14 +83,17 @@ class birthday(MooBotModule):
 		return Event("privmsg", "", self.return_to_sender(args), [ msg ])
 
 class ims(MooBotModule):
+	msgfmt_setbirtyday = "Use \"birthday YYYY-MM-DD\" to set the birthday for `%s' first. For privacy, whisper is recommended."
 	def __init__(self):
-		self.regex="^ims(?: .*)?"
+		self.regex="^ims(pk)?(?: .*)?"
 		import re
 		self.pdate = re.compile("^(\\d{4})-(\\d{1,2})-(\\d{1,2})$")
 
 	def handler(self, **args):
 		from irclib import Event, nm_to_n
-		params = args['text'].strip().split(' ')[2:]
+		params = args['text'].strip().split(' ')[1:]
+		cmd = params[0]
+		params = params[1:]
 		dohelp = False
 		if len(params) != 0 and len(params) != 1:
 			dohelp = True
@@ -98,7 +101,40 @@ class ims(MooBotModule):
 			dohelp = True
 
 		if dohelp:
-			msg = "Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1)".decode("GBK")
+			msg = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk $nick [$nick2]"
+		elif cmd == 'imspk':
+			if len(params) == 0:
+				msg = "Usage: imspk $nick"
+			else:
+				if len(params) == 2:
+					nick, rival = params
+				else:
+					nick = nm_to_n(args['source'])
+					rival = params[0]
+				if nick == rival:
+					msg = "%s cannot pk her/himself" % (nick)
+				else:
+					birthday = Birthday(nick).get()
+
+					if not birthday:
+						msg = self.msgfmt_setbirtyday % (nick)
+					else:
+						rival_birthday = Birthday(rival).get()
+						if not rival_birthday:
+							msg = self.msgfmt_setbirtyday % (rival)
+						else:
+							today = ND()
+							def sumIms(ims):
+								return ims[0] + ims[1] + ims[2]
+							n_score = sumIms(self.calcIms(birthday, today))
+							r_score = sumIms(self.calcIms(rival_birthday, today))
+							if n_score > r_score:
+								msg = "%s ROCKS and %s sucks today" % (nick, rival)
+							elif n_score < r_score:
+								msg = "%s sucks and %s ROCKS today" % (nick, rival)
+							else:
+								msg = "are %s and %s the same guy?" % (nick, rival)
+		# 'ims here'
 		elif len(params) == 1 and self.pdate.search(params[0]):
 			date = params[0]
 			try:
@@ -121,7 +157,7 @@ class ims(MooBotModule):
 			if birthday:
 				msg = self.calc(nick, birthday)
 			else:
-				msg = "Use \"birthday YYYY-MM-DD\" to set the birthday for `%s' first. For privacy, whisper is recommended." % (nick)
+				msg = self.msgfmt_setbirtyday % (nick)
 		return Event("privmsg", "", self.return_to_sender(args), [ msg ])
 
 	def calc(self, calcfor, birthday):
