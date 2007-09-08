@@ -135,9 +135,7 @@ class ims(MooBotModule):
 		try: import cmath as math
 		except: import math
 
-		print (birthday, day)
 		days = (day - birthday)
-		print days
 		results = []
 		for i in [33, 28, 23]:
 			mod = days - int(days / i) * i
