@@ -11,21 +11,46 @@ class decodeUtf8(MooBotModule):
 		self.regex = ""
 		import re
 		utf8char = "(?:[\xE0-\xEF][\x80-\xBF]{2})"
-		self.preg = re.compile("%s%s" % (utf8char, utf8char))
+		utfregex = re.compile("%s%s" % (utf8char, utf8char))
+		gbkchar = "(?:[\x7F-\xFE][\x7F-\xFE])"
+		gb2312regex = re.compile("(?:^|[\x01-\x7E])%s%s" % (gbkchar, gbkchar))
+
+		self.translations = {
+		                    # for GB* connections
+		                    "GBK":      (False, utfregex, "UTF8"),
+		                    "GB18030":  (False, utfregex, "UTF8"),
+		                    "GB2312":   (False, utfregex, "UTF8"),
+		                    # for UTF8 connections
+		                    "UTF8":     (True,  gb2312regex, "GB2312"),
+		                    }
+
 		self.type = Handler.GLOBAL
 		self.priority = 100
 
 	def handler(self, **args):
+		if not self.translations.has_key(args['encoding']):
+			return Event("continue", "", "")
+		(erronly, regex, fromencoding) = self.translations[args['encoding']];
+
 		rawmsg = args['event'].rawdata().split(' ', 3)[3][1:]
-		if not self.preg.search(rawmsg):
+		if not regex.search(rawmsg):
 			return Event("continue", "", "")
 
+		# only translate if string does not match connection encoding
+		if erronly:
+			try:
+				msg = rawmsg.decode(args['encoding'])
+				# well, no translation
+				return Event("continue", "", "")
+			except:
+				pass
+
 		try:
-			msg = rawmsg.decode('utf-8')
+			msg = rawmsg.decode(fromencoding)
 		except Exception, e:
 			self.Debug(e)
 			return Event("continue", "", "")
 
 		from irclib import nm_to_n
-		msg = nm_to_n(args['source']) + ' says: ' + msg
+		msg = "%s said \"%s\" in %s, but we say %s here" % (nm_to_n(args['source']), msg, fromencoding, args['encoding'])
 		return Event("privmsg", "", self.return_to_sender(args), [ msg ])

@@ -82,7 +82,7 @@ class MooBot(SingleServerIRCBot):
 		if module_list == []: module_list = config_module_list
 		if encoding == "": encoding = config_encoding
 		# Now that we have our values, initialize it all
-		SingleServerIRCBot.__init__(self, [(server, port, password, encoding)], nickname, realname)
+		SingleServerIRCBot.__init__(self, [(server, port, password, encoding.upper())], nickname, realname)
 		self.channels = IRCDict()
 		for channel in channels:
 			if channel.strip():
@@ -108,6 +108,7 @@ class MooBot(SingleServerIRCBot):
 		args["type"] = e.eventtype()
 		args["source"] = e.source()
 		args["channel"] = e.target()
+		args["encoding"] = self.connection.encoding
 		args["event"] = e
 		msg = msg.strip()
 		from irclib import nm_to_n
@@ -136,6 +137,7 @@ class MooBot(SingleServerIRCBot):
 		args["type"] = e.eventtype()
 		args["source"] = e.source()
 		args["channel"] = e.target()
+		args["encoding"] = self.connection.encoding
 		args["event"] = e
 		# Then check with all the global handlers, see if any match
 		from irclib import nm_to_n
@@ -242,12 +244,15 @@ class MooBot(SingleServerIRCBot):
 						    "channel", "event"]:
 						if key not in args.keys():
 							args[key] = None
+					if not args["encoding"]:
+						args["encoding"] = self.connection.encoding
 					instance = handler.instance
 					result = instance.handler(text=args["text"],
 								  type=args["type"],
 								  source=args["source"],
 								  channel=args["channel"],
 								  event=args["event"],
+								  encoding=args["encoding"],
 								  ref=weakref.ref(self))
 					if isinstance(result, Event):
 						eventlist.append(result)
