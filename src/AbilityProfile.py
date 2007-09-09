@@ -277,7 +277,7 @@ class AbilityProfile(MooBotModule):
 							reply = nick + " doesn't have any ability, is he/she disabled?"
 						else:
 							from irclib import IrcStringIO
-							buffer = IrcStringIO(nick + "'s is capable of")
+							buffer = IrcStringIO(nick + " is capable of")
 							for ability_score in ability_scores:
 								buffer.write(" %s*%s" % ability_score)
 							reply = buffer.getvalue()
