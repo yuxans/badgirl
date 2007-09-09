@@ -242,9 +242,9 @@ class MooBot(SingleServerIRCBot):
 				   (handler.regex.search(msg)):
 					for key in ["text", "type", "source",
 						    "channel", "event"]:
-						if key not in args.keys():
+						if not args.has_key(key):
 							args[key] = None
-					if not args["encoding"]:
+					if not args.has_key("encoding"):
 						args["encoding"] = self.connection.encoding
 					instance = handler.instance
 					result = instance.handler(text=args["text"],
