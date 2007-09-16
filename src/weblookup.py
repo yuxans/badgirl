@@ -703,7 +703,8 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 
 class debfile(MooBotModule, HTMLParser.HTMLParser):
 	"""
-	Does a file search on http://packages.debian.org and returns top 10 matched package names
+	Does a file search on http://packages.debian.org and returns
+	top 10 matched package names
 	"""
 
 	def __init__(self):
@@ -780,8 +781,13 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 			self.reset()
 			self.feed(result.read())
 			result.close()
-			return Event("privmsg", "", target, [self.o.getvalue()])
+			return Event("privmsg", "",
+				     target,
+				     [self.found_or_not()])
 
+	def found_or_not(self):
+		return self.o.getvalue().strip() or \
+		    "%s(%s): Not Found!" % (self.file, self.version)
 
 	def _check_stat(self, tag):
 		"""To see if we can change tag's inside/outside stat
