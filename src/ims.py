@@ -84,6 +84,8 @@ class birthday(MooBotModule):
 
 class ims(MooBotModule):
 	msgfmt_setbirtyday = "Use \"birthday YYYY-MM-DD\" to set the birthday for `%s' first. For privacy, whisper is recommended."
+	msg_help           = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk $nick [$nick2]"
+	msg_imspkhelp      = u"Usage: imspk $nick OR imspk $nick $nick2"
 	def __init__(self):
 		self.regex="^ims(pk)?(?: .*)?"
 		import re
@@ -94,19 +96,15 @@ class ims(MooBotModule):
 		params = args['text'].strip().split(' ')[1:]
 		cmd = params[0]
 		params = params[1:]
-		dohelp = False
-		if len(params) != 0 and len(params) != 1:
-			dohelp = True
-		elif len(params) == 1 and params[0].lower() == 'help':
-			dohelp = True
 
-		if dohelp:
-			msg = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk $nick [$nick2]"
+		paramc = len(params)
+		if paramc == 1 and params[0].lower() == 'help':
+			msg = self.msg_help
 		elif cmd == 'imspk':
-			if len(params) == 0:
-				msg = "Usage: imspk $nick"
+			if paramc != 1 and paramc != 2:
+				msg = self.msg_imspkhelp
 			else:
-				if len(params) == 2:
+				if paramc == 2:
 					nick, rival = params
 				else:
 					nick = nm_to_n(args['source'])
@@ -135,7 +133,7 @@ class ims(MooBotModule):
 							else:
 								msg = "are %s and %s the same guy?" % (nick, rival)
 		# 'ims here'
-		elif len(params) == 1 and self.pdate.search(params[0]):
+		elif paramc == 1 and self.pdate.search(params[0]):
 			date = params[0]
 			try:
 				birthday = ND(date.split('-'))
@@ -145,10 +143,10 @@ class ims(MooBotModule):
 				msg = self.calc(date, birthday)
 			else:
 				msg = "date error"
-		else:
-			if len(params) == 0:
+		elif paramc == 0 or paramc == 1:
+			if paramc == 0:
 				nick = nm_to_n(args['source'])
-			else:
+			elif paramc == 1:
 				nick = params[0]
 				
 			b = Birthday(nick)
@@ -158,6 +156,9 @@ class ims(MooBotModule):
 				msg = self.calc(nick, birthday)
 			else:
 				msg = self.msgfmt_setbirtyday % (nick)
+		else:
+			msg = self.msg_help
+
 		return Event("privmsg", "", self.return_to_sender(args), [ msg ])
 
 	def calc(self, calcfor, birthday):
