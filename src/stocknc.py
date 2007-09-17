@@ -19,11 +19,16 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import re, httplib, urllib, sys, HTMLParser
+import re
+import sys
+import urllib
+import httplib
+import HTMLParser
+import sina_finance
 from irclib import Event 
 from moobot_module import MooBotModule
 
-handler_list = ["stockQuote"]
+handler_list = ["stockQuote", "sinaFinance"]
 
 class stockQuote(MooBotModule):
 
@@ -146,3 +151,21 @@ class myp(HTMLParser.HTMLParser):
 
 	def get_result(self):
 		return self.data_list
+
+class sinaFinance(MooBotModule):
+	def __init__(self):
+		self.regex="^sina .+"
+		self.sf = sina_finance.SearchEngine()
+
+	def handler(self, **args):
+		target = self.return_to_sender(args, 'nick')
+
+		o = self.sf.search(args['text'].split()[2:])
+
+		x = ''
+		for i in o:
+			x = '\n'.join((x, i.__str__()))
+
+# 		print x
+
+		return Event("notice", "", target, [x.strip() or "Sorry we can't find that :("])
