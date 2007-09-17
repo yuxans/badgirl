@@ -52,5 +52,5 @@ class decodeUtf8(MooBotModule):
 			return Event("continue", "", "")
 
 		from irclib import nm_to_n
-		msg = "%s said \"%s\" in %s, but we say %s here" % (nm_to_n(args['source']), msg, fromencoding, args['encoding'])
+		msg = "%s said \"%s\" in %s, but we speak %s here" % (nm_to_n(args['source']), msg, fromencoding, args['encoding'])
 		return Event("privmsg", "", self.return_to_sender(args), [ msg ])
