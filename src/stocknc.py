@@ -32,8 +32,8 @@ handler_list = ["stockQuote", "sinaFinance"]
 
 class stockQuote(MooBotModule):
 
-	ss = re.compile('^600\d{3}')
-	sz = re.compile('^000\d{3}')
+	ss = re.compile('^60\d{4}')
+	sz = re.compile('^00\d{4}')
 
 	def __init__(self):
 		self.regex="^(em|stockquote) .+"
