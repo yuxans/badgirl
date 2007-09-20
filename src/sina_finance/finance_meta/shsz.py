@@ -10,7 +10,7 @@ from meta_map import COLOR
 FINANCE_META['sh']={'cls':None,'attrs':None,'attr_types':None}
 FINANCE_META['sz']={'cls':None,'attrs':None,'attr_types':None}
 
-FINANCE_META['sh']['attrs']=['name','pre_close','open','last_price',
+FINANCE_META['sh']['attrs']=['name','open','pre_close','last_price',
                          'high','low','bid','ask',
                          'volume','turnover','bv1','bp1',
                          'bv2','bp2','bv3','bp3',
@@ -35,7 +35,12 @@ def to_str_sh(self):
     # cal the markup precent
     pct=0.0
     try:
-        pct=100*(self.last_price-self.pre_close)/self.pre_close
+        # when the market is going to open in the morning, most
+        # of the data will be clear. in this situation, pct might
+        # should wrong data. we need to use a simple trick to fix it
+        if self.last_price >0:
+            pct=100*(self.last_price-self.pre_close)/self.pre_close
+
     except:
         pct=0.0
     
