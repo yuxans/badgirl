@@ -16,7 +16,7 @@ class SearchEngine(Singleton):
     SUGGEST_URL=r'http://202.108.37.42:8086/f.suggest?q=%s'
     DATA_URL=r'http://hq.sinajs.cn/list=%s'
     SUGG_PATT=re.compile(r'everydata\[\d+\]=".*\t([a-z]+-[a-z0-9]+-.*)";', re.I)
-    DATA_PATT=re.compile(r'var hq_str_.*="(.*)";', re.I)
+    DATA_PATT=re.compile(r'var hq_str_.*?="(.*?)";', re.I)
         
     def __init__(self):
         pass
