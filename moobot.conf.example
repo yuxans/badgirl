@@ -1,9 +1,15 @@
+[config]
+encoding = UTF-8
+
 [connection]
 nick = BadGirl
+username = BadGirl
+realname = BadGirl
 server = localhost
 port = 6667
 password = password_mask
 channels = #Water #Trustix #Unix #LinuxFire #LinuxFans #Linuxer #70s #80s #Warez #Shell #BSDChina #Acm
+encoding = GB18030
 
 [extras]
 shorthand = ~
@@ -16,6 +22,7 @@ hostname = host_mask
 name = name_mask
 password = password_mask
 port = port_mask
+encoding = utf8
 
 [modules]
 modulefiles = quotegrab flood_protect botmath bottime cool ditdaw dunno eightball factoids hi ignore internal karma lart module_handling nslookup poll priv qotd seen spell stack stats stocknc tell translate version weblookup wordgame webstats
