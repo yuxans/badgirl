@@ -25,4 +25,4 @@ port = port_mask
 encoding = utf8
 
 [modules]
-modulefiles = quotegrab flood_protect botmath bottime cool ditdaw dunno eightball factoids hi ignore internal karma lart module_handling nslookup poll priv qotd seen spell stack stats stocknc tell translate version weblookup wordgame webstats
+modulefiles = eventProcess quotegrab flood_protect botmath bottime cool ditdaw dunno eightball factoids hi ignore internal karma lart module_handling nslookup poll priv qotd seen spell stack stats stocknc tell translate version weblookup wordgame webstats
