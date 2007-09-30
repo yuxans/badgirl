@@ -83,7 +83,8 @@ class MooBot(SingleServerIRCBot):
 		if encoding == "": encoding = config_encoding
 		# Now that we have our values, initialize it all
 		SingleServerIRCBot.__init__(self, [(server, port, password, encoding.upper())], nickname, realname)
-		self.serveas_nick = config_nick
+		self.serve_nick = config_nick
+		self.serve_password = config_password
 		self.serve_channels = [channel for channel in channels if channel.strip()]
 		self.channels = IRCDict()
 		self.handlers = {}
@@ -93,14 +94,28 @@ class MooBot(SingleServerIRCBot):
 
 	def on_nicknameinuse(self, c, e):
 		"""Nick is already in use, pick another nick"""
-		import random
-		c.nick(self.serveas_nick + str(int(random.uniform(0, 9999))))
+		if self.registered:
+			self.fight_for_nick(c, e.arguments()[0])
+		else:
+			# sneak in andfight for nick in on_welcome
+			import random
+			c.nick(self.serve_nick + str(int(random.uniform(0, 9999))))
 
 	def on_welcome(self, c, e):
 		"""Whenever this bot joins a server, this is executed"""
+		self._on_welcome(c, e)
 		for channel in self.serve_channels:
 			Debug("Joining", channel)
 			c.join(channel.replace(':',' ',1))
+		if self._nickname != self.serve_nick:
+			self.fight_for_nick(c, self.serve_nick)
+		return "NO MORE"
+
+	def fight_for_nick(self, c, nick):
+		if self.serve_password:
+			c.send_raw("NICKSERV GHOST %s %s"   % (nick, self.serve_password))
+			c.send_raw("NICKSERV RELEASE %s %s" % (nick, self.serve_password))
+			c.nick(nick)
 
 	def on_privmsg(self, c, e):
 		"""Whenever someone sends a /msg to our bot, this is executed"""

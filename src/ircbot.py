@@ -71,6 +71,7 @@ class SingleServerIRCBot(SimpleIRCClient):
 
 		self._nickname = nickname
 		self._realname = realname
+		self.registered = False
 #FIXME		self._nickmask = "%s!%s@%s" % (
 		for i in ["disconnect", "join", "kick", "mode",
 				  "namreply", "nick", "part", "quit", "welcome"]:
@@ -107,9 +108,11 @@ class SingleServerIRCBot(SimpleIRCClient):
 		self.channels = IRCDict()
 		self.connection.execute_delayed(self.reconnection_interval,
 										self._connected_checker)
+		self.registered = False
 
 	def _on_welcome(self, c, e):
 		self._nickname = e.target()
+		self.registered = True
 
 	def _on_join(self, c, e):
 		"""[Internal]"""
