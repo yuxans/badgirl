@@ -83,10 +83,8 @@ class MooBot(SingleServerIRCBot):
 		if encoding == "": encoding = config_encoding
 		# Now that we have our values, initialize it all
 		SingleServerIRCBot.__init__(self, [(server, port, password, encoding.upper())], nickname, realname)
+		self.serve_channels = [channel for channel in channels if channel.strip()]
 		self.channels = IRCDict()
-		for channel in channels:
-			if channel.strip():
-				self.channels[channel.strip()] = Channel()
 		self.handlers = {}
 		self.configs = config_others
 		self.module_list = module_list
@@ -94,8 +92,7 @@ class MooBot(SingleServerIRCBot):
 
 	def on_welcome(self, c, e):
 		"""Whenever this bot joins a server, this is executed"""
-		"""And replace frist ':' to space join +k channel,by Yuxans Yao 2007/07/13 11:45"""
-		for channel in self.channels.keys():
+		for channel in self.serve_channels:
 			Debug("Joining", channel)
 			c.join(channel.replace(':',' ',1))
 
