@@ -116,6 +116,7 @@ class MooBot(SingleServerIRCBot):
 			c.send_raw("NICKSERV GHOST %s %s"   % (nick, self.serve_password))
 			c.send_raw("NICKSERV RELEASE %s %s" % (nick, self.serve_password))
 			c.nick(nick)
+			c.send_raw("NICKSERV IDENTIFY %s" % self.serve_password)
 
 	def on_privmsg(self, c, e):
 		"""Whenever someone sends a /msg to our bot, this is executed"""
