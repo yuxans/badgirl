@@ -83,12 +83,18 @@ class MooBot(SingleServerIRCBot):
 		if encoding == "": encoding = config_encoding
 		# Now that we have our values, initialize it all
 		SingleServerIRCBot.__init__(self, [(server, port, password, encoding.upper())], nickname, realname)
+		self.serveas_nick = config_nick
 		self.serve_channels = [channel for channel in channels if channel.strip()]
 		self.channels = IRCDict()
 		self.handlers = {}
 		self.configs = config_others
 		self.module_list = module_list
 
+
+	def on_nicknameinuse(self, c, e):
+		"""Nick is already in use, pick another nick"""
+		import random
+		c.nick(self.serveas_nick + str(int(random.uniform(0, 9999))))
 
 	def on_welcome(self, c, e):
 		"""Whenever this bot joins a server, this is executed"""
