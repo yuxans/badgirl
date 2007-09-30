@@ -473,7 +473,7 @@ class ServerConnection(Connection):
 			line = line.decode(self.encoding, "ignore")
 
 			if DEBUG:
-				DebugErr("FROM SERVER:", line)
+				DebugErr("<< FROM SERVER:", line)
 
 			prefix = None
 			command = None
@@ -738,7 +738,7 @@ class ServerConnection(Connection):
 		try:
 			self.socket.send(raw_string.encode(self.encoding, "ignore") + "\r\n")
 			if DEBUG:
-				DebugErr("TO SERVER:", raw_string)
+				DebugErr(">> TO SERVER:", raw_string)
 		except socket.error:
 			# Aouch!
 			self.disconnect("Connection reset by peer.")
