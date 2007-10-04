@@ -45,7 +45,8 @@ class SingleServerIRCBot(SimpleIRCClient):
 	have operator or voice modes.  The "database" is kept in the
 	self.channels attribute, which is an IRCDict of Channels.
 	"""
-	def __init__(self, server_list, nickname, realname, reconnection_interval=60):
+	def __init__(self, server_list, nickname, realname,
+	reconnection_interval=60, keepalive_interval=60):
 		"""Constructor for SingleServerIRCBot objects.
 
 		Arguments:
@@ -60,6 +61,8 @@ class SingleServerIRCBot(SimpleIRCClient):
 
 			reconnection_interval -- How long the bot should wait
 									 before trying to reconnect.
+			keepalive_interval -- How long the bot should ping server when
+								  online.
 		"""
 
 		SimpleIRCClient.__init__(self)
@@ -68,6 +71,10 @@ class SingleServerIRCBot(SimpleIRCClient):
 		if not reconnection_interval or reconnection_interval < 0:
 			reconnection_interval = 2**31
 		self.reconnection_interval = reconnection_interval
+		self.keepalive_interval = keepalive_interval
+		if self.keepalive_interval:
+			self.connection.execute_delayed(self.keepalive_interval,
+											self._keepalive_checker)
 
 		self._nickname = nickname
 		self._realname = realname
@@ -78,12 +85,21 @@ class SingleServerIRCBot(SimpleIRCClient):
 			self.connection.add_global_handler(i,
 											   getattr(self, "_on_" + i),
 											   -10)
+
 	def _connected_checker(self):
 		"""[Internal]"""
 		if not self.connection.is_connected():
 			self.connection.execute_delayed(self.reconnection_interval,
 											self._connected_checker)
 			self.jump_server()
+
+	def _keepalive_checker(self):
+		"""[Internal]"""
+		if self.connection.is_connected():
+			import time
+			self.connection.pong(time.time())
+		self.connection.execute_delayed(self.keepalive_interval,
+										self._keepalive_checker)
 
 	def _connect(self):
 		"""[Internal]"""
