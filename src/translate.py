@@ -138,13 +138,15 @@ class russian_style (MooBotModule):
 
         cmd, msg = args["text"].split(" ", 2)[1:]
 
+        a2c = True
+        
         if cmd.startswith('u'):
-            ascii2cyrillic = False
+            a2c = False
 
         newmsg = []
 
         for each_char in msg:
-            newmsg.append(self.trans_char(each_char, ascii2cyrillic))
+            newmsg.append(self.trans_char(each_char, a2c))
 
         newmsg = ''.join(newmsg)
 
