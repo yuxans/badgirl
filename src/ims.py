@@ -84,8 +84,8 @@ class birthday(MooBotModule):
 
 class ims(MooBotModule):
 	msgfmt_setbirtyday = "Use \"birthday YYYY-MM-DD\" to set the birthday for `%s' first. For privacy, whisper is recommended."
-	msg_help           = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk $nick [$nick2]"
-	msg_imspkhelp      = u"Usage: imspk $nick OR imspk $nick $nick2"
+	msg_help           = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk/imsnb $nick [$nick2]"
+	msg_imspkhelp      = u"Usage: imspk/imsnb $nick OR imspk/imsnb $nick $nick2"
 	def __init__(self):
 		self.regex="^ims(pk)?(?: .*)?"
 		import re
@@ -100,7 +100,7 @@ class ims(MooBotModule):
 		paramc = len(params)
 		if paramc == 1 and params[0].lower() == 'help':
 			msg = self.msg_help
-		elif cmd == 'imspk':
+		elif cmd == 'imspk' or cmd == 'imsnb':
 			if paramc != 1 and paramc != 2:
 				msg = self.msg_imspkhelp
 			else:
@@ -126,12 +126,20 @@ class ims(MooBotModule):
 								return ims[0] + ims[1] + ims[2]
 							n_score = sumIms(self.calcIms(birthday, today))
 							r_score = sumIms(self.calcIms(rival_birthday, today))
-							if n_score > r_score:
-								msg = "%s ROCKS and %s sucks today" % (nick, rival)
-							elif n_score < r_score:
-								msg = "%s sucks and %s ROCKS today" % (nick, rival)
-							else:
+							if n_score == r_score:
 								msg = "are %s and %s the same guy?" % (nick, rival)
+							elif cmd == "imspk":
+								if n_score > r_score:
+									msg = "%s ROCKS and %s sucks today" % (nick, rival)
+								elif n_score < r_score:
+									msg = "%s sucks and %s ROCKS today" % (nick, rival)
+							elif cmd == "imsnb":
+								n_score = abs(n_score)
+								r_score = abs(r_score)
+								if n_score > r_score:
+									msg = "%s is NBer than %s" % (nick, rival)
+								elif n_score < r_score:
+									msg = "%s is NBer than %s" % (rival, nick)
 		# 'ims here'
 		elif paramc == 1 and self.pdate.search(params[0]):
 			date = params[0]
