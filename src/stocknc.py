@@ -55,7 +55,7 @@ class stockQuote(MooBotModule):
 		return default_short
 
 	def eastmoney(self, symbol, short_style):
-		err_msg =  "Please use formal STOCK ID to query, exp. 600000 or 000001. Or you can view this link http://quote.eastmoney.com/q.asp?StockCode=%s" % symbol
+		err_msg =  "Please use formal STOCK ID to query, exp. 600000 or 000001. Or you can view this link http://q.eastmoney.com/q.aspx?StockCode=%s" % symbol
 
 		if not (self.ss.match(symbol) or self.sz.match(symbol)):
 			return err_msg
@@ -65,8 +65,8 @@ class stockQuote(MooBotModule):
 		headers = {"Content-type": "application/x-www-form-urlencoded",
 		"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
 		"Accept-Encoding": ""}
-		em_con = httplib.HTTPConnection('quote2.eastmoney.com', 80)
-		em_con.request("POST", "/q.asp", params, headers)
+		em_con = httplib.HTTPConnection('q.eastmoney.com', 80)
+		em_con.request("GET", "/q.aspx", params, headers)
 		response = em_con.getresponse()
 		if response.status != 200:
 			return response.reason
