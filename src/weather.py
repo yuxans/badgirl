@@ -41,7 +41,7 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 		self.city = ""
 		self.we = []
 		self.temp = ""
-		self.temp_re = re.compile(u'^\d+¡æ')
+		self.temp_re = re.compile(u'^-?\d+¡æ')
 		self.wind = ""
 		self.daterange =""
 		self.result_list = []
@@ -86,7 +86,7 @@ class WeatherCNParser(HTMLParser.HTMLParser):
 			elif self.ruler < 130 and self.city_re.match(data):
 				self.city = data.strip('{}')
 				self.ruler = 130
-			elif self.ruler >= 150 and self.temp_re.match(data):
+			elif self.ruler >= 150 and self.ruler <= 160 and self.temp_re.match(data):
 				self.temp = data
 			elif self.ruler == 161:
 				self.daterange = data
