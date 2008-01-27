@@ -867,7 +867,7 @@ class SimpleIRCClient:
 		self.ircobj.process_forever()
 
 class IrcStringIO(list):
-	def __init__(self, head = "", cl=450):
+	def __init__(self, head = "", cl=450, empty_notice="no result!"):
 		from StringIO import StringIO
 		self.head    = head
 		self.wbuffer = StringIO()
@@ -876,6 +876,7 @@ class IrcStringIO(list):
 		self.curlen  = 0
 		self.headlen = len(self.head)
 		self.chunklen = cl
+		self.en = empty_notice
 
 	def write(self, string):
 		l = len(string)
@@ -895,7 +896,14 @@ class IrcStringIO(list):
 		if self.curlen:
 			self.append(self.wbuffer.getvalue())
 			self.wbuffer.truncate()
-		return "\n".join(self)
+
+		tmp = "\n".join(self).strip()
+		if not tmp:
+		       if  self.head:
+			       tmp = "".join((self.head,": ", self.en))
+		       else:
+			       tmp =  self.en
+		return tmp
 
 class Event:
 	"""Class representing an IRC event."""
