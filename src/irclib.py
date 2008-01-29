@@ -900,7 +900,7 @@ class IrcStringIO(list):
 		tmp = "\n".join(self).strip()
 		if not tmp:
 		       if  self.head:
-			       tmp = "".join((self.head,": ", self.en))
+			       tmp = "".join((self.head, self.en))
 		       else:
 			       tmp =  self.en
 		return tmp
