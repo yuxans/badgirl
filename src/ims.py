@@ -84,10 +84,10 @@ class birthday(MooBotModule):
 
 class ims(MooBotModule):
 	msgfmt_setbirtyday = "Use \"birthday YYYY-MM-DD\" to set the birthday for `%s' first. For privacy, whisper is recommended."
-	msg_help           = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk/imsnb $nick [$nick2]"
-	msg_imspkhelp      = u"Usage: imspk/imsnb $nick OR imspk/imsnb $nick $nick2"
+	msg_help           = u"Usage: \"ims [ |help|$nick|YYYY-MM-DD]\", 总数=基数+变数*指数, 指数 in(-1...1) || imspk/imsnb/imsbt $nick [$nick2]"
+	msg_imspkhelp      = u"Usage: imspk/imsnb/imsbt $nick OR imspk/imsnb/imsbt $nick $nick2"
 	def __init__(self):
-		self.regex="^ims(pk)?(?: .*)?"
+		self.regex="^ims(pk|nb|bt|)(?: .*)?$"
 		import re
 		self.pdate = re.compile("^(\\d{4})-(\\d{1,2})-(\\d{1,2})$")
 
@@ -100,7 +100,7 @@ class ims(MooBotModule):
 		paramc = len(params)
 		if paramc == 1 and params[0].lower() == 'help':
 			msg = self.msg_help
-		elif cmd == 'imspk' or cmd == 'imsnb':
+		elif cmd == 'imspk' or cmd == 'imsnb' or cmd == 'imsbt':
 			if paramc != 1 and paramc != 2:
 				msg = self.msg_imspkhelp
 			else:
@@ -122,10 +122,13 @@ class ims(MooBotModule):
 							msg = self.msgfmt_setbirtyday % (rival)
 						else:
 							today = ND()
-							def sumIms(ims):
-								return ims[0] + ims[1] + ims[2]
-							n_score = sumIms(self.calcIms(birthday, today))
-							r_score = sumIms(self.calcIms(rival_birthday, today))
+							def sumIms(ims, absolute):
+								if absolute:
+									return abs(ims[0]) + abs(ims[1]) + abs(ims[2])
+								else:
+									return ims[0] + ims[1] + ims[2]
+							n_score = sumIms(self.calcIms(birthday, today), cmd == "imsbt")
+							r_score = sumIms(self.calcIms(rival_birthday, today), cmd == "imsbt")
 							if n_score == r_score:
 								msg = "are %s and %s the same guy?" % (nick, rival)
 							elif cmd == "imspk":
@@ -140,6 +143,11 @@ class ims(MooBotModule):
 									msg = "%s is NBer than %s" % (nick, rival)
 								elif n_score < r_score:
 									msg = "%s is NBer than %s" % (rival, nick)
+							elif cmd == "imsbt":
+								if n_score > r_score:
+									msg = "%s is BTer than %s" % (nick, rival)
+								elif n_score < r_score:
+									msg = "%s is BTer than %s" % (rival, nick)
 		# 'ims here'
 		elif paramc == 1 and self.pdate.search(params[0]):
 			date = params[0]
