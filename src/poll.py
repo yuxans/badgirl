@@ -156,6 +156,8 @@ class list_polls(MooBotModule):
 			questions = database.doSQL("select question, poll.poll_num, count(poll_votes.poll_num) from poll, poll_votes where poll.poll_num = poll_votes.poll_num group by poll_num")
 		elif database.type == "pgsql":
 			questions = database.doSQL("select question, poll.poll_num, count(poll_votes.poll_num) from poll, poll_votes where poll.poll_num = poll_votes.poll_num group by poll.poll_num, question") 
+		elif database.type == "sqlite3":
+			questions = database.doSQL("select question, poll.poll_num, count(poll_votes.poll_num) from poll, poll_votes where poll.poll_num = poll_votes.poll_num group by poll_num, question")
 		for tuple in questions:
 			msg += str(int(tuple[1])) + " - " + tuple[0] + " (" + str(tuple[2]) + " votes)\n"
 		return Event("privmsg", "", target, [msg])

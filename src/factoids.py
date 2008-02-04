@@ -270,6 +270,9 @@ class cookie(factoidClass):
 		elif database.type == "pgsql":
 			factoid_query = "select factoid_key, factoid_value "\
 				"from factoids order by random() limit 1"
+		elif database.type == "sqlite3":
+			factoid_query = "select factoid_key, factoid_value "\
+			    "from factoids order by random(*) limit 1"
 
 		factoid = database.doSQL(factoid_query)[0]
 		factoid_key = factoid[0]
@@ -495,6 +498,12 @@ class list_keys(factoidClass):
 					     "where lower(created_by) like '%s!%%' "\
 					     "order by random() "\
 					     "limit 15" % search_string.lower()
+			elif database.type == "sqlite3":
+				keys_query = "select factoid_key "\
+				    "from factoids "\
+				    "where lower(created_by) like '%s!%%' "\
+				    "order by random(*) "\
+				    "limit 15"  % search_string.lower()
 		else:
 			if database.type == "mysql":
 				keys_query = "select factoid_key "\
@@ -510,6 +519,15 @@ class list_keys(factoidClass):
 					     "order by random() "\
 					     "limit 15" % (
 					column, '%' + search_string.lower() + '%')
+			elif database.type == "sqlite3":
+				keys_query = "select factoid_key "\
+				    "from factoids "\
+				    "where lower(%s) like '%s' "\
+				    "order by random(*) "\
+				    "limit 15" % (column,
+						  ''.join('%',
+							  search_string.lower(),
+							  '%s'))
 
 		keys = database.doSQL(keys_query)
 		

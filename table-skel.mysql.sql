@@ -37,15 +37,6 @@ CREATE TABLE data (
 ) TYPE=MyISAM;
 
 --
--- Table structure for table 'deb'
---
-
-CREATE TABLE deb (
-  package varchar(255) default NULL,
-  build enum('stable','testing','unstable') default NULL
-) TYPE=MyISAM;
-
---
 -- Table structure for table 'factoids'
 --
 

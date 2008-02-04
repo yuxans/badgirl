@@ -82,5 +82,9 @@ def addurl(obj, source, str):
         insert_query = "INSERT INTO url (nick, string, time) " \
                        "VALUES ('%s', '%s', CURRENT_TIMESTAMP)" % (
             obj.sqlEscape(nm_to_n(source)), obj.sqlEscape(str))
+    elif database.type == "sqlite3":
+        insert_query = "insert into url (nick, string, time) " \
+            "values ('%s', '%s', time())" % (obj.sqlEscape(nm_to_n(source)),
+                                             obj.sqlEscape(str))
     
     database.doSQL(insert_query)

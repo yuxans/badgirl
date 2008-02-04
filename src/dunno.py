@@ -40,6 +40,12 @@ class dunno(MooBotModule):
 		elif database.type == "mysql":
 			dunno_query = "select data from data where type='dunno' order " \
 				+ "by rand() limit 1"
+                elif database.type == "sqlite3":
+                    dunno_query = "select data from data "\
+                        "where type = 'dunno' "\
+                        "order by random() "\
+                        "limit 1"
+
 		line = (database.doSQL(dunno_query) or [['dunno']])[0][0]
 
 		line = line.replace("WHO", nm_to_n(args["source"]))

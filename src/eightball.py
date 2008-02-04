@@ -66,6 +66,11 @@ def makeline(type):
 	elif database.type == "pgsql":
 		line = database.doSQL("select data from data where type='" + \
 			   type + "' order by random() limit 1")[0][0]
+	elif database.type == "sqlite3":
+		line = database.doSQL("select data from data "\
+					      "where type = '%s' "\
+					      "order by random(*)"\
+					      "limit 1" % type)[0][0]
 
 	return line
 

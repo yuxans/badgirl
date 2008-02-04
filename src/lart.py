@@ -99,6 +99,11 @@ def makeline(type, target):
 		line = database.doSQL("select data from data where type='" + type + "' order by rand() limit 1")[0][0]
 	elif database.type=="pgsql":
 		line = database.doSQL("select data from data where type='" + type + "' order by random() limit 1")[0][0]
+	elif database.type == "sqlite3":
+		line = database.doSQL("select data from data "\
+					      "where type='%s' "\
+					      "order by random(*) "\
+					      "limit 1" % type)[0][0]
 	line = line.replace("WHO", targets[0])
 	for reason in range(1, len(targets)):
 		line = line + " for " + targets[reason]
