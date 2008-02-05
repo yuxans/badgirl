@@ -10,30 +10,9 @@
    * 管理员控制 BadGirl 连接 pastebot 网站列出/删除历史粘帖数据……（不一
      定要通过 soap 协议实现，简单的方法还是直接利用标准 web 操作）
 
-* weblookup.py
-
-   According to http://www.acronymfinder.com/terms.htm , we must
-   switch to other sites. like:
-     * http://silmaril.ie/cgi-bin/uncgi/acronyms
-     * http://acronyms.thefreedictionary.com/
-
 * setup.py
 
   implement a setup.py so that we can install to site-packages and
   make use of easyinstall package
 
   after that we can write our new INSTALL
-
-* docs
-
-  explain our modules' usage, chinese manual (asciidoc source)
-
-* README
-
-  import the wiki page
-
-* GeoIP module
-
-  Check GeoIP from locale installed GeoIP (real) database
-    Need addational GeoIP installation
-    API level coding.
