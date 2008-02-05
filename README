@@ -1,1 +1,9 @@
-import the wiki page ;)
+BadGirl 是基于 moobot 1 的 Irc 机器人程序。她的前身是 #linuxfans 频道中
+的 fans 机器人。她现在服务于 FireIrcd 的多个频道和 freenode.org 的
+#ubuntu-cn2 频道中，主要为喜欢在 IRC 聊天的 Linuxer 和网虫们提供一些
+rss阅读、字词翻译、debian 文件/包裹查询、国内股票价格查询、国内天气预报
+查询等小功能。
+
+BadGirl 十分有趣，有兴趣的兄弟们来一起玩儿吧~~ Try to write some ugly
+codes!! UGLY 才是硬道理！！ 有任何改进的意见或者建议您均可以在 IRC
+(irc://linuxfire.com.cn) 中提出，提前谢过。
