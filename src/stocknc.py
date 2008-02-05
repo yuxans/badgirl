@@ -116,9 +116,24 @@ class stockQuote(MooBotModule):
 		return result
 
 # Without this, the HTMLParser won't accept Chinese attribute values
-HTMLParser.attrfind=re.compile(
-		r'\s*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*'
-		r'(\'[^\']*\'|"[^"]*"|[^ <>]*))?')
+HTMLParser.attrfind = re.compile(
+	r'[\x1d\s;,]*([a-zA-Z_][-.:a-zA-Z_0-9]*)(\s*=\s*' # zkmod
+	r'(\'[^\']*\'|"[^"]*"|((?!\/>)[^><\t\f \n])*))?') # zkmod
+
+HTMLParser.locatestarttagend = re.compile(r"""
+  <[a-zA-Z][-.a-zA-Z0-9:_]*	# tag name
+  (?:(\s|;|,|\x1d)+		# whitespace before attribute name, zkmod
+    (?:[a-zA-Z_][-.:a-zA-Z0-9_]*     # attribute name
+      (?:\s*=\s*                     # value indicator
+        (?:'[^']*'                   # LITA-enclosed value
+          |\"[^\"]*\"                # LIT-enclosed value
+          |[^><\s]+		     # bare value, zkmod
+         )?
+       )?
+     )
+   )*
+  \s*				# trailing whitespace
+""", re.VERBOSE)
 
 class myp(HTMLParser.HTMLParser):
 	"Html Parser for eastmoney quick stockquote"
