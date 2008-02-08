@@ -77,17 +77,19 @@ class uptime(MooBotModule):
 class date(MooBotModule):
     def __init__(self):
         self.regex = "^date(?:stz)?(?: [^ \t]+)?$"
-        self.help_message_date = ""
-        self.help_message_datestz = ""
+        self.help_message_date = "date(see also datestz) usage: ~date [nick|+/-offset]"
+        self.help_message_datestz = "datestz usage: ~datestz [nick] [+/-offset]"
 
     def handler(self, **args):
         import os
         from irclib import Event
 
-        input = args["text"].lower().split().remove(0)
+        input = args["text"].lower().split()
+        del input[0]
+
         request_nick = self.return_to_sender(args, select='nick')
 
-        if input[0] == 'datestz':n
+        if input[0] == 'datestz':
             result = self.handle_tz(input, request_nick)
         else:
             result = self.get_time(input, request_nick)
@@ -110,6 +112,7 @@ class date(MooBotModule):
         """
         assert input[0] == "date"
 
+        tz_offset1 = None
         tz_offset = None
         qnick = None
 
@@ -130,17 +133,21 @@ class date(MooBotModule):
 
         if qnick:
             tz_offset1 = database.doSQL("select tz_offset from bottime "\
-                                            "where nick = %s" % qnick)
+                                            "where nick = '%s'" % qnick)
         if tz_offset1:
-            tz_offset = tz_offset1
+            self.Debug(tz_offset1)
+            tz_offset = tz_offset1[0][0]
         elif not tz_offset:
-            return time.asctime()
+            return "You have no timezone setting, "\
+                "current server time is: %s" % time.asctime()
         
-        return = time.asctime(
-            time.localtime(
-                time.time() + (60 * 60 * tz_offset)
-                )
-            )
+        return "your current timezone is %d, "\
+            "current time is: %s" % (tz_offset,
+                                     time.asctime(
+                time.gmtime(
+                    time.time() + (60 * 60 * tz_offset)
+                    )
+                ))
 
 
     def handle_tz(self, input, request_nick):
@@ -158,30 +165,54 @@ class date(MooBotModule):
 
         tz_offset = None
         qnick = self.nick_validate(request_nick)
+        show_offset = False
+        input_len = len(input)
 
-        if len(input) == 2:
-            tz_offset = tz_validate(input[1])
-        elif len(input) == 3:
-            tz_offset = tz_validate(input[2])
+        if input_len == 1:
+            show_offset = True
+        elif input_len == 2:
+            tz_offset = self.tz_validate(input[1])
+            if not tz_offset:
+                qnick = self.nick_validate(input[1])
+                if not qnick == "help":
+                    show_offset = True
+        elif input_len == 3:
+            tz_offset = self.tz_validate(input[2])
             qnick = self.nick_validate(input[1])
-
+    
         if not tz_offset:
-            return self.help_message_datestz
+            if not show_offset:
+                return self.help_message_datestz
+            else:
+                return self.show_tz(qnick)
         else:
             tmp_data = database.doSQL("select nick, tz_offset from bottime "\
-                                          "where nick = %s" % qnick)
+                                          "where nick = '%s'" % qnick)
 
             if tmp_data:
                 sql_string = "update bottime "\
-                    "set tz_offset = %s "\
-                    "where nick = %s" % (tz_offset, qnick)
+                    "set tz_offset  = %s "\
+                    "where nick = '%s'" % (tz_offset, qnick)
             else:
                 sql_string = "insert into bottime (nick, tz_offset) "\
-                    "values (%s, %s)" % (qnick, tz_offset)
+                    "values ('%s', %s)" % (qnick, tz_offset)
 
             database.doSQL(sql_string)
 
-        return "done!"
+        return "datastz: done!"
+
+    def show_tz(self, nick):
+        """
+        """
+        possiable_data = database.doSQL("select tz_offset from bottime "\
+                                            "where nick = '%s'" % nick)
+        if not possiable_data:
+            return "datastz: %s has no timezone setting, please try to "\
+                "setup one by using `~datastz %s +/-offset'" % (nick,
+                                                                nick)
+        else:
+            return "datestz: %s's timezone was set to %d" % (nick,
+                                                             possiable_data[0][0])
 
     def tz_validate(self, tz_string):
         """validate the time zone offset string
@@ -196,7 +227,7 @@ class date(MooBotModule):
         except ValueError:
             return False
 
-        if abs(tz_offset) > 12:
+        if abs(tz_offset) >= 11:
             return False
 
         return tz_offset
