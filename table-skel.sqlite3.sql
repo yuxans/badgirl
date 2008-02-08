@@ -122,3 +122,9 @@ CREATE TABLE birthday (
   PRIMARY KEY (nick)
 ) ;
 
+
+CREATE TABLE bottime (
+  nick TEXT NOT NULL,
+  tz_offset INTEGER NOT NULL default 0,
+  PRIMARY KEY (nick)
+) ;
