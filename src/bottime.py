@@ -140,12 +140,12 @@ class date(MooBotModule):
             return "You have no timezone setting, "\
                 "current server time is: %s" % time.asctime()
         
-        return "%s (GMT %d)" % (tz_offset,
-                                time.asctime(
+        return "%s (GMT %d)" % (time.asctime(
                 time.gmtime(
                     time.time() + (60 * 60 * tz_offset)
                     )
-                ))
+                ),
+                                tz_offset)
 
 
     def handle_tz(self, input, request_nick):
