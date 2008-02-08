@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS `userability` (
   `bynick` varchar(30) NOT NULL,
   PRIMARY KEY  (`nick`,`channel`,`abilityid`),
   KEY `channel` (`channel`(3))
-) ENGINE=MyISAM:
+) ENGINE=MyISAM;
 
 -- used by ims module
 CREATE TABLE `birthday` (
@@ -169,3 +169,8 @@ CREATE TABLE `birthday` (
   PRIMARY KEY  (`nick`)
 ) ENGINE=MyISAM;
 
+CREATE TABLE bottime (
+  nick varchar(30) NOT NULL,
+  tz_offset smallint(3) NOT NULL DEFAULT 0,
+  PRIMARY KEY (nick)
+);
