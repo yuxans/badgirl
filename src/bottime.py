@@ -75,7 +75,25 @@ class uptime(MooBotModule):
 
 class date(MooBotModule):
     def __init__(self):
-        self.regex = "^date(?:stz)?(?: [^ \t]+)?$"
+        """
+        >>> import re
+        >>> from bottime import date
+        >>> d = date()
+        >>> r = re.compile(d.regex)
+        >>> r.match("date") and True or False
+        True
+        >>> r.match("date fktpp") and True or False
+        True
+        >>> r.match("datestz") and True or False
+        True
+        >>> r.match("datestz fktpp") and True or False
+        True
+        >>> r.match("datestz fktpp +1") and True or False
+        True
+        >>> r.match("datestz +8") and True or False
+        True
+        """
+        self.regex = "^date(?:stz)?(?: [^ \t]+)*$"
         self.help_message_date = "date(see also datestz) usage: ~date [nick|+/-offset]"
         self.help_message_datestz = "datestz usage: ~datestz [nick] [+/-offset]"
 
