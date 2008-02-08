@@ -140,9 +140,8 @@ class date(MooBotModule):
             return "You have no timezone setting, "\
                 "current server time is: %s" % time.asctime()
         
-        return "your current timezone is %d, "\
-            "current time is: %s" % (tz_offset,
-                                     time.asctime(
+        return "%s (GMT %d)" % (tz_offset,
+                                time.asctime(
                 time.gmtime(
                     time.time() + (60 * 60 * tz_offset)
                     )
@@ -210,8 +209,8 @@ class date(MooBotModule):
                 "setup one by using `~datastz %s +/-offset'" % (nick,
                                                                 nick)
         else:
-            return "datestz: %s's timezone was set to %d" % (nick,
-                                                             possiable_data[0][0])
+            return "%s's timezone was (GMT %d)" % (nick,
+                                                   possiable_data[0][0])
 
     def tz_validate(self, tz_string):
         """validate the time zone offset string
