@@ -24,7 +24,6 @@
 """bottime.py - time-related modules """
 import os
 import time
-import datetime
 
 import database
 from moobot_module import MooBotModule
