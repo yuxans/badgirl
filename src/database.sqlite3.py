@@ -59,6 +59,8 @@ def doSQL(SQL):
                 print moobot.RED + "Exception occurred: " + moobot.BLUE + \
                         str(message) + moobot.NORMAL
 
-	c.close()
+	
+	if c:
+		c.close()
 
 	return results
