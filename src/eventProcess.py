@@ -47,7 +47,12 @@ class eventProcess(MooBotModule):
 		elif event.eventtype() == "action":
 			bot.connection.action(event.target(), event.arguments()[0])
 		elif event.eventtype() == "ctcp":
-			bot.connection.ctcp(event.target(), event.arguments()[0])
+			texts = event.arguments()[0].split(" ", 1)
+			if len(texts) == 1:
+				(ctcptype, ctcptext) = (texts[0], "")
+			else:
+				(ctcptype, ctcptext) = texts
+			bot.connection.ctcp(ctcptype, event.target(), ctcptext)
 		elif event.eventtype() == "ctcp_reply":
 			bot.connection.ctcp_reply(event.target(), event.arguments()[0])
 		elif event.eventtype() == "continue":
