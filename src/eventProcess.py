@@ -34,26 +34,36 @@ class eventProcess(MooBotModule):
 
 		bot = args["ref"]() # resolve the reference to the bot
 		event = args["event"]
-		if event.eventtype() == "privmsg" and event.target().lower() != bot.connection.get_nickname().lower():
-			for line in event.arguments()[0].split("\n"):
-				if line != "":
-					bot.connection.privmsg(event.target(), line)
-		
-		elif event.eventtype() == "notice" and event.target().lower() != bot.connection.get_nickname().lower():
-			for line in event.arguments()[0].split("\n"):
-				if line != "":
-					bot.connection.notice(event.target(), line)
+		if event.source() == bot.connection.get_nickname():
+			# self.Debug("%s %s %s %s" % (event.source(), event.eventtype(), event.target(), bot.connection.get_nickname()))
+			if event.eventtype() == "privmsg":
+				for line in event.arguments()[0].split("\n"):
+					if line != "":
+						bot.connection.privmsg(event.target(), line)
+				return # done
+			
+			elif event.eventtype() == "notice":
+				for line in event.arguments()[0].split("\n"):
+					if line != "":
+						bot.connection.notice(event.target(), line)
+				return # done
 
-		elif event.eventtype() == "action":
-			bot.connection.action(event.target(), event.arguments()[0])
-		elif event.eventtype() == "ctcp":
-			texts = event.arguments()[0].split(" ", 1)
-			if len(texts) == 1:
-				(ctcptype, ctcptext) = (texts[0], "")
-			else:
-				(ctcptype, ctcptext) = texts
-			bot.connection.ctcp(ctcptype, event.target(), ctcptext)
-		elif event.eventtype() == "ctcp_reply":
-			bot.connection.ctcp_reply(event.target(), event.arguments()[0])
-		elif event.eventtype() == "continue":
+			elif event.eventtype() == "action":
+				bot.connection.action(event.target(), event.arguments()[0])
+				return # done
+
+			elif event.eventtype() == "ctcp":
+				texts = event.arguments()[0].split(" ", 1)
+				if len(texts) == 1:
+					(ctcptype, ctcptext) = (texts[0], "")
+				else:
+					(ctcptype, ctcptext) = texts
+				bot.connection.ctcp(ctcptype, event.target(), ctcptext)
+				return # done
+
+			elif event.eventtype() == "ctcp_reply":
+				bot.connection.ctcp_reply(event.target(), event.arguments()[0])
+				return # done
+
+		if event.eventtype() == "continue":
 			return
