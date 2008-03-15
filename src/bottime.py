@@ -88,9 +88,9 @@ class date(MooBotModule):
         True
         >>> r.match("datestz fktpp") and True or False
         True
-        >>> r.match("datestz fktpp +1") and True or False
+        >>> r.match("datestz fktpp +12") and True or False
         True
-        >>> r.match("datestz +8") and True or False
+        >>> r.match("datestz +0") and True or False
         True
         """
         self.regex = "^date(?:stz)?(?: [^ \t]+)*$"
@@ -138,12 +138,12 @@ class date(MooBotModule):
             qnick = self.nick_validate(request_nick)
 
         elif len(input) == 2:
-            tz_offset = self.tz_validate(input[1])
+            tz_offset, tz_is_valid = self.tz_validate(input[1])
             if input[1] == "help":
                 return self.help_message_date
             # if input[1] is not a valid tz_offset string, we assume it is 
             # a nick
-            elif not tz_offset:
+            elif not tz_is_valid:
                 qnick = self.nick_validate(input[1])
         else:
             return self.help_message_date
@@ -154,7 +154,7 @@ class date(MooBotModule):
         if tz_offset1:
             self.Debug(tz_offset1)
             tz_offset = tz_offset1[0][0]
-        elif not tz_offset:
+        elif not tz_is_valid:
             return "You have no timezone setting, "\
                 "current server time is: %s" % time.asctime()
         
@@ -187,16 +187,16 @@ class date(MooBotModule):
         if input_len == 1:
             show_offset = True
         elif input_len == 2:
-            tz_offset = self.tz_validate(input[1])
-            if not tz_offset:
+            tz_offset, tz_is_valid = self.tz_validate(input[1])
+            if not tz_is_valid:
                 qnick = self.nick_validate(input[1])
                 if not qnick == "help":
                     show_offset = True
         elif input_len == 3:
-            tz_offset = self.tz_validate(input[2])
+            tz_offset, tz_is_valid = self.tz_validate(input[2])
             qnick = self.nick_validate(input[1])
     
-        if not tz_offset:
+        if not tz_is_valid:
             if not show_offset:
                 return self.help_message_datestz
             else:
@@ -235,18 +235,31 @@ class date(MooBotModule):
 
         return the crosponding time zone offset if the tz_string is
         valid, or return False.
+        >>> from bottime import date
+        >>> d = date()
+        >>> d.tz_validate("12")
+        (12, True)
+        >>> d.tz_validate("-12")
+        (-12, True)
+        >>> d.tz_validate("13")
+        (13, False)
+        >>> d.tz_validate("0")
+        (0, True)
+        >>> d.tz_validate("-0")
+        (0, True)
         """
         tz_offset = 0
+        result = True
         
         try:
             tz_offset = int(tz_string)
         except ValueError:
-            return False
+            result = False
 
-        if abs(tz_offset) >= 11:
-            return False
+        if abs(tz_offset) > 12:
+            result = False
 
-        return tz_offset
+        return tz_offset, result
 
     def nick_validate(self, nick_string):
         """validate nick_string to prevent being SQL injected
