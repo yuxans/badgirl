@@ -72,7 +72,7 @@ way as normal tell, but with "faketell" instead."""
 		if faketell:
 			if factoid.lower()[:7] == "<reply>":
 				message = factoid[7:]
-			else
+			else:
 				message = factoid_key + " is " + factoid
 		else:
 			if factoid.lower()[:7] == "<reply>":
