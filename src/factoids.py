@@ -89,7 +89,7 @@ class factoidClass(MooBotModule):
 					stack.append(token)
 				else:
 					stack.append(stack.pop() + token)
-		return " ".join(stack)
+		return "".join(stack)
 
 	def get_token(self, text):
 		""" gets the next token for SAR parsing from text """

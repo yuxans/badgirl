@@ -31,7 +31,7 @@ class reverse(MooBotModule):
     def handler(self, **args):
         """gnirts a sesreveR"""
 
-        orig_string = "".join(args["text"].split(" ")[2:])
+        orig_string = " ".join(args["text"].split(" ")[2:])
         newstring = ""
         for i in range(1, len(orig_string)+1):
             newstring += orig_string[-i]

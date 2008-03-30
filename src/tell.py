@@ -47,7 +47,7 @@ way as normal tell, but with "faketell" instead."""
 				faketell = 1
 	
 		# Get the factoid
-		factoid_key = "".join(args["text"].split()[4:])
+		factoid_key = " ".join(args["text"].split()[4:])
 	
 		# Check if it exists first
 		count_query = "select count(factoid_key) from" \

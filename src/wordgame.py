@@ -193,8 +193,8 @@ class wordgame(MooBotModule):
 			answer_letters[x].lower() == guess.lower():
 			   clue_letters[x] = answer_letters[x]
 
-		if "".join(clue_letters) != self.clue:
-			self.clue = "".join(clue_letters)
+		if " ".join(clue_letters) != self.clue:
+			self.clue = " ".join(clue_letters)
 			self.score(who, 'GUESS', self.clue.count(guess))
 			if BLANK not in self.clue:
 				self.reset()

@@ -205,7 +205,7 @@ class remove_poll_option(MooBotModule):
 		if priv.checkPriv(args["source"], "poll_priv") == 0:
 			return Event("privmsg", "", target, [ "You are not authorized to do that." ])
 		
-		option_key = "".join(args["text"].split()[4:])
+		option_key = " ".join(args["text"].split()[4:])
 		poll_num = self.sqlEscape(args["text"].split()[3])
 	
 		database.doSQL("delete from poll_options where poll_num = " + poll_num + " and option_key = '" + option_key + "'")
