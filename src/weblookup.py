@@ -25,7 +25,7 @@ from irclib import Event, IrcStringIO
 
 handler_list = ["weathercn", "google", "kernelStatus", "dict", "acronym",
 		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
-		"geekquote"]
+		"geekquote", "lunarCal"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
@@ -1032,6 +1032,65 @@ class geekquote(MooBotModule):
 		quote=re.sub('<br />','',quote)
 
 		return Event("privmsg", "", target, [quote])
+
+
+class lunarCal(MooBotModule):
+	"""黄历查询 by Ian@linuxfire.com.cn
+		Action: http://www.shpan.com/huangli/MyDetail.asp?currentDate=
+		Method: GET
+		Params: yyyy-mm-dd
+	"""
+	URL = "http://www.shpan.com/huangli/MyDetail.asp?currentDate="
+	def __init__(self):
+		self.regex = "^hl( +[^ ]*)?"
+	
+	def parse_date(self, strDate):
+		from datetime import date
+		if strDate.isdigit():
+			d = date(int(strDate[0:-4]), int(strDate[-4:-2]), int(strDate[-2:]))
+		else:
+			tupDate = re.findall('(\d+)-(\d+)-(\d+)', strDate)
+			if len(tupDate) == 1:
+				d = date(int(tupDate[0][0]), int(tupDate[0][1]), int(tupDate[0][2]))
+			else:
+				raise ValueError, "输入格式不正确。";
+		return d.isoformat()
+	
+	def fetch(self, date):
+		#print date
+		response = urllib.urlopen(lunarCal.URL+date)
+		html = response.read().decode("GBK")
+		response.close()
+		return html
+	
+	def extract(self, text):
+		date = re.compile("中华人民共和国\d{4}年\d+月\d+日黄历".decode("GBK"))
+		hl = re.search(date, text)
+		if hl:
+			msg = ["\002" + hl.group(0) + "\002.  "]
+			date = re.compile('<tr>[^<]*<td[^>]*class="TdShow"\s*>([^<]*)</td>\s*<td[^>]*class="TdShow"\s*>([^<]*)</td>\s*</tr>')
+			for item in re.findall(date, text):
+				msg.append("\002" + item[0].strip() + "\002 " + item[1].strip())
+			return msg
+		else:
+			raise ValueError, "查询结果无效。";
+	
+	def handler(self, **args):
+		qstr = args["text"].strip().split(" ")[1:]
+		try:
+			if len(qstr) == 1:
+				from datetime import date
+				theDate = date.today().isoformat()
+			elif len(qstr) == 2:
+				theDate = self.parse_date(qstr[1])
+			else:
+				raise ValueError, "输入格式不正确。";
+			msg = [" ".join(self.extract(self.fetch(theDate)))]
+		except ValueError, e:
+			desc = str(e).decode("GBK")
+			msg = [desc]
+		#for m in msg: print m
+		return Event("notice", "", self.return_to_sender(args), msg)
 
 
 def _test():
