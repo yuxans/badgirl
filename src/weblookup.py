@@ -1090,7 +1090,10 @@ class lunarCal(MooBotModule):
 			desc = str(e).decode("GBK")
 			msg = [desc]
 		#for m in msg: print m
-		return Event("notice", "", self.return_to_sender(args), msg)
+		return Event("notice",
+			     "",
+			     self.return_to_sender(args, select="nick"),
+			     msg)
 
 
 def _test():
