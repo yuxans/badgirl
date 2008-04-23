@@ -22,7 +22,8 @@ import random
 from irclib import Event
 from irclib import Event
 from moobot_module import MooBotModule
-handler_list = ["reverse", "coding", "leet", "russian_style"]
+import url_codec
+handler_list = ["reverse", "encodeDecode", "coding", "leet", "russian_style"]
 
 class reverse(MooBotModule):
     def __init__(self):
@@ -37,19 +38,59 @@ class reverse(MooBotModule):
             newstring += orig_string[-i]
         return Event("privmsg", "", self.return_to_sender(args), [newstring])
 
+class encodeDecode(MooBotModule):
+    def __init__(self):
+        self.regex = "^(encode|decode) .+?$"
+
+    def handler(self, **args):
+
+        txts = args["text"].split(" ", 3)[1:]
+        if len(txts) != 3:
+            return Event("privmsg", "",
+                         self.return_to_sender(args), [ "Usage: encode $encoding $string, decode $encoding $string" ])
+
+        cmd, encoding, msg = txts
+
+        try:
+            encodings = encoding.split("|")
+            for encoding in encodings:
+                if cmd == "encode":
+                    msg = msg.encode(encoding)
+                else:
+                    msg = str(msg).decode(encoding)
+
+            if type(msg) != unicode:
+                if cmd == "encode":
+                    try:
+                        encoding = "utf8"
+                        msg = msg.decode(encoding)
+                    except:
+                        encoding = "gb18030"
+                        msg = msg.decode(encoding)
+                else:
+                    msg = unicode(msg)
+        except Exception, e:
+            msg = "%s when %s with '%s' encoding, result in: %s" % (e, cmd, encoding, msg)
+
+        return Event("privmsg", "", 
+                     self.return_to_sender(args), [ msg ])
+
 class coding(MooBotModule):
     def __init__(self):
-        self.regex = "^(rot13|u?(hex|base64)) .+"
+        self.regex = "^(rot13|(un)?(hex|base64|url\\+|url)) .+"
 
     def handler(self, **args):
 
         cmd, msg = args["text"].split(" ", 2)[1:]
 
-        if cmd.startswith("u"):
-            cmd = cmd.lstrip("u")
-            msg = msg.decode(cmd).decode('utf8')
+        if cmd.startswith("un"):
+            cmd = cmd[2:]
+            try:
+                msg = str(msg).decode(cmd).decode('utf8')
+            except:
+                msg = str(msg).decode(cmd).decode('gb18030')
         else:
-            msg = msg.encode('utf8').encode(cmd)
+            msg = msg.encode("utf8").encode(cmd)
 
         return Event("privmsg", "", 
                      self.return_to_sender(args), [ msg ])
