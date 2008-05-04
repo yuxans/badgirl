@@ -60,15 +60,12 @@ class encodeDecode(MooBotModule):
                     msg = str(msg).decode(encoding)
 
             if type(msg) != unicode:
-                if cmd == "encode":
-                    try:
-                        encoding = "utf8"
-                        msg = msg.decode(encoding)
-                    except:
-                        encoding = "gb18030"
-                        msg = msg.decode(encoding)
-                else:
-                    msg = unicode(msg)
+                try:
+                    encoding = "utf8"
+                    msg = msg.decode(encoding)
+                except:
+                    encoding = "gb18030"
+                    msg = msg.decode(encoding)
         except Exception, e:
             msg = "%s when %s with '%s' encoding, result in: %s" % (e, cmd, encoding, msg)
 
