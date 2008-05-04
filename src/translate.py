@@ -67,7 +67,7 @@ class encodeDecode(MooBotModule):
                     encoding = "gb18030"
                     msg = msg.decode(encoding)
         except Exception, e:
-            msg = "%s when %s with '%s' encoding, result in: %s" % (e, cmd, encoding, msg)
+            msg = "Error \"%s\" when %s with '%s' encoding" % (e, cmd, encoding)
 
         return Event("privmsg", "", 
                      self.return_to_sender(args), [ msg ])
