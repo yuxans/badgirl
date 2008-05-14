@@ -24,7 +24,7 @@ from moobot_module import MooBotModule
 from irclib import Event, IrcStringIO
 
 handler_list = ["weathercn", "google", "kernelStatus", "dict", "acronym",
-		"babelfish", "debpackage", "debfile", "foldoc", "pgpkey",
+		"babelfish", "debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
 		"geekquote", "lunarCal"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
@@ -880,6 +880,85 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 				self.o.write(' ')
 				self.o.write(data)
 
+class genpackage(MooBotModule):
+	"""
+	Does a package or file search on http://www.portagefilelist.de/index.php/Special:PFLQuery2 and returns top 10 result
+	"""
+	re_tag = re.compile("<[^>]+>")
+	re_td = re.compile("<td[^>]*>(.*?)</td>", re.S)
+	def __init__(self):
+		self.regex="^(genpackage|genfile) .+"
+
+	def handler(self, **args):
+		target = self.return_to_sender(args)
+
+		request = args["text"].split()[1:]
+
+		if len(request) == 2:
+			all = False
+			cmd, param = request
+		elif len(request) == 3 and request[1] == 'all':
+			all = True
+			cmd, dummy, param = request
+		else:
+			msg = "Usage: genpackage [all] [$dir/]$packagename, [all] OR genfile $path"
+			return Event("privmsg", "", target, [msg])
+		form_action = "http://www.portagefilelist.de/index.php/Special:PFLQuery2"
+		if cmd == 'genpackage':
+			package = param
+			if package.find('/') != -1:
+				dir, package = package.split('/', 1)
+			else:
+				dir = ''
+
+			params = {
+				"dir": dir,
+				"package": package,
+				"searchpackage": "lookup",
+				"lookup": "package"}
+			if not all:
+				params["group_pkgs"] = "on"
+		else:
+			file = param
+
+			params = {
+				"file": file,
+				"searchfile": "lookup",
+				"lookup": "file"}
+			if not all:
+				params["group_file"] = "on"
+
+		form_inputs = urllib.urlencode(params)
+		# build the request
+		try:
+			response = urllib.urlopen(form_action + '?' + form_inputs)
+		except Exception, e:
+			return Event("privmsg", "", target, [str(e)])
+		msg_notfound = Event("privmsg", "", target, ["not found"])
+		html = response.read().decode("UTF-8")
+		if html.find("query execution time") == -1:
+			return msg_notfound
+		dummy, html = html.split("query execution time", 1)
+		if html.find("</table") == -1:
+			return msg_notfound
+		html, dummy = html.split("</table", 1)
+		results = []
+		rows = html.split("</tr")[:-1]
+		for row in rows:
+			tds = self.re_td.findall(row)
+			if len(tds) == 2:
+				results.append(self.re_tag.sub("", "%s/%s" % (tds[0], tds[1])))
+			elif len(tds) == 3:
+				results.append(self.re_tag.sub("", "%s/%s-%s" % (tds[0], tds[1], tds[2])))
+			elif len(tds) == 4:
+				results.append(self.re_tag.sub("", "%s/%s in %s/%s" % (tds[2], tds[3], tds[0], tds[1])))
+			elif len(tds) == 5:
+				results.append(self.re_tag.sub("", "%s/%s in %s/%s-%s" % (tds[2], tds[3], tds[0], tds[1], tds[4])))
+			#else:
+			#	return msg_notfound
+		results.sort(lambda x,y: cmp(y.lower(), x.lower()))
+		result = ", ".join(results[0:10])
+		return Event("privmsg", "", target, [result])
 
 class acronym(MooBotModule):
 	""" Does a search on www.acronymfinder.com and returns all definitions
