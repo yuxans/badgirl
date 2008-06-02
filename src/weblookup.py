@@ -887,7 +887,7 @@ class genpackage(MooBotModule):
 	re_tag = re.compile("<[^>]+>")
 	re_td = re.compile("<td[^>]*>(.*?)</td>", re.S)
 	def __init__(self):
-		self.regex="^(genpackage|genfile) .+"
+		self.regex="^(genpackage|genfile)( .+)?$"
 
 	def handler(self, **args):
 		target = self.return_to_sender(args)
@@ -901,7 +901,7 @@ class genpackage(MooBotModule):
 			all = True
 			cmd, dummy, param = request
 		else:
-			msg = "Usage: genpackage [all] [$dir/]$packagename, [all] OR genfile $path"
+			msg = "Usage: genpackage [all] [$dir/]$packagename, OR genfile [all] $path"
 			return Event("privmsg", "", target, [msg])
 		form_action = "http://www.portagefilelist.de/index.php/Special:PFLQuery2"
 		if cmd == 'genpackage':
