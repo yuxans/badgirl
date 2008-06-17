@@ -236,6 +236,8 @@ class lookup(factoidClass):
 
 			# Replace $who and $nick with the person requesting the factoid
 			text = text.replace("$who", nm_to_n(args["source"]))
+			if args.has_key("channel"):
+				text = text.replace("$chan", args["channel"])
 			text = text.replace("$nick", nm_to_n(args["source"]))
 
 			# If the new string (after previous replacements) begins with
