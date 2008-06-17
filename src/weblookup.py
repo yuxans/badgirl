@@ -946,14 +946,16 @@ class genpackage(MooBotModule):
 		rows = html.split("</tr")[:-1]
 		for row in rows:
 			tds = self.re_td.findall(row)
+			# genpackage
 			if len(tds) == 2:
 				results.append(self.re_tag.sub("", "%s/%s" % (tds[0], tds[1])))
 			elif len(tds) == 3:
 				results.append(self.re_tag.sub("", "%s/%s-%s" % (tds[0], tds[1], tds[2])))
-			elif len(tds) == 4:
-				results.append(self.re_tag.sub("", "%s/%s in %s/%s" % (tds[2], tds[3], tds[0], tds[1])))
+			# genfile
 			elif len(tds) == 5:
-				results.append(self.re_tag.sub("", "%s/%s in %s/%s-%s" % (tds[2], tds[3], tds[0], tds[1], tds[4])))
+				results.append(self.re_tag.sub("", "%s/%s in %s/%s" % (tds[2], tds[3], tds[0], tds[1])))
+			elif len(tds) == 6:
+				results.append(self.re_tag.sub("", "%s/%s in %s/%s-%s" % (tds[2], tds[3], tds[0], tds[1], tds[5])))
 			#else:
 			#	return msg_notfound
 		results.sort(lambda x,y: cmp(y.lower(), x.lower()))
