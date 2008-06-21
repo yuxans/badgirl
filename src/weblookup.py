@@ -580,8 +580,8 @@ class babelfish(MooBotModule):
 			   "User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
 			   "Accept-Encoding": ""}
 		# connect, make the reauest
-		connect = httplib.HTTPConnection('babelfish.altavista.com', 80)
-		connect.request("POST", "/tr", urllib.urlencode(params), headers)
+		connect = httplib.HTTPConnection('babelfish.yahoo.com', 80)
+		connect.request("POST", "/translate_txt", urllib.urlencode(params), headers)
 		response = connect.getresponse()
 		if response.status != 200: # check for errors
 			msg = response.status + ": " + response.reason
@@ -589,7 +589,7 @@ class babelfish(MooBotModule):
 		else:
 			listing = response.read().decode("UTF-8", "ignore")
 			listing = listing.replace('\n', '') # get rid of newlines
-		searchRegex2 = re.compile("<td bgcolor=white class=s><div style=padding:10px;>(.*?)</div></td>")
+		searchRegex2 = re.compile('<div id="result"><div style="padding:0.6em;">(.*?)</div></div>')
 		match = searchRegex2.search(listing)
 		result = match.group(1)
 		return Event("privmsg", "", self.return_to_sender(args), 
