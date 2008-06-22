@@ -1166,7 +1166,7 @@ class lunarCal(MooBotModule):
 				theDate = self.parse_date(qstr[1])
 			else:
 				raise ValueError, "输入格式不正确。";
-			msg = [" ".join(self.extract(self.fetch(theDate)))]
+			msg = ["\n".join(self.extract(self.fetch(theDate)))]
 		except ValueError, e:
 			desc = str(e).decode("GBK")
 			msg = [desc]
