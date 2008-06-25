@@ -1246,7 +1246,7 @@ class ohloh(MooBotModule):
 					kudo_position = 999999
 
 				name = account["name"]
-				msg = [ u"%s has kudo lv %d #%d on ohloh, located at %s %s" % (
+				msg = [ u"%s has kudo lv%d #%d on ohloh, located at %s %s" % (
 						name,
 						kudo_rank,
 						kudo_position,
