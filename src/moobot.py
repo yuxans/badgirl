@@ -181,11 +181,11 @@ class MooBot(SingleServerIRCBot):
 				return
 		# If we are referred to with our shorthand name, make it look
 		# like we were referred to normally.
-		shortname = "^\s*" + self.configs["shorthand"]
+		shortname = "^\s*" + self.configs["botconfig"]["shorthand"]
 		shortregex = compile(shortname)
 		replace_str = self.connection.get_nickname() + ": "
 		if shortregex.search(msg):
-			msg = msg.replace(self.configs["shorthand"], replace_str, 1)
+			msg = msg.replace(self.configs["botconfig"]["shorthand"], replace_str, 1)
 			args["text"] = msg
 		# Now, check and see if we are being spoken too
 		ourname = "^" + self.connection.get_nickname()
@@ -318,7 +318,7 @@ class MooBot(SingleServerIRCBot):
 		try:
 			confenc = config.get('config', 'encoding')
 		except NoSectionError:
-			Debug("ERROR: [config]\nencoding=..")
+			Debug("WARNING: config encoding should be set:\n[config]\nencoding=..")
 
 		try:
 			nick = config.get('connection', 'nick').decode(confenc)
@@ -339,8 +339,9 @@ class MooBot(SingleServerIRCBot):
 		for section in config.sections():
 			if section != "connection":
 				# These will all be returned, don't need to be in others
+				others[section] = {}
 				for option in config.options(section):
-					others[option] = config.get(section, option).decode(confenc)
+					others[section][option] = config.get(section, option).decode(confenc)
 		return {'nick': nick, 'username': username,
 			'realname': realname, 'server': server, 'port': port,
 			'channels': channels, 'module_list': module_list, 'encoding': encoding,
