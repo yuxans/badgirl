@@ -25,7 +25,7 @@ from irclib import Event, IrcStringIO
 
 handler_list = ["weathercn", "google", "kernelStatus", "dict", "acronym",
 		"babelfish", "debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
-		"geekquote", "lunarCal"]
+		"geekquote", "lunarCal", "ohloh"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
@@ -1176,6 +1176,123 @@ class lunarCal(MooBotModule):
 			     self.return_to_sender(args, select="nick"),
 			     msg)
 
+class ohloh(MooBotModule):
+	urlAccount = "http://www.ohloh.net/accounts/{account_id}.xml"
+	def __init__(self):
+		self.regex = "^(ohloh +.+|ohlohpk +[^ ]+ +[^ ]+|ohloh)$"
+	
+	def getKey(self, bot):
+		return bot.configs["ohloh"]["key"]
+
+	def domNodeToObject(self, node):
+		import xml.dom.minidom as dom
+		obj = {}
+		text = ''
+		for node in node.childNodes:
+			if node.nodeType == node.ELEMENT_NODE:
+				obj[node.nodeName] = self.domNodeToObject(node)
+			elif node.nodeType == node.TEXT_NODE:
+				text += node.nodeValue
+		if not obj:
+			obj = text
+		return obj
+
+	def queryAccount(self, bot, account):
+		if account.find("@") != -1:
+			import md5
+			m = md5.new()
+			m.update(account)
+			account = m.hexdigest()
+
+
+		params = urllib.urlencode({ 'api_key': self.getKey(bot), 'v': 1 })
+		url = self.urlAccount.replace('{account_id}', account) + "?" + params
+		print url
+		response = urllib.urlopen(url)
+		html = response.read()
+		response.close()
+
+		import xml.dom.minidom as dom
+		doc = self.domNodeToObject(dom.parseString(html).documentElement)
+		if not doc or doc["status"] != "success":
+			return None
+
+		return doc["result"]["account"]
+	
+	def handler(self, **args):
+		bot = args["ref"]()
+		try:
+			self.getKey(bot)
+		except ValueError:
+			return Event("privmsg", "", self.return_to_sender(args), [ u"ohloh key not configured" ])
+
+		argv = args["text"].strip().split(" ")
+		del(argv[1], argv[0])
+		target = self.return_to_sender(args)
+
+		while True:
+			if len(argv) == 1:
+				name = argv[0]
+				account = self.queryAccount(bot, name)
+				if not account:
+					msg = [ u"%s not found on ohloh" % name ]
+					break
+
+				try:
+					kudo_rank = int(account["kudo_score"]["kudo_rank"])
+					kudo_position = int(account["kudo_score"]["position"])
+				except KeyError:
+					kudo_rank = 1
+					kudo_position = 999999
+
+				name = account["name"]
+				msg = [ u"%s has kudo lv %d #%d on ohloh, located at %s %s" % (
+						name,
+						kudo_rank,
+						kudo_position,
+						account["location"],
+						account["homepage_url"]
+						) ]
+			elif len(argv) == 2:
+				name1, name2 = argv
+
+				# getting info
+				account1 = self.queryAccount(bot, name1)
+				if not account1:
+					msg = [ u"%s not found on ohloh" % name1 ]
+					break
+
+				account2 = self.queryAccount(bot, name2)
+				if not account2:
+					msg = [ u"%s not found on ohloh" % name2 ]
+					break
+
+				# compare
+				try:
+					kudo_rank1 = int(account1["kudo_score"]["position"])
+				except KeyError:
+					kudo_rank1 = 999999
+				try:
+					kudo_rank2 = int(account2["kudo_score"]["position"])
+				except KeyError:
+					kudo_rank2 = 999999
+
+				# result
+				name1 = account1["name"]
+				name2 = account2["name"]
+				result = kudo_rank1 - kudo_rank2
+				self.Debug(result)
+				if result == 0:
+					msg = [ u"both %s and %s are just newbie on ohloh" % (name1, name2) ]
+				elif result < 0:
+					msg = [ u"%s ROCKS and %s sucks" % (name1, name2)  ]
+				else:
+					msg = [ u"%s sucks and %s ROCKS" % (name1, name2)  ]
+			else:
+				msg = [ u"Usage: ohloh OR ohloh $nick OR ohlohpk $nick1 $nick2, see http://www.ohloh.net/" ]
+			break
+
+		return Event("privmsg", "", target, msg)
 
 def _test():
 	import doctest
