@@ -1179,7 +1179,7 @@ class lunarCal(MooBotModule):
 class ohloh(MooBotModule):
 	urlAccount = "http://www.ohloh.net/accounts/{account_id}.xml"
 	def __init__(self):
-		self.regex = "^((ohloh|kudo)( +.+)?|(ohloh|kudo) +[^ ]+( +[^ ]+)?|(ohloh|kudo) help)$"
+		self.regex = "^((ohloh|kudo)( +.+)?|(ohlohpk|kudopk) +[^ ]+( +[^ ]+)?|(ohloh|kudo) help)$"
 	
 	def getKey(self, bot):
 		return bot.configs["ohloh"]["key"]
