@@ -1266,6 +1266,9 @@ class ohloh(MooBotModule):
 				else:
 					from irclib import nm_to_n
 					name1, name2 = (nm_to_n(args['source']), argv[0])
+				if name1.lower() == name2.lower():
+					msg = [ u"Cannot pk the same ppl" ]
+					break;
 
 				# getting info
 				account1 = self.queryAccount(bot, name1)
