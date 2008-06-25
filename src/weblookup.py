@@ -1179,7 +1179,7 @@ class lunarCal(MooBotModule):
 class ohloh(MooBotModule):
 	urlAccount = "http://www.ohloh.net/accounts/{account_id}.xml"
 	def __init__(self):
-		self.regex = "^(ohloh +.+|ohlohpk +[^ ]+ +[^ ]+|ohloh)$"
+		self.regex = "^((ohloh|kudo)( +.+)?|(ohloh|kudo) +[^ ]+( +[^ ]+)?|(ohloh|kudo) help)$"
 	
 	def getKey(self, bot):
 		return bot.configs["ohloh"]["key"]
@@ -1227,12 +1227,19 @@ class ohloh(MooBotModule):
 			return Event("privmsg", "", self.return_to_sender(args), [ u"ohloh key not configured" ])
 
 		argv = args["text"].strip().split(" ")
-		del(argv[1], argv[0])
+		del argv[0]
+		cmd = argv[0].replace("kudo", "ohloh")
+		del argv[0]
 		target = self.return_to_sender(args)
 
 		while True:
-			if len(argv) == 1:
-				name = argv[0]
+			if cmd == "ohloh":
+				if len(argv) == 1:
+					name = argv[0]
+				else:
+					from irclib import nm_to_n
+					name = nm_to_n(args['source'])
+
 				account = self.queryAccount(bot, name)
 				if not account:
 					msg = [ u"%s not found on ohloh" % name ]
@@ -1246,15 +1253,19 @@ class ohloh(MooBotModule):
 					kudo_position = 999999
 
 				name = account["name"]
-				msg = [ u"%s has kudo lv%d #%d on ohloh, located at %s %s" % (
+				msg = [ u"%s has kudo lv %d #%d on ohloh, located at %s %s" % (
 						name,
 						kudo_rank,
 						kudo_position,
 						account["location"],
 						account["homepage_url"]
 						) ]
-			elif len(argv) == 2:
-				name1, name2 = argv
+			elif cmd == "ohlohpk" and len(argv) > 0:
+				if len(argv) == 2:
+					name1, name2 = argv
+				else:
+					from irclib import nm_to_n
+					name1, name2 = (nm_to_n(args['source']), argv[0])
 
 				# getting info
 				account1 = self.queryAccount(bot, name1)
@@ -1269,27 +1280,27 @@ class ohloh(MooBotModule):
 
 				# compare
 				try:
-					kudo_rank1 = int(account1["kudo_score"]["position"])
+					pos1 = int(account1["kudo_score"]["position"])
 				except KeyError:
-					kudo_rank1 = 999999
+					pos1 = 999999
 				try:
-					kudo_rank2 = int(account2["kudo_score"]["position"])
+					pos2 = int(account2["kudo_score"]["position"])
 				except KeyError:
-					kudo_rank2 = 999999
+					pos2 = 999999
 
 				# result
 				name1 = account1["name"]
 				name2 = account2["name"]
-				result = kudo_rank1 - kudo_rank2
+				result = pos1 - pos2
 				self.Debug(result)
 				if result == 0:
 					msg = [ u"both %s and %s are just newbie on ohloh" % (name1, name2) ]
 				elif result < 0:
-					msg = [ u"%s ROCKS and %s sucks" % (name1, name2)  ]
+					msg = [ u"%s#%d ROCKS and %s#%d sucks" % (name1, pos1, name2, pos2)  ]
 				else:
-					msg = [ u"%s sucks and %s ROCKS" % (name1, name2)  ]
+					msg = [ u"%s#%d sucks and %s#%d ROCKS" % (name1, pos1, name2, pos2)  ]
 			else:
-				msg = [ u"Usage: ohloh OR ohloh $nick OR ohlohpk $nick1 $nick2, see http://www.ohloh.net/" ]
+				msg = [ u"Usage: ohloh OR ohloh help OR ohloh $nick OR ohlohpk $nick1 $nick2, see http://www.ohloh.net/" ]
 			break
 
 		return Event("privmsg", "", target, msg)
