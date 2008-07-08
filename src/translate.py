@@ -40,26 +40,39 @@ class reverse(MooBotModule):
 
 class encodeDecode(MooBotModule):
     def __init__(self):
-        self.regex = "^(encode|decode) .+?$"
+        self.regex = "^(encode|decode|codec) .+?$"
 
     def handler(self, **args):
 
         txts = args["text"].split(" ", 3)[1:]
         if len(txts) != 3:
             return Event("privmsg", "",
-                         self.return_to_sender(args), [ "Usage: encode $encoding $string, decode $encoding $string" ])
+                         self.return_to_sender(args), [ "Usage: encode|decode|codec $encodings $string, $encodings is separated by | prefixed by optional + or -" ])
 
         cmd, encoding, msg = txts
+        if cmd != "decode":
+            cmd = "encode"
 
+        import re
+        separator = re.compile("[|/,]")
         try:
-            encodings = encoding.split("|")
+            encodings = separator.split(encoding)
             for encoding in encodings:
+                if encoding:
+                    if encoding[0] == '+':
+                        cmd = "encode"
+                        encoding = encoding[1:]
+                    elif encoding[0] == '-':
+                        cmd = "decode"
+                        encoding = encoding[1:]
+
                 if cmd == "encode":
                     msg = msg.encode(encoding)
                 else:
                     msg = str(msg).decode(encoding)
 
             if type(msg) != unicode:
+                cmd = "decode"
                 try:
                     encoding = "utf8"
                     msg = msg.decode(encoding)
