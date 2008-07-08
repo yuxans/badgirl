@@ -115,4 +115,4 @@ class math(MooBotModule):
             for x in number:
                 if x != "" and eval(x) > 1000 :
                     return False
-            return Ture
+            return True
