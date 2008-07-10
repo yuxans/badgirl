@@ -575,7 +575,7 @@ class babelfish(MooBotModule):
 		translation_text = translation_text.replace("'", u"¡¯");
 
 		# create the POST body
-		params = {"doit": "done", "intl": "1", "tt": "urltext", "trtext": translation_text.encode("UTF-8"), "lp": translation_key}
+		params = {"ei": "UTF-8", "doit": "done", "fr": "bf-res", "intl": "1", "tt": "urltext", "trtext": translation_text.encode("UTF-8"), "lp": translation_key}
 		headers = {"Content-type": "application/x-www-form-urlencoded",
 			   "User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
 			   "Accept-Encoding": ""}
