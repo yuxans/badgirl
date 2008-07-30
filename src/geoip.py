@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding:gb2312 -*-
+# -*- coding:utf-8 -*-
 
 # Copyright (C) 2007 by FKtPp
 #
@@ -22,6 +22,8 @@
 import re, urllib
 from irclib import Event
 from moobot_module import MooBotModule
+from sgmllib import SGMLParser
+
 
 handler_list = ['chunzhen',]
 
@@ -29,6 +31,27 @@ class IEURLopener(urllib.FancyURLopener):
 	version = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
 
 urllib._urlopener = IEURLopener()
+
+class Parse(SGMLParser):
+	def reset(self):
+		self.found_td = 0
+		SGMLParser.reset(self)
+    
+	def unknown_starttag(self, tag, attrs):
+		self.tag = tag
+		if tag == "li":
+			self.found_td = 1 
+        
+	def unknown_endtag(self, tag):
+		self.tag = tag
+		if tag == "li":
+			self.found_td=0
+
+	def handle_data(self, text):
+		if self.found_td:
+			global info
+			info = text
+			return info
 
 class chunzhen(MooBotModule):
 	"""Get geographic location infomation of specific IP address from web.
@@ -95,20 +118,20 @@ class chunzhen(MooBotModule):
 
 	def handler(self, **args):
 		query_str = args["text"].split()
-
 		query_str = query_str[2].strip()
+		ip = self.fixipv4(query_str)
+		parms = "ip="+ip+"&action=2"
+		f = urllib.urlopen('http://www.ip138.com/ips8.asp', parms)
+    
+		p = Parse()
+		p.feed(f.read())
+        
+		geoinfo = info.decode("gbk")
+		"""m = geoinfo.split("：",1)[1]
+		geoinfo = m.decode('utf-8')"""
+		geoinfo = geoinfo.split(u"：", 1)[1]
 
-		ipaddress = self.fixipv4(query_str)
-
-		parms = urllib.urlencode({'ip':ipaddress})
-		f = urllib.urlopen('http://www.cz88.net/ip/ipcheck.aspx', parms)
-
-		geo_re = re.compile('document.write\("(.*)"\);')
-
-		m = geo_re.search(f.read().decode('gbk'))
 		f.close()
-
-		geoinfo = (m and m.group(1) or 'Not Found')
 
 		target = self.return_to_sender(args)
 		result = Event('privmsg', '', target, [ ''.join((query_str, ': ', geoinfo))])
