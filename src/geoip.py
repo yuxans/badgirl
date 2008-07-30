@@ -111,8 +111,8 @@ class chunzhen(MooBotModule):
 		num0_254 = '(?:25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?|0)'
 		num1_254 = '(?:25[0-4]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]?)'
 		ipv4part = '(?:%s(?:\.%s){1,2}(?:\.%s)?)' % (num1_254,
-								 num0_254,
-								 num1_254)
+		                                             num0_254,
+		                                             num1_254)
 
 		self.regex='^geoip\s+%s$' % (ipv4part)
 
@@ -120,15 +120,13 @@ class chunzhen(MooBotModule):
 		query_str = args["text"].split()
 		query_str = query_str[2].strip()
 		ip = self.fixipv4(query_str)
-		parms = "ip="+ip+"&action=2"
+		parms = "ip=" + ip + "&action=2"
 		f = urllib.urlopen('http://www.ip138.com/ips8.asp', parms)
     
 		p = Parse()
 		p.feed(f.read())
         
 		geoinfo = info.decode("gbk")
-		"""m = geoinfo.split("：",1)[1]
-		geoinfo = m.decode('utf-8')"""
 		geoinfo = geoinfo.split(u"：", 1)[1]
 
 		f.close()
