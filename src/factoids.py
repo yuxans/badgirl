@@ -28,7 +28,7 @@ handler_list = ["augment", "cookie", "list_keys", "info", "delete", "lock", "loo
 
 
 from moobot_module import MooBotModule
-import database
+import FactoIds
 
 class factoidClass(MooBotModule):
 	"""Base class for all factoid classes, encapsulates a lot of common
@@ -45,94 +45,12 @@ class factoidClass(MooBotModule):
 			str = str[:-1]
 		return str	
 
-	def parse_sar(self, text):
-		import random
-		stack = []
-		# continue as long as text still has stuff in it
-		while len(text) > 0:
-			# get the first token from text
-			token = self.get_token(text)
-
-			# remove that token from text
-			text = text[len(token):]
-
-			# if the token is a ) and there is a ( in stack,
-			# pop every element up to and including the (,
-			# then chose one of those elements and append it
-			# to stack.
-			if token == ")" and "(" in stack \
-			and "|" in stack[stack.index('('):]:
-				choices = []
-				while stack[-1] != "(":
-					choices.append(stack.pop())
-
-				stack.pop()
-				chosen="|"
-				while chosen == "|":
-					chosen = random.choice(choices)
-
-				if len(stack) > 0:
-					if stack[-1] != "(" and stack[-1] != "|":
-						stack.append(stack.pop() + chosen)
-					else:
-						stack.append(chosen)
-				else:
-					stack.append(chosen)
-
-			elif token == "|":
-				stack.append(token)
-				if len(text) and (text[0] == "|" or text[0] == ")"):
-					stack.append("")
-			else:
-				if len(stack) == 0 or stack[-1] == "|" \
-				or stack[-1] == "(" or token == "(":
-					stack.append(token)
-				else:
-					stack.append(stack.pop() + token)
-		return "".join(stack)
-
-	def get_token(self, text):
-		""" gets the next token for SAR parsing from text """
-		# Basically, this returns either:
-		#  * one of the special_chars if it is the first character
-		#  * otherwise, the string of non-special chars leading up
-		#    to the first special char in the string
-		special_chars = "()|"
-		for length in range(len(text)):
-			if text[length] in special_chars:
-				# If we already have a string of chars going, back
-				# up one and return that, we don't want to include
-				# the special character we are currently on
-				if length > 0:
-					length -= 1
-				# Once we hit a special character, break out of the
-				# for loop so we can return
-				break
-		return text[:length+1]
-
-	def escape_regex(self, line):
-
-		line = line.replace("[", "[\[")
-		line = line.replace("]", "[\]]")
-		line = line.replace("[\[", "[\[]")
-		line = line.replace("+", "[+]")
-		line = line.replace("*", "[*]")
-		line = line.replace(".", "\\.")
-		line = line.replace("?", "[?]")
-		line = line.replace("{", "[{]")
-		line = line.replace("}", "[}]")
-		line = line.replace("(", "[(]")
-		line = line.replace(")", "[)]")
-		line = line.replace("|", "[|]")
-		return line
-
-
 class lookup(factoidClass):
 	def __init__(self):
 		self.regex = ".+"
 		self.priority = 18
 	def handler(self, **args):
-		""" gets the factoid_value field from the database """
+		""" gets the factoid_value field """
 		import time
 		from irclib import Event, nm_to_n
 
@@ -166,37 +84,12 @@ class lookup(factoidClass):
 		# the same as just asking for "moobot: foo" 
 		factoid_key = self.strip_punctuation(factoid_key)
 
-		#  Query the database for the factoid value for the given key
-		factoid_query = "select factoid_value from factoids "\
-				"where (factoid_key) = "\
-				"'%s'" % self.sqlEscape(factoid_key.lower())
-		list = database.doSQL(factoid_query)
+		text = FactoIds.getValueByKey(factoid_key, args["source"])
 
-		# If the factoid doesn't exist, tell them, and then continue trying
+		# If the factoid doesn't exist, simply continue trying
 		# to match with other handlers using the continue event type 
-		if len(list) == 0:
+		if not text:
 			return Event("continue", "", target, [""])
-		else:	
-			tuple = list[0]
-
-		# Now that we are sure we have a factoid that got requested, increment
-		# the count, set the new requester, etc.  NOTE: even for "literal"
-		# requests, this is set.  Whether or not this is really is wanted is
-		# ... debatable, but we don't really care.
-		update_query = "update factoids set "\
-			       "requested_count = requested_count + 1, "\
-			       "requested_by = '%s', "\
-			       "requested_time = %s "\
-			       "where (factoid_key) = '%s'" % (
-			args["source"], str(int(time.time())),
-			self.sqlEscape(factoid_key.lower())
-			)
-
-		database.doSQL(update_query)
-
-		# The factoid is just the first field of the one-field tuple we got
-		# back from the query earlier
-		text = tuple[0]
 
 		### The new length stuff
 		# Here we check to see if the total message length would be greater
@@ -232,7 +125,7 @@ class lookup(factoidClass):
 
 			# Parse parentheses and pipes to come up with one random string
 			# from many choices specified in the factoid 
-			text = self.parse_sar(text)
+			text = FactoIds.parseSar(text)
 
 			# Replace $who and $nick with the person requesting the factoid
 			text = text.replace("$who", nm_to_n(args["source"]))
@@ -259,26 +152,20 @@ class cookie(factoidClass):
 		self.regex = "^cookie$"
 		self.priority = 17
 	def handler(self, **args):
-		""" gets a random factoid from the database"""
+		""" gets a random factoid """
 		from irclib import nm_to_n, Event
 
 
 		# Standard return_to_sender target, talk to who talks to us
 		target = self.return_to_sender(args)
 
-		if database.type == "mysql":
-			factoid_query = "select factoid_key, factoid_value "\
-				"from factoids order by rand() limit 1"
-		elif database.type == "pgsql":
-			factoid_query = "select factoid_key, factoid_value "\
-				"from factoids order by random() limit 1"
-		elif database.type == "sqlite3":
-			factoid_query = "select factoid_key, factoid_value "\
-			    "from factoids order by random(*) limit 1"
+		factoids = FactoIds.getRandoms()
+		if not factoids:
+			return Event("privmsg", "", target, [ "no factoid defined" ])
 
-		factoid = database.doSQL(factoid_query)[0]
+		factoid = factoids[0]
 		factoid_key = factoid[0]
-		factoid_value = self.parse_sar(factoid[1].lstrip())
+		factoid_value = FactoIds.parseSar(factoid[1].lstrip())
 		factoid_value = factoid_value.replace("$who", nm_to_n(args["source"]))
 
 		return Event("privmsg", "", target, \
@@ -290,7 +177,7 @@ class delete(factoidClass):
 		self.regex = "^(delete|forget)\s.+"
 		self.priority = 17
 	def handler(self, **args):
-		"Remove a factoid from the database"
+		"Remove a factoid"
 		import priv
 		from irclib import Event
 
@@ -305,35 +192,12 @@ class delete(factoidClass):
 
 		requester = args["source"]
 
-		# We will always get back a (non-empty) list from this that is of the
-		# format:
-		#  [(<some number>,)]
-		# That number is the number of instances of the factoid_key in the
-		# factoid database (which should be 0 or 1).  If it's 0, tell them we
-		# don't have the factoid. 
-			
-		count_query = "select count(factoid_key) "\
-			      "from factoids "\
-			      "where (factoid_key) = '%s'" % \
-			      self.sqlEscape(factoid_key.lower())
-		self.debug(count_query)
-		self.debug(database.doSQL(count_query))
-		if database.doSQL(count_query)[0][0] == 0:
+		try:
+			locked_by = FactoIds.getLockedBy(factoid_key)
+			created_by = FactoIds.getCreatedBy(factoid_key)
+		except KeyError:
 			msg = "Factoid \"%s\" does not exist." % factoid_key
 			return Event("privmsg", "", target, [ msg ])
-
-		# This SQL query gets back a list similar to the one before:
-		#  [(<person who locked the factoid>,)]
-		# Only, if the locked_by value is NULL in SQL, we get None in our
-		# tuple. 
-		locked_query = "select locked_by, created_by "\
-			       "from factoids "\
-			       "where (factoid_key) = '%s'" % \
-			       self.sqlEscape(factoid_key.lower())
-		locked = database.doSQL(locked_query)
-
-		locked_by = locked[0][0]
-		created_by = locked[0][1]
 
 		self.debug("created_by = ", created_by)
 		self.debug("requester = ", requester)
@@ -353,10 +217,7 @@ class delete(factoidClass):
 
 		# If we made it here, they can delete it.  So delete it, and tell
 		# them.
-		delete_query = "delete from factoids "\
-			       "where (factoid_key) = '%s'" % \
-			       self.sqlEscape(factoid_key.lower())
-		database.doSQL(delete_query)
+		FactoIds.delete(factoid_key)
 
 		msg = "Factoid \"%s\" deleted." % factoid_key
 		return Event("privmsg", "", target, [ msg ])
@@ -373,19 +234,7 @@ class add(factoidClass):
 		# have to delete anything anyway when we just delete all factoids
 		# created by "factoid-length-check"
 		
-		factoid_key = "a"*512	# 512 is the max chars in an IRC msg, from RFC
-		created_by = "factoid-length-check"
-		query = "insert into factoids(factoid_key, created_by) values('" + \
-			factoid_key + "', '" + created_by + "')"
-		database.doSQL(query)
-		# Now retrieve the longest factoid that exists and delete the ones
-		# created by "factoid-length-check"
-		query = "select max(length(factoid_key)) from factoids"
-		self.FACTOID_KEY_LENGTH = database.doSQL(query)[0][0]
-		if self.FACTOID_KEY_LENGTH == None: #hack for postgres
-			self.FACTOID_KEY_LENGTH = 64
-		query = "delete from factoids where created_by='" + created_by + "'"
-		database.doSQL(query)
+		self.FACTOID_KEY_LENGTH = FactoIds.getMaxValueLength()
 
 	def handler(self, **args):
 		"""adds a factoid"""
@@ -418,37 +267,22 @@ class add(factoidClass):
 		factoid_key = self.strip_punctuation(data[0])
 		factoid_value = data[1]
 
+		msg = "ok"
 		if len(factoid_key) > self.FACTOID_KEY_LENGTH:
 			old_key = factoid_key
 			factoid_key = factoid_key[:self.FACTOID_KEY_LENGTH]
-			warning = "WARNING: The factoid key '" + old_key + "' is" + \
+			msg = "WARNING: The factoid key '" + old_key + "' is" + \
 				" too long, using this truncated key '" + factoid_key + \
 				"' instead."
 
 		#  Check and make sure the factoid isn't there
-		count_query= "select count(factoid_key) "\
-			     "from factoids "\
-			     "where (factoid_key) = '%s'" % \
-			     self.sqlEscape(factoid_key.lower())
-		count = database.doSQL(count_query)[0][0]
-			
-		if count != 0:
+		if FactoIds.exists(factoid_key):
 			message = "Factoid \"%s\" already exists." % factoid_key
 			return Event("privmsg", "", target, [ message ])
 
-		#  Get the time for the database insertion
-		insert_query = "insert into factoids("\
-			"factoid_key, factoid_value, created_by, created_time, "\
-			"requested_count) values ('%s', '%s', '%s', %s, 0)" % (
-				self.sqlEscape(factoid_key),
-				self.sqlEscape(factoid_value),
-				args["source"], str(time.time()))
-		database.doSQL(insert_query)
+		FactoIds.add(factoid_key, factoid_value, args["source"])
 
-		if globals().has_key('warning'):
-			return Event("privmsg", "", target, [ warning ])
-		else:
-			return Event("privmsg", "", target, [ "ok" ])
+		return Event("privmsg", "", target, [ msg ])
 	
 class list_keys(factoidClass):
 	def __init__(self):
@@ -464,75 +298,8 @@ class list_keys(factoidClass):
 		search_string = self.strip_words(args["text"], 2)
 		type = args["text"].split()[1]
 
-		# have type search the appropriate attribute in the database
-		if type == "listauth":
-			match_query = "select count(created_by) "\
-				      "from factoids "\
-				      "where lower(created_by) like '%s!%%'" % (
-				search_string.lower())
-		else:
-			if type == "listkeys":
-				column = "factoid_key"
-			elif type == "listvalues":
-				column = "factoid_value"
-			match_query = "select count(%s) "\
-				      "from factoids "\
-				      "where lower(%s) like '%s'" % (
-				column, column, '%' + search_string.lower() + '%')
-
-		# matchcount simply gets the number of matches for the SQL query that
-		# counts factoids that are "like" the one given to us, and keys gets
-		# the actual list (which is in the form of a list of one-element
-		# tuples) 
-		match = database.doSQL(match_query)
-		matchcount = match[0][0]
-
-		if type == "listauth": 
-			if database.type == "mysql":
-				keys_query = "select factoid_key "\
-					     "from factoids "\
-					     "where lower(created_by) like '%s!%%' "\
-					     "order by rand() "\
-					     "limit 15" % search_string.lower()
-			elif database.type == "pgsql":
-				keys_query = "select factoid_key "\
-					     "from factoids "\
-					     "where lower(created_by) like '%s!%%' "\
-					     "order by random() "\
-					     "limit 15" % search_string.lower()
-			elif database.type == "sqlite3":
-				keys_query = "select factoid_key "\
-				    "from factoids "\
-				    "where lower(created_by) like '%s!%%' "\
-				    "order by random(*) "\
-				    "limit 15"  % search_string.lower()
-		else:
-			if database.type == "mysql":
-				keys_query = "select factoid_key "\
-					     "from factoids "\
-					     "where lower(%s) like '%s' "\
-					     "order by rand() "\
-					     "limit 15" % (
-					column, '%' + search_string.lower() + '%')
-			elif database.type == "pgsql":
-				keys_query = "select factoid_key "\
-					     "from factoids "\
-					     "where lower(%s) like '%s' "\
-					     "order by random() "\
-					     "limit 15" % (
-					column, '%' + search_string.lower() + '%')
-			elif database.type == "sqlite3":
-				keys_query = "select factoid_key "\
-				    "from factoids "\
-				    "where lower(%s) like '%s' "\
-				    "order by random(*) "\
-				    "limit 15" % (column,
-						  ''.join('%',
-							  search_string.lower(),
-							  '%s'))
-
-		keys = database.doSQL(keys_query)
-		
+		limit = 15
+		keys, matchcount = FactoIds.search(type[4:], search_string, limit, True)
 		# Add a nifty little preface to the list showing what was searched
 		# and how many match and (if applicable, how many we are showing) 
 		text = "%s search of '%s' (%d matching" % (
@@ -546,10 +313,8 @@ class list_keys(factoidClass):
 		text += "): "
 
 		#  Append on each of the fifteen terms and a separator
-		index = 0
-		while index < len(keys):
-			text += keys[index][0] + " ;; "
-			index += 1
+		for key in keys:
+			text += key + " ;; "
 		target = self.return_to_sender(args)
 		return Event("privmsg", "", target, [ text ])
 
@@ -575,50 +340,18 @@ class replace(factoidClass):
 		factoid_key = data[0]
 		factoid_value = data[1]
 
-		select_query = "select count(factoid_key), locked_by "\
-			       "from factoids "\
-			       "where (factoid_key) = '%s' "\
-			       "group by locked_by" % (
-			self.sqlEscape(factoid_key.lower()))
-		data = database.doSQL(select_query)
-		count = data[0][0]
-		locked_by = data[0][1]
-
-		if count == 0:
+		try:
+			locked_by = FactoIds.getLockedBy(factoid_key)
+		except KeyError:
 			message = "Factoid '" + factoid_key + "' does not exist."
 			return Event("privmsg", "", target, [message])
 
 		# Check if they can modify factoids, and if they can modify THIS
 		# particular factoid (ie, it's not locked) 
-		if priv.checkPriv(args["source"], "delete_priv") == 0 and\
-		locked_by != "" and locked_by != None:
-			return Event("privmsg","", target, [ "Factoid is locked."])
+		if priv.checkPriv(args["source"], "delete_priv") == 0 and locked_by != None:
+			return Event("privmsg","", target, [ "Factoid \"%s\" locked by %s" % (factoid_key, locked_by)])
 
-		check_lock_query = "select count(factoid_key) "\
-				   "from factoids "\
-				   "where (factoid_key) = '%s' "\
-				   "and (locked_by is null or locked_by = '')" % (
-			self.sqlEscape(factoid_key.lower()))
-		unlocked = database.doSQL(check_lock_query)[0][0]
-		if not unlocked:
-			msg = "Factoid \"%s\" is locked." % factoid_key
-			return Event("privmsg","", target, [ msg ])
-
-		#  If we make it here, we simply delete and recreate the factoid
-		delete_query = "delete from factoids "\
-			       "where (factoid_key) = '%s'" % (
-			self.sqlEscape(factoid_key.lower()))
-		database.doSQL(delete_query)
-
-		insert_query = "insert into factoids("\
-			       "factoid_key, created_by, created_time, factoid_value, "\
-			       "requested_count) values ("\
-			       "'%s', '%s', %d, '%s', 0)" % (
-			self.sqlEscape(factoid_key),
-			args["source"],
-			int(time()),
-			self.sqlEscape(factoid_value))
-		database.doSQL(insert_query)
+		FactoIds.add(factoid_key, factoid_value, args["source"])
 
 		return Event("privmsg", "", target,  [ "ok" ])
 
@@ -646,43 +379,29 @@ class lock(factoidClass):
 			# lock_priv, whatever they want 
 			if factoid_key == nm_to_n(args["source"]) \
 			or priv.checkPriv(args["source"], "lock_priv") == 1:
-				update_query = "update factoids "\
-					"set locked_by = '%s', "\
-					"locked_time = %d "\
-					"where (factoid_key) = '%s'" % (
-						args["source"],
-						time.time(),
-						self.sqlEscape(factoid_key.lower()))
-				database.doSQL(update_query)
+				FactoIds.lock(factoid_key, args["source"])
 				msg = "Factoid \"%s\" locked." % factoid_key
 			else:
 				msg = "You can't lock this factoid."
 		elif action == "unlock":
 			# For unlocking, first check who locked the factoid we are
 			# talking about 
-			locked_query = "select locked_by "\
-				"from factoids "\
-				"where (factoid_key) = '%s'" % (
-					self.sqlEscape(factoid_key.lower()))
-			locked_by = database.doSQL(locked_query)
+			try:
+				locked_by = FactoIds.getLockedBy(factoid_key)
+			except KeyError:
+				msg = "Factoid \"%s\" not found." % factoid_key
 
-			# if we aren't locked, tell them, otherwise, check if the factoid
-			# is for the requester's nick or if they have lock_priv (which
-			# allows unlocking as well) 
-			if len(locked_by) == 0 or \
-			len(locked_by[0]) == 0 or \
-			locked_by[0][0] == None:
-				msg = "Factoid \"%s\" is not locked." % factoid_key
-			elif locked_by[0][0] != args["source"] and \
-			not priv.checkPriv(args["source"], "lock_priv"):
-				msg = "You cannot unlock this factoid."
 			else:
-				update_query = "update factoids "\
-					"set locked_by = NULL "\
-					"where (factoid_key) = '%s'" % (
-						self.sqlEscape(factoid_key.lower()))
-				database.doSQL(update_query)
-				msg = "Factoid \"%s\" unlocked." % factoid_key
+				# if we aren't locked, tell them, otherwise, check if the factoid
+				# is for the requester's nick or if they have lock_priv (which
+				# allows unlocking as well) 
+				if not locked_by:
+					msg = "Factoid \"%s\" is not locked." % factoid_key
+				elif locked_by != args["source"] and not priv.checkPriv(args["source"], "lock_priv"):
+					msg = "You cannot unlock this factoid."
+				else:
+					FactoIds.unlock(factoid_key, args["source"])
+					msg = "Factoid \"%s\" unlocked." % factoid_key
 
 		return Event("privmsg", "", target, [ msg ])
 
@@ -696,33 +415,28 @@ class info(factoidClass):
 		from irclib import Event
 
 		target = self.return_to_sender(args)
-		# Grab the factoid name requested
-		factoid = self.strip_words(args["text"], 2)
+		# Grab the factoid_key name requested
+		factoid_key = self.strip_words(args["text"], 2)
 
-		factinfo = database.doSQL("select requested_by, requested_time, " +
-			"requested_count, created_by, created_time, modified_by, " +
-			"modified_time, locked_by, locked_time from factoids where " +
-			"(factoid_key) = '" + self.sqlEscape(factoid.lower()) + "'")
-		if len(factinfo) == 0:
+		factinfo = FactoIds.getFactoInfoByKey(factoid_key)
+		if not factinfo:
 			return Event("continue", "", target, [""])
-		requested_by, requested_time, requested_count, created_by, created_time, \
-			modified_by, modified_time, locked_by, locked_time = factinfo[0]
 		# Convert timestamps to ASCII time strings
 		# Makes "1030123142124L" into a long int
 		# That gets converted into a special time tuple
 		# That gets converted to a nice ASCII string
 		try:
-			requested_time_str = time.asctime(time.localtime(requested_time))
+			requested_time_str = time.asctime(time.localtime(factinfo["requested_time"]))
 		except:
 			requested_time_str = "never"
 
 		try:
-			created_time_str = time.asctime(time.localtime(created_time))
+			created_time_str = time.asctime(time.localtime(factinfo["created_time"]))
 		except:
 			created_time_str = "never"
 
 		try:
-			modified_time_str = time.asctime(time.localtime(modified_time))
+			modified_time_str = time.asctime(time.localtime(factinfo["modified_time"]))
 		except:
 			modified_time_str = "never"
 
@@ -731,13 +445,13 @@ class info(factoidClass):
 		#else:
 		#	locked_time_str = time.asctime(time.localtime(locked_time))
 		
-		reply = factoid + ": created by " + self.str(created_by) + " on " + created_time_str
-		if (modified_by is not None):
-			reply += ".  Last modified by " + self.str(modified_by) + " on " + modified_time_str
-		reply += ".  Last requested by " + self.str(requested_by) + " on " + requested_time_str + \
-			", requested a total of " + str(requested_count) + " times."
-		if (locked_by is not None and locked_time != None):
-			reply += "  Locked by " + self.str(locked_by) + " on " + time.ctime(locked_time) + "."
+		reply = factoid_key + ": created by " + self.str(factinfo["created_by"]) + " on " + created_time_str
+		if (factinfo["modified_by"] is not None):
+			reply += ".  Last modified by " + self.str(factinfo["modified_by"]) + " on " + modified_time_str
+		reply += ".  Last requested by " + self.str(factinfo["requested_by"]) + " on " + requested_time_str + \
+			", requested a total of " + str(factinfo["requested_count"]) + " times."
+		if (factinfo["locked_by"] is not None and factinfo["locked_time"] != None):
+			reply += "  Locked by " + self.str(factinfo["locked_by"]) + " on " + time.ctime(factinfo["locked_time"]) + "."
 
 		return Event("privmsg", "", target, [reply])
 
@@ -760,54 +474,21 @@ class augment(factoidClass):
 		# Grab the stuff to tack on:
 		to_add = self.strip_words(args["text"], 1).split(" is also ")[1]
 
-		# Check if the factoid exists, if it doesn't tell the user
-		query = "select count(factoid_key) from factoids where" \
-			" (factoid_key) = '" + factoid_key.lower() + "'"
-		if database.doSQL(query)[0][0] == 0:
-			message = "Factoid '" + factoid_key + "' does not exist."
-			return Event("privmsg", "", target, [message])
-		
 		# Check if the factoid is locked or not
-		lock_query = "select locked_by from factoids where (factoid_key) = '"\
-			+ factoid_key.lower() + "'"
-		locked_by = database.doSQL(lock_query)[0][0]
-		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != None and locked_by != "" and locked_by != args["source"]):
-			message = "You do not have permission to delete this factoid."
+		try:
+			locked_by = FactoIds.getLockedBy(factoid_key)
+		except:
+			message = "Factoid '%s' does not exist." % factoid_key
 			return Event("privmsg", "", target, [message])
-		
-		if locked_by != None:
-			message = "That factoid is locked."
+
+		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != None and locked_by != args["source"]):
+			message = "You do not have permission to delete factoid '%s." % factoid_key
 			return Event("privmsg", "", target, [message])
 		
 		# Since we don't have delete_priv, we just delete and recreate the factoid
-		orig_factoid_query = "select factoid_value, requested_by," \
-			+ " requested_time, requested_count, created_by, created_time"\
-			+ " from factoids where" \
-			+ " (factoid_key) = '" + factoid_key.lower() + "'"
-		result = database.doSQL(orig_factoid_query)
-		orig_factoid, orig_req_by, orig_req_time, orig_req_count, orig_cre_by, \
-			orig_cre_time = result[0]
-		if orig_req_by == None:
-			orig_req_by = "NULL"
-			orig_req_time = "NULL"
-			orig_req_count = 0
-		else:
-			orig_req_by = "'" + orig_req_by + "'"
-			orig_req_time = "'" + str(orig_req_time) + "'"
+		orig_factoid = FactoIds.getValueByKey(factoid_key)
 		new_factoid = self.sqlEscape(orig_factoid + ", or " + to_add)
-		# Delete the factoid
-		delete_query = "delete from factoids where (factoid_key) = '" \
-			+ factoid_key.lower() + "'"
-		database.doSQL(delete_query)
-		# Re-create
-		create_query = "insert into factoids(factoid_key, requested_by," \
-			+ " requested_time, requested_count, created_by, created_time," \
-			+ " modified_by, modified_time, factoid_value) values('" \
-			+ factoid_key + "', " + orig_req_by + ", " + str(orig_req_time) \
-			+ ", " + str(orig_req_count) + ", '" + orig_cre_by + "', " \
-			+ str(orig_cre_time) + ", '" + args["source"] + "', " \
-			+ str(int(time())) + ", '" + new_factoid + "')"
-		database.doSQL(create_query)
+		FactoIds.update(factoid_key, new_factoid, arg["source"])
 		return Event("privmsg", "", target, ["ok"])
 
 class alter(factoidClass):
@@ -828,37 +509,21 @@ class alter(factoidClass):
 		factoid_key = factoid_key.split(" =~ ", 1)[0]
 		
 			
-		# Check if the factoid exists
-		count_query = "select count(factoid_key) from factoids where" \
-			" (factoid_key) = '%s'" % \
-			self.sqlEscape(factoid_key.lower())
-		count = database.doSQL(count_query)[0][0]
-		if count == 0:
-			message = "Factoid '" + factoid_key + "' does not exist."
+		try:
+			locked_by = FactoIds.getLockedBy(factoid_key)
+		except:
+			message = "Factoid '%s' does not exist." % factoid_key
 			return Event("privmsg", "", target, [message])
 
-		# Now check and make sure we can modify this factoid
-		# Locked?
-		lock_query = "select locked_by from factoids " \
-			"where (factoid_key) = '%s'" % \
-			self.sqlEscape(factoid_key.lower())
-		locked_by = database.doSQL(lock_query)[0][0]
-		if locked_by != None: 
-			message = "That factoid is locked."
-			return Event("privmsg", "", target, [message])
-		
 		# Check for the appropriate privilege (delete_priv, even
 		# though we aren't deleting - we are modifying, and there
 		# is no modify priv)
-		if priv.checkPriv(args["source"], "delete_priv") == 0:
-			message = "You do not have permission to modify"
+		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != None and locked_by != args["source"]):
+			message = "You do not have permission to modify factoid '%s." % factoid_key
 			return Event("privmsg", "", target, [message])
 
 		# get the original factoid value
-		orig_factoid_query = "select factoid_value from factoids where " \
-			"(factoid_key) = '%s'" % \
-			self.sqlEscape(factoid_key.lower())
-		factoid = database.doSQL(orig_factoid_query)[0][0]
+		factoid = FactoIds.getValueByKey(factoid_key)
 
 		# Grab the regex(es) to apply
 		# First split on =~, then split on spaces for the RHS
@@ -953,17 +618,7 @@ class alter(factoidClass):
 					
 		# When all the regexes are applied, store the factoid again
 		# with the new date as the modification date.
-		factoid = self.sqlEscape(factoid)
-		mod_date = str(int(time.time()))
-		mod_author = args["source"]
-		insert_query = "update factoids set factoid_value='%s', " \
-			"modified_time='%s', modified_by='%s' " \
-			"where (factoid_key)='%s'" % (
-			factoid, mod_date, mod_author,
-			self.sqlEscape(factoid_key.lower()))
-		#insert_query = "update factoids set factoid_value = '" + factoid + "'" \
-		#	+ " where (factoid_key) = '" + factoid_key.lower() + "'"
-		database.doSQL(insert_query)
+		FactoIds.update(factoid_key, factoid, args["source"])
 		return Event("privmsg", "", target, ["ok"])
 
 # vim:ts=4:sw=4:tw=78:
