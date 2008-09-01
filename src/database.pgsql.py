@@ -141,3 +141,5 @@ def printFreeConnections(): # for debugging
 			string += str(idx) + " is not locked. "
 	print string
 			
+def getRandomFunction():
+	return "random()"

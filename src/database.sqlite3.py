@@ -64,3 +64,6 @@ def doSQL(SQL):
 		c.close()
 
 	return results
+
+def getRandomFunction():
+	return "random(*)"

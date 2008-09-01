@@ -91,3 +91,5 @@ def doSQL(SQL):
 
 	return results
 
+def getRandomFunction():
+	return "rand()"
