@@ -181,21 +181,21 @@ def exists(factoid_key):
 	else:
 		return False
 
-# raise KeyError if not found
+# return None for not found
 def getLockedBy(factoid_key):
 	factoInfo = _getByKey("locked_by", factoid_key, None)
 	if not factoInfo:
-		raise KeyError # not found
+		return None
 
-	return factoInfo[0] or None # "" is None
+	return factoInfo[0] or ""
 
-# raise KeyError if not found
+# return None for not found
 def getCreatedBy(factoid_key):
 	factoInfo = _getByKey("created_by", factoid_key, None)
 	if not factoInfo:
-		raise KeyError # not found
+		return None
 
-	return factoInfo[0] or None # "" is None
+	return factoInfo[0] or ""
 
 def getRandoms(count = 1):
 	sql = "select factoid_key, factoid_value "\

@@ -192,10 +192,9 @@ class delete(factoidClass):
 
 		requester = args["source"]
 
-		try:
-			locked_by = FactoIds.getLockedBy(factoid_key)
-			created_by = FactoIds.getCreatedBy(factoid_key)
-		except KeyError:
+		locked_by = FactoIds.getLockedBy(factoid_key)
+		created_by = FactoIds.getCreatedBy(factoid_key)
+		if locked_by == None or created_by == None:
 			msg = "Factoid \"%s\" does not exist." % factoid_key
 			return Event("privmsg", "", target, [ msg ])
 
@@ -340,15 +339,14 @@ class replace(factoidClass):
 		factoid_key = data[0]
 		factoid_value = data[1]
 
-		try:
-			locked_by = FactoIds.getLockedBy(factoid_key)
-		except KeyError:
+		locked_by = FactoIds.getLockedBy(factoid_key)
+		if locked_by == None:
 			message = "Factoid '" + factoid_key + "' does not exist."
 			return Event("privmsg", "", target, [message])
 
 		# Check if they can modify factoids, and if they can modify THIS
 		# particular factoid (ie, it's not locked) 
-		if priv.checkPriv(args["source"], "delete_priv") == 0 and locked_by != None:
+		if priv.checkPriv(args["source"], "delete_priv") == 0 and locked_by != "":
 			return Event("privmsg","", target, [ "Factoid \"%s\" locked by %s" % (factoid_key, locked_by)])
 
 		FactoIds.add(factoid_key, factoid_value, args["source"])
@@ -386,9 +384,8 @@ class lock(factoidClass):
 		elif action == "unlock":
 			# For unlocking, first check who locked the factoid we are
 			# talking about 
-			try:
-				locked_by = FactoIds.getLockedBy(factoid_key)
-			except KeyError:
+			locked_by = FactoIds.getLockedBy(factoid_key)
+			if locked_by == None:
 				msg = "Factoid \"%s\" not found." % factoid_key
 
 			else:
@@ -475,13 +472,12 @@ class augment(factoidClass):
 		to_add = self.strip_words(args["text"], 1).split(" is also ")[1]
 
 		# Check if the factoid is locked or not
-		try:
-			locked_by = FactoIds.getLockedBy(factoid_key)
-		except:
+		locked_by = FactoIds.getLockedBy(factoid_key)
+		if locked_by == None:
 			message = "Factoid '%s' does not exist." % factoid_key
 			return Event("privmsg", "", target, [message])
 
-		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != None and locked_by != args["source"]):
+		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != "" and locked_by != args["source"]):
 			message = "You do not have permission to delete factoid '%s." % factoid_key
 			return Event("privmsg", "", target, [message])
 		
@@ -509,16 +505,15 @@ class alter(factoidClass):
 		factoid_key = factoid_key.split(" =~ ", 1)[0]
 		
 			
-		try:
-			locked_by = FactoIds.getLockedBy(factoid_key)
-		except:
+		locked_by = FactoIds.getLockedBy(factoid_key)
+		if locked_by == None:
 			message = "Factoid '%s' does not exist." % factoid_key
 			return Event("privmsg", "", target, [message])
 
 		# Check for the appropriate privilege (delete_priv, even
 		# though we aren't deleting - we are modifying, and there
 		# is no modify priv)
-		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != None and locked_by != args["source"]):
+		if priv.checkPriv(args["source"], "delete_priv") == 0 and (locked_by != "" and locked_by != args["source"]):
 			message = "You do not have permission to modify factoid '%s." % factoid_key
 			return Event("privmsg", "", target, [message])
 
