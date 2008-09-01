@@ -348,7 +348,7 @@ class replace(factoidClass):
 		if priv.checkPriv(args["source"], "delete_priv") == 0 and locked_by != "":
 			return Event("privmsg","", target, [ "Factoid \"%s\" locked by %s" % (factoid_key, locked_by)])
 
-		FactoIds.add(factoid_key, factoid_value, args["source"])
+		FactoIds.replace(factoid_key, factoid_value, args["source"])
 
 		return Event("privmsg", "", target,  [ "ok" ])
 
