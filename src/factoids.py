@@ -205,8 +205,7 @@ class delete(factoidClass):
 		# delete things anyway, tell them they can't.  ... unless they created
 		# it. 
 		if locked_by != None:
-			msg = "Factoid \"%s\" is locked." % \
-			self.sqlEscape(factoid_key)
+			msg = "Factoid \"%s\" is locked." % factoid_key
 			return Event("privmsg", "", target, [ msg ])
 
 		if (priv.checkPriv(requester, "delete_priv") == 0) \
@@ -483,7 +482,7 @@ class augment(factoidClass):
 		
 		# Since we don't have delete_priv, we just delete and recreate the factoid
 		orig_factoid = FactoIds.getValueByKey(factoid_key)
-		new_factoid = self.sqlEscape(orig_factoid + ", or " + to_add)
+		new_factoid = orig_factoid + ", or " + to_add
 		FactoIds.update(factoid_key, new_factoid, arg["source"])
 		return Event("privmsg", "", target, ["ok"])
 
