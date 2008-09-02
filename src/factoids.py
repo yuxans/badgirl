@@ -24,7 +24,7 @@
 
 Includes handlers for factoid lookup and creation
 """
-handler_list = ["augment", "cookie", "list_keys", "info", "delete", "lock", "lookup", "replace", "alter", "add"]
+handler_list = ["augment", "cookie", "list_keys", "info", "delete", "lock", "lookup", "replace", "alter", "add", "link", "unlink"]
 
 
 from moobot_module import MooBotModule
@@ -220,6 +220,75 @@ class delete(factoidClass):
 		msg = "Factoid \"%s\" deleted." % factoid_key
 		return Event("privmsg", "", target, [ msg ])
 
+class unlink(factoidClass):
+	def __init__(self):
+		self.priority = 20
+		self.regex = "^unlink +.*"
+		import re
+		self.rSplit = re.compile("<[-=]+>")
+
+	def handler(self, **args):
+		"""adds a factoid link"""
+		from irclib import Event
+
+		target = self.return_to_sender(args)
+
+		#  Strip the bots name
+		text = self.strip_words(args["text"], 1)
+
+		factoid_keys = self.rSplit.split(text, 1)
+		if len(factoid_keys) != 2:
+			return Event("privmsg", "", target, [ "Usage: unlink factoid1 <-> factoid2"])
+
+		#  Check and make sure the factoid isn't there
+		FactoIds.unlink(factoid_keys[0], factoid_keys[1])
+		FactoIds.unlink(factoid_keys[1], factoid_keys[0])
+
+		return Event("privmsg", "", target, [ "ok" ])
+
+class link(factoidClass):
+	def __init__(self):
+		self.priority = 20
+		self.regex = "^(.+) *<([-=]) *([^ ]+) *\\2> *(.+)$"
+		import re
+		self.rMatch = re.compile(self.regex)
+
+	def handler(self, **args):
+		"""adds a factoid link"""
+		from irclib import Event
+
+		target = self.return_to_sender(args)
+
+		#  Strip the bots name
+		text = self.strip_words(args["text"], 1)
+
+		linkfrom, dummy, linktype, linkto = self.rMatch.match(text).groups()
+		linkfrom = linkfrom.strip()
+		linktype = linktype.strip()
+		linkto   = linkto.strip()
+		weight = 100
+		if linktype.find("*") != -1:
+			linktype, weight = linktype.split("*", 1)
+			try:
+				weight = int(weight)
+				if weight < 0:
+					weight = 0
+				elif weight > 1000:
+					weight = 1000
+			except ValueError:
+				weight = 100
+
+		#  Check and make sure the factoid isn't there
+		for factoid_key in [linkfrom, linktype, linkto]:
+			if not FactoIds.exists(factoid_key):
+				message = "Factoid \"%s\" must be defined first." % factoid_key
+				return Event("privmsg", "", target, [ message ])
+
+		FactoIds.link(linkfrom, linkto, linktype, weight, args["source"])
+		FactoIds.link(linkto, linkfrom, linktype, weight, args["source"])
+
+		return Event("privmsg", "", target, [ "ok" ])
+
 class add(factoidClass):
 	def __init__(self):
 		self.priority = 20
@@ -236,7 +305,6 @@ class add(factoidClass):
 
 	def handler(self, **args):
 		"""adds a factoid"""
-		import time
 		from irclib import Event
 
 		target = self.return_to_sender(args)
@@ -284,7 +352,7 @@ class add(factoidClass):
 	
 class list_keys(factoidClass):
 	def __init__(self):
-		self.regex = "^list(keys|values|auth)\s.+"
+		self.regex = "^list(keys|values|links|auth)\s.+"
 		self.priority = 17
 	def handler(self, **args):
 		"""searches factoid keys"""

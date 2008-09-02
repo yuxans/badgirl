@@ -222,11 +222,16 @@ def update(factoid_key, factoid_value, request_by = None):
 	database.doSQL(sql)
 
 def delete(factoid_key):
-	sql = "delete from factoids where (factoid_key) = '%s'" % sqlEscape(factoid_key)
-	database.doSQL(sql)
+	database.doSQL("delete from factoids where factoid_key = '%s'" % sqlEscape(factoid_key))
+
+def delete(factoid_key):
+	_delete(factoid_key)
+	database.doSQL("delete from factoidlink where linkfrom = '%s'" % sqlEscape(factoid_key))
+	database.doSQL("delete from factoidlink where linkto   = '%s'" % sqlEscape(factoid_key))
+	database.doSQL("delete from factoidlink where linktype = '%s'" % sqlEscape(factoid_key))
 
 def replace(factoid_key, factoid_value, request_by = None):
-	delete(factoid_key)
+	_delete(factoid_key)
 	add(factoid_key, factoid_value, request_by)
 
 def lock(factoid_key, request_by = None):
@@ -246,36 +251,66 @@ def unlock(factoid_key, request_by = None):
 	              self.sqlEscape(factoid_key.lower()))
 	database.doSQL(sql)
 
+def getLinkCreatedBy(linkfrom, linkto):
+	sql = "select created_by from factoidlink"\
+	      " where linkfrom = '%s' and linkto = '%s'" % (sqlEscape(linkfrom), sqlEscape(linkto))
+	linkinfo = database.doSQL(sql)
+	if not linkinfo:
+		return None
+
+	return linkinfo[0] or ""
+
+def link(linkfrom, linkto, linktype, weight, request_by = None):
+	unlink(linkfrom, linkto)
+	import time
+	sql = "insert into factoidlink("\
+	      "linkfrom, linkto, linktype, weight, created_by, created_time)"\
+	      " values ('%s', '%s', '%s', %s, '%s', %s)" % (
+	                               sqlEscape(linkfrom),
+	                               sqlEscape(linkto),
+	                               sqlEscape(linktype),
+	                               str(int(weight)),
+	                               request_by and sqlEscape(request_by) or 'me', str(time.time()))
+	database.doSQL(sql)
+
+def unlink(linkfrom, linkto):
+	import time
+	sql = "delete from factoidlink" \
+	      " where linkfrom = '%s'" \
+	      " and linkto = '%s'" % (sqlEscape(linkfrom),
+	                                sqlEscape(linkto))
+	database.doSQL(sql)
+
 def search(type, search_string, limit = 15, returnCount = False):
 	# have type search the appropriate attribute in the database
-	if type == "auth":
+	order = database.getRandomFunction()
+	if type == "links":
+		column = "linkto"
+		order = "linktype,weight,linkto"
+		table = "factoidlink"
+		condition = "linkfrom = '%s'" % sqlEscape(search_string)
+	elif type == "auth":
+		table = "factoids"
 		column = "created_by"
-		condition_sql = "where lower(created_by) like '%s!%%'" % search_string
+		condition = "created_by like '%s!%%'" % sqpEscape(search_string)
 	else:
+		table = "factoids"
 		if type == "keys":
 			column = "factoid_key"
 		elif type == "values":
 			column = "factoid_value"
 		else:
 			raise ValueError(type)
-		condition_sql = "where %s like '%s'" % (column, '%' + sqlEscape(search_string) + '%')
+		condition = "%s like '%s'" % (column, '%' + sqlEscape(search_string) + '%')
 
 	if returnCount:
-		count = database.doSQL("select count(%s) from factoids %s" % (column, condition_sql))[0][0]
+		count = database.doSQL("select count(%s) from %s where %s" % (column, table, condition))[0][0]
 
-	if type == "auth": 
-		keys_query = "select factoid_key "\
-		             "from factoids "\
-		             "where created_by like '%s!%%' "\
-		             "order by %s "\
-		             "limit 15" % (search_string.lower(), database.getRandomFunction())
-	else:
-		keys_query = "select factoid_key "\
-		             "from factoids "\
-		             "where lower(%s) like '%s' "\
-		             "order by %s "\
-		             "limit 15" % (
-		             column, '%' + search_string.lower() + '%', database.getRandomFunction())
+	keys_query = "select " + column + \
+	             " from " + table + \
+	             " where " + condition + \
+	             " order by " + order + \
+	             " limit " + str(int(limit))
 
 	keys = [row[0] for row in database.doSQL(keys_query)]
 
