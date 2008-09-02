@@ -36,6 +36,18 @@ CREATE TABLE factoids (
   PRIMARY KEY (factoid_key)
 ) ;
 
+CREATE TABLE IF NOT EXISTS factoidlink (
+  linkfrom TEXT NOT NULL,
+  linkto TEXT NOT NULL,
+  linktype TEXT NOT NULL,
+  created_by TEXT) NOT NULL,
+  created_time NUMBERIC NOT NULL,
+  weight NUMBERIC NOT NULL,
+  PRIMARY KEY (linkfrom,linkto),
+  KEY linkto (linkto(4)),
+  KEY linktype (linktype(4))
+);
+
 
 CREATE TABLE grants (
   hostmask TEXT NOT NULL default '',

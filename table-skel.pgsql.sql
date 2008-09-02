@@ -122,6 +122,18 @@ CREATE TABLE "factoids" (
 	Constraint "factoids_pkey" Primary Key ("factoid_key")
 );
 
+CREATE TABLE IF NOT EXISTS "factoidlink" (
+	"linkfrom" character varying(64) NOT NULL,
+	"linkto" character varying(64) NOT NULL,
+	"linktype" character varying(64) NOT NULL,
+	"created_by" character varying(150) NOT NULL,
+	"created_time" numeric(11,0) NOT NULL,
+	"weight" numeric(4,0) NOT NULL,
+	Constraint "factoidlink_pkey" Primary Key("linkfrom","linkto"),
+);
+CREATE INDEX "linkto" ON "factoidlink" KEY ("linkto");
+CREATE INDEX "linktype" ON "factoidlink" KEY ("linktype");
+
 --
 -- Name: seentype Type: TABLE Owner: bradmont
 --

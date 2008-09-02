@@ -1,7 +1,7 @@
 -- MySQL dump 8.21
 --
 -- Host: localhost    Database: moobot
----------------------------------------------------------
+-- -------------------------------------------------------
 -- Server version	3.23.49-log
 
 --
@@ -53,6 +53,18 @@ CREATE TABLE factoids (
   locked_time decimal(11,0) default NULL,
   factoid_value text,
   PRIMARY KEY  (factoid_key)
+) TYPE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS `factoidlink` (
+  `linkfrom` varchar(64) NOT NULL,
+  `linkto` varchar(64) NOT NULL,
+  `linktype` varchar(64) NOT NULL,
+  `created_by` varchar(150) NOT NULL,
+  `created_time` decimal(11,0) NOT NULL,
+  `weight` decimal(4,0) NOT NULL,
+  PRIMARY KEY  (`linkfrom`,`linkto`),
+  KEY `linkto` (`linkto`(4)),
+  KEY `linktype` (`linktype`(4))
 ) TYPE=MyISAM;
 
 --
