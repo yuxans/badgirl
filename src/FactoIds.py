@@ -235,6 +235,8 @@ def replace(factoid_key, factoid_value, request_by = None):
 	add(factoid_key, factoid_value, request_by)
 
 def lock(factoid_key, request_by = None):
+	import time
+
 	sql = "update factoids "\
 	      "set locked_by = '%s', "\
 	      "locked_time = '%s' "\
@@ -274,7 +276,6 @@ def link(linkfrom, linkto, linktype, weight, request_by = None):
 	database.doSQL(sql)
 
 def unlink(linkfrom, linkto):
-	import time
 	sql = "delete from factoidlink" \
 	      " where linkfrom = '%s'" \
 	      " and linkto = '%s'" % (sqlEscape(linkfrom),
