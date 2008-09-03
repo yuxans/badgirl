@@ -221,7 +221,7 @@ def update(factoid_key, factoid_value, request_by = None):
 	        sqlEscape(factoid_key))
 	database.doSQL(sql)
 
-def delete(factoid_key):
+def _delete(factoid_key):
 	database.doSQL("delete from factoids where factoid_key = '%s'" % sqlEscape(factoid_key))
 
 def delete(factoid_key):
