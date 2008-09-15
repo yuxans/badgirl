@@ -204,7 +204,7 @@ class delete(factoidClass):
 		# If the factoid is locked, or the person doesn't have the right to
 		# delete things anyway, tell them they can't.  ... unless they created
 		# it. 
-		if locked_by != None:
+		if locked_by:
 			msg = "Factoid \"%s\" is locked." % factoid_key
 			return Event("privmsg", "", target, [ msg ])
 
