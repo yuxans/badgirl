@@ -551,7 +551,7 @@ class augment(factoidClass):
 		# Since we don't have delete_priv, we just delete and recreate the factoid
 		orig_factoid = FactoIds.getValueByKey(factoid_key)
 		new_factoid = orig_factoid + ", or " + to_add
-		FactoIds.update(factoid_key, new_factoid, arg["source"])
+		FactoIds.update(factoid_key, new_factoid, args["source"])
 		return Event("privmsg", "", target, ["ok"])
 
 class alter(factoidClass):
