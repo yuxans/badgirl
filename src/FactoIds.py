@@ -126,14 +126,14 @@ fieldNames = ["requested_by", "requested_time",
 propertyNames = fieldNames
 sqlFieldNames = ", ".join(fieldNames)
 
-def _getByKey(fields, factoid_key, request_by = None):
+def _getByKey(fields, factoid_key, requested_by = None):
 	#  Query the database for the factoid value for the given key
 	sql = "select %s from factoids "\
 	        "where (factoid_key) = "\
 	        "'%s'" % (fields, sqlEscape(factoid_key))
 	result = database.doSQL(sql)
 
-	if request_by:
+	if requested_by:
 		# Now that we are sure we have a factoid that got requested, increment
 		# the count, set the new requester, etc.  NOTE: even for "literal"
 		# requests, this is set.  Whether or not this is really is wanted is
@@ -145,7 +145,7 @@ def _getByKey(fields, factoid_key, request_by = None):
 		        "requested_by = '%s', "\
 		        "requested_time = %s "\
 		        "where (factoid_key) = '%s'" % (
-		                sqlEscape(request_by), str(int(time.time())),
+		                sqlEscape(requested_by), str(int(time.time())),
 		                sqlEscape(factoid_key)
 		                )
 		database.doSQL(sql)
@@ -155,8 +155,8 @@ def _getByKey(fields, factoid_key, request_by = None):
 	else:
 		return None
 
-def getFactoInfoByKey(factoid_key, request_by = None):
-	row = _getByKey(sqlFieldNames, factoid_key, request_by)
+def getFactoInfoByKey(factoid_key, requested_by = None):
+	row = _getByKey(sqlFieldNames, factoid_key, requested_by)
 	if row:
 		factoInfo = {}
 		i = 0
@@ -167,8 +167,8 @@ def getFactoInfoByKey(factoid_key, request_by = None):
 	else:
 		return None
 
-def getValueByKey(factoid_key, request_by = None):
-	factoInfo = _getByKey("factoid_value", factoid_key, request_by)
+def getValueByKey(factoid_key, requested_by = None):
+	factoInfo = _getByKey("factoid_value", factoid_key, requested_by)
 	if factoInfo:
 		return factoInfo[0] # return value
 	else:
@@ -202,17 +202,17 @@ def getRandoms(count = 1):
 	      "from factoids order by %s limit %d" % (database.getRandomFunction(), count)
 	return database.doSQL(sql)
 
-def add(factoid_key, factoid_value, request_by = None):
+def add(factoid_key, factoid_value, requested_by = None):
 	import time
 	sql = "insert into factoids("\
 	      "factoid_key, factoid_value, created_by, created_time, "\
 	      "requested_count) values ('%s', '%s', '%s', %s, 0)" % (
 	                               sqlEscape(factoid_key),
 	                               sqlEscape(factoid_value),
-	                               request_by and sqlEscape(request_by) or 'me', str(time.time()))
+	                               requested_by and sqlEscape(requested_by) or 'me', str(time.time()))
 	database.doSQL(sql)
 
-def update(factoid_key, factoid_value, request_by = None):
+def update(factoid_key, factoid_value, requested_by = None):
 	import time
 	sql = "update factoids set factoid_value='%s', " \
 	        "modified_time='%s', modified_by='%s' " \
@@ -230,23 +230,23 @@ def delete(factoid_key):
 	database.doSQL("delete from factoidlink where linkto   = '%s'" % sqlEscape(factoid_key))
 	database.doSQL("delete from factoidlink where linktype = '%s'" % sqlEscape(factoid_key))
 
-def replace(factoid_key, factoid_value, request_by = None):
+def replace(factoid_key, factoid_value, requested_by = None):
 	_delete(factoid_key)
-	add(factoid_key, factoid_value, request_by)
+	add(factoid_key, factoid_value, requested_by)
 
-def lock(factoid_key, request_by = None):
+def lock(factoid_key, requested_by = None):
 	import time
 
 	sql = "update factoids "\
 	      "set locked_by = '%s', "\
 	      "locked_time = '%s' "\
 	      "where (factoid_key) = '%s'" % (
-	              request_by and sqlEscape(request_by) or 'me',
+	              requested_by and sqlEscape(requested_by) or 'me',
 	              str(time.time()),
 	              sqlEscape(factoid_key))
 	database.doSQL(sql)
 
-def unlock(factoid_key, request_by = None):
+def unlock(factoid_key, requested_by = None):
 	sql = "update factoids "\
 	      "set locked_by = NULL "\
 	      "where (factoid_key) = '%s'" % (
@@ -262,7 +262,7 @@ def getLinkCreatedBy(linkfrom, linkto):
 
 	return linkinfo[0] or ""
 
-def link(linkfrom, linkto, linktype, weight, request_by = None):
+def link(linkfrom, linkto, linktype, weight, requested_by = None):
 	unlink(linkfrom, linkto)
 	import time
 	sql = "insert into factoidlink("\
@@ -272,7 +272,7 @@ def link(linkfrom, linkto, linktype, weight, request_by = None):
 	                               sqlEscape(linkto),
 	                               sqlEscape(linktype),
 	                               str(int(weight)),
-	                               request_by and sqlEscape(request_by) or 'me', str(time.time()))
+	                               requested_by and sqlEscape(requested_by) or 'me', str(time.time()))
 	database.doSQL(sql)
 
 def unlink(linkfrom, linkto):
