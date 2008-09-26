@@ -250,7 +250,7 @@ def unlock(factoid_key, requested_by = None):
 	sql = "update factoids "\
 	      "set locked_by = NULL "\
 	      "where (factoid_key) = '%s'" % (
-	              self.sqlEscape(factoid_key.lower()))
+	              sqlEscape(factoid_key.lower()))
 	database.doSQL(sql)
 
 def getLinkCreatedBy(linkfrom, linkto):
