@@ -296,13 +296,14 @@ def search(type, search_string, limit = 15, returnCount = False):
 		condition = "created_by like '%s!%%'" % sqpEscape(search_string)
 	else:
 		table = "factoids"
+		column = "factoid_key"
 		if type == "keys":
-			column = "factoid_key"
+			search_field = "factoid_key"
 		elif type == "values":
-			column = "factoid_value"
+			search_field = "factoid_value"
 		else:
 			raise ValueError(type)
-		condition = "%s like '%s'" % (column, '%' + sqlEscape(search_string) + '%')
+		condition = "%s like '%s'" % (search_field, '%' + sqlEscape(search_string) + '%')
 
 	if returnCount:
 		count = database.doSQL("select count(%s) from %s where %s" % (column, table, condition))[0][0]
