@@ -28,18 +28,19 @@ class decodeUtf8(MooBotModule):
 		self.priority = 100
 
 	def handler(self, **args):
-		if not self.translations.has_key(args['encoding']):
+		encoding = args['encoding'].replace('-', '')
+		if not self.translations.has_key(encoding):
 			return Event("continue", "", "")
-		(erronly, regex, fromencoding) = self.translations[args['encoding']];
+		(skipmatch, regex, fromencoding) = self.translations[encoding];
 
 		rawmsg = args['event'].rawdata().split(' ', 3)[3][1:]
 		if not regex.search(rawmsg):
 			return Event("continue", "", "")
 
-		# only translate if string does not match connection encoding
-		if erronly:
+		if skipmatch:
+			# skip if it match
 			try:
-				msg = rawmsg.decode(args['encoding'])
+				msg = rawmsg.decode(encoding)
 				# well, no translation
 				return Event("continue", "", "")
 			except:
