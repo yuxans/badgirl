@@ -36,7 +36,7 @@ CREATE TABLE factoids (
   PRIMARY KEY (factoid_key)
 ) ;
 
-CREATE TABLE IF NOT EXISTS factoidlink (
+CREATE TABLE factoidlink (
   linkfrom TEXT NOT NULL,
   linkto TEXT NOT NULL,
   linktype TEXT NOT NULL,
@@ -113,12 +113,12 @@ CREATE TABLE url (
   url_id INTEGER PRIMARY KEY
 ) ;
 
-CREATE TABLE IF NOT EXISTS ability (
+CREATE TABLE ability (
   abilityid INTEGER PRIMARY KEY,
   name TEXT NOT NULL
 ) ;
 
-CREATE TABLE IF NOT EXISTS userability (
+CREATE TABLE userability (
   nick TEXT NOT NULL,
   abilityid INTEGER NOT NULL,
   channel TEXT NOT NULL,
