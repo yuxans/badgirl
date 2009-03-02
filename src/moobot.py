@@ -26,6 +26,8 @@ I already said "the sucking" :)).  This is a work in
 progress.
 """
 
+VERSION = (0, 7, 0)
+
 # Debugging turns stack traces on (allows bot crash)
 DEBUG = 0
 
@@ -196,6 +198,13 @@ class MooBot(SingleServerIRCBot):
 			if eventlist != []:
 				for event in eventlist:
 					self.do_event(event)
+
+	def get_version(self):
+		"""Returns the bot version.
+
+		Used when answering a CTCP VERSION request.
+		"""
+		return "MooBot version %d.%d.%d by Danny DiPaolo and Brad Stewart" % VERSION
 
 	def on_ctcp(self, c, e):
 		""" Executed on CTCP events."""
