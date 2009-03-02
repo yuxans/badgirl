@@ -424,7 +424,6 @@ class ServerConnection(Connection):
         self.ircname = ircname or nickname
         self.password = password
         self.encoding = encoding
-        DebugErr(self.encoding)
         self.localaddress = localaddress
         self.localport = localport
         self.localhost = socket.gethostname()
