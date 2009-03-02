@@ -1,22 +1,22 @@
-# Copyright (C) 1999, 2000 Joel Rosdahl
-# 
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful,
+# Copyright (C) 1999--2002  Joel Rosdahl
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-# GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
 #
 # Joel Rosdahl <joel@rosdahl.net>
 #
-# $Id: ircbot.py,v 1.6 2003/02/13 15:33:54 ddipaolo Exp $
+# $Id: ircbot.py,v 1.23 2008/09/11 07:38:30 keltus Exp $
 
 """ircbot -- Simple IRC bot library.
 
@@ -24,10 +24,7 @@ This module contains a single-server IRC bot class that can be used to
 write simpler bots.
 """
 
-VERSION = (0, 7, 0)
-
 import sys
-
 from UserDict import UserDict
 
 from irclib import SimpleIRCClient
@@ -45,8 +42,7 @@ class SingleServerIRCBot(SimpleIRCClient):
     have operator or voice modes.  The "database" is kept in the
     self.channels attribute, which is an IRCDict of Channels.
     """
-    def __init__(self, server_list, nickname, realname,
-    reconnection_interval=60, keepalive_interval=60):
+    def __init__(self, server_list, nickname, realname, reconnection_interval=60, keepalive_interval=60):
         """Constructor for SingleServerIRCBot objects.
 
         Arguments:
@@ -61,8 +57,9 @@ class SingleServerIRCBot(SimpleIRCClient):
 
             reconnection_interval -- How long the bot should wait
                                      before trying to reconnect.
-            keepalive_interval -- How long the bot should ping server when
-                                  online.
+
+            dcc_connections -- A list of initiated/accepted DCC
+            connections.
         """
 
         SimpleIRCClient.__init__(self)
@@ -79,13 +76,11 @@ class SingleServerIRCBot(SimpleIRCClient):
         self._nickname = nickname
         self._realname = realname
         self.registered = False
-#FIXME		self._nickmask = "%s!%s@%s" % (
         for i in ["disconnect", "join", "kick", "mode",
                   "namreply", "nick", "part", "quit", "welcome"]:
             self.connection.add_global_handler(i,
                                                getattr(self, "_on_" + i),
                                                -10)
-
     def _connected_checker(self):
         """[Internal]"""
         if not self.connection.is_connected():
@@ -134,7 +129,7 @@ class SingleServerIRCBot(SimpleIRCClient):
         """[Internal]"""
         ch = e.target()
         nick = nm_to_n(e.source())
-        if nick == self._nickname:
+        if nick == c.get_nickname():
             self.channels[ch] = Channel()
         self.channels[ch].add_user(nick)
 
@@ -143,7 +138,7 @@ class SingleServerIRCBot(SimpleIRCClient):
         nick = e.arguments()[0]
         channel = e.target()
 
-        if nick == self._nickname:
+        if nick == c.get_nickname():
             del self.channels[channel]
         else:
             self.channels[channel].remove_user(nick)
@@ -167,7 +162,9 @@ class SingleServerIRCBot(SimpleIRCClient):
     def _on_namreply(self, c, e):
         """[Internal]"""
 
-        # e.arguments()[0] == "="	  (why?)
+        # e.arguments()[0] == "@" for secret channels,
+        #                     "*" for private channels,
+        #                     "=" for others (public channels)
         # e.arguments()[1] == channel
         # e.arguments()[2] == nick list
 
@@ -196,7 +193,7 @@ class SingleServerIRCBot(SimpleIRCClient):
         nick = nm_to_n(e.source())
         channel = e.target()
 
-        if nick == self._nickname:
+        if nick == c.get_nickname():
             del self.channels[channel]
         else:
             self.channels[channel].remove_user(nick)
@@ -215,7 +212,8 @@ class SingleServerIRCBot(SimpleIRCClient):
 
             msg -- Quit message.
         """
-        self.connection.quit(msg)
+
+        self.connection.disconnect(msg)
         sys.exit(0)
 
     def disconnect(self, msg="I'll be back!"):
@@ -227,38 +225,45 @@ class SingleServerIRCBot(SimpleIRCClient):
 
             msg -- Quit message.
         """
-        self.connection.quit(msg)
+        self.connection.disconnect(msg)
 
     def get_version(self):
         """Returns the bot version.
 
         Used when answering a CTCP VERSION request.
         """
-        #return "ircbot.py by Joel Rosdahl <joel@rosdahl.net>"
-        return "MooBot version %d.%d.%d by Danny DiPaolo and Brad Stewart" % VERSION
+        return "ircbot.py by Joel Rosdahl <joel@rosdahl.net>"
 
-    def jump_server(self):
-        """Connect to a new server, possible disconnecting from the current.
+    def jump_server(self, msg="Changing servers"):
+        """Connect to a new server, possibly disconnecting from the current.
 
         The bot will skip to next server in the server_list each time
         jump_server is called.
         """
         if self.connection.is_connected():
-            self.connection.quit("Jumping servers")
+            self.connection.disconnect(msg)
+
         self.server_list.append(self.server_list.pop(0))
         self._connect()
 
     def on_ctcp(self, c, e):
         """Default handler for ctcp events.
 
-        Replies to VERSION and PING requests.
+        Replies to VERSION and PING requests and relays DCC requests
+        to the on_dccchat method.
         """
         if e.arguments()[0] == "VERSION":
-            c.ctcp_reply(nm_to_n(e.source()), self.get_version())
+            c.ctcp_reply(nm_to_n(e.source()),
+                         "VERSION " + self.get_version())
         elif e.arguments()[0] == "PING":
             if len(e.arguments()) > 1:
                 c.ctcp_reply(nm_to_n(e.source()),
                              "PING " + e.arguments()[1])
+        elif e.arguments()[0] == "DCC" and e.arguments()[1].split(" ", 1)[0] == "CHAT":
+            self.on_dccchat(c, e)
+
+    def on_dccchat(self, c, e):
+        pass
 
     def start(self):
         """Start the bot."""
@@ -292,7 +297,7 @@ class IRCDict:
     def __getitem__(self, key):
         return self.data[self.canon_keys[irc_lower(key)]]
     def __setitem__(self, key, item):
-        if self.has_key(key):
+        if key in self:
             del self[key]
         self.data[key] = item
         self.canon_keys[irc_lower(key)] = key
@@ -300,6 +305,10 @@ class IRCDict:
         ck = irc_lower(key)
         del self.data[self.canon_keys[ck]]
         del self.canon_keys[ck]
+    def __iter__(self):
+        return iter(self.data)
+    def __contains__(self, key):
+        return self.has_key(key)
     def clear(self):
         self.data.clear()
         self.canon_keys.clear()
@@ -315,7 +324,7 @@ class IRCDict:
     def values(self):
         return self.data.values()
     def has_key(self, key):
-        return self.canon_keys.has_key(irc_lower(key))
+        return irc_lower(key) in self.canon_keys
     def update(self, dict):
         for k, v in dict.items():
             self.data[k] = v
@@ -350,31 +359,31 @@ class Channel:
 
     def has_user(self, nick):
         """Check whether the channel has a user."""
-        return self.userdict.has_key(nick)
+        return nick in self.userdict
 
     def is_oper(self, nick):
         """Check whether a user has operator status in the channel."""
-        return self.operdict.has_key(nick)
+        return nick in self.operdict
 
     def is_voiced(self, nick):
         """Check whether a user has voice mode set in the channel."""
-        return self.voiceddict.has_key(nick)
+        return nick in self.voiceddict
 
     def add_user(self, nick):
         self.userdict[nick] = 1
 
     def remove_user(self, nick):
         for d in self.userdict, self.operdict, self.voiceddict:
-            if d.has_key(nick):
+            if nick in d:
                 del d[nick]
 
     def change_nick(self, before, after):
         self.userdict[after] = 1
         del self.userdict[before]
-        if self.operdict.has_key(before):
+        if before in self.operdict:
             self.operdict[after] = 1
             del self.operdict[before]
-        if self.voiceddict.has_key(before):
+        if before in self.voiceddict:
             self.voiceddict[after] = 1
             del self.voiceddict[before]
 
@@ -431,8 +440,7 @@ class Channel:
     def is_invite_only(self):
         return self.has_mode("i")
 
-    def has_message_from_outside_protection(self):
-        # Eh... What should it be called, really?
+    def has_allow_external_messages(self):
         return self.has_mode("n")
 
     def has_limit(self):

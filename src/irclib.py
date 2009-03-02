@@ -1,30 +1,29 @@
-# Copyright (C) 1999, 2000 Joel Rosdahl
+# Copyright (C) 1999--2002  Joel Rosdahl
 # Copyright (C) 2007 by mOo, FKtPp
-# 
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#		 
-# This program is distributed in the hope that it will be useful,
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
-# GNU General Public License for more details.
-# 
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
 #
-# Joel Rosdahl <joel@rosdahl.net>
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307  USA
 #
-# $Id: irclib.py,v 1.14 2003/01/09 00:50:02 ddipaolo Exp $
+# keltus <keltus@users.sourceforge.net>
+#
+# $Id: irclib.py,v 1.47 2008/09/25 22:00:59 keltus Exp $
 
 """irclib -- Internet Relay Chat (IRC) protocol client library.
 
 This library is intended to encapsulate the IRC protocol at a quite
-low level.	It provides an event-driven IRC client framework.  It has
-a fairly thorough support for the basic IRC protocol and CTCP, but DCC
-connection support is not yet implemented.
+low level.  It provides an event-driven IRC client framework.  It has
+a fairly thorough support for the basic IRC protocol, CTCP, DCC chat,
+but DCC file transfers is not yet supported.
 
 In order to understand how to make an IRC client, I'm afraid you more
 or less must understand the IRC specifications.  They are available
@@ -47,7 +46,6 @@ The main features of the IRC client framework are:
   * Decodes CTCP tagging correctly (hopefully); I haven't seen any
     other IRC client implementation that handles the CTCP
     specification subtilties.
-    u
   * A kind of simple, single-server, object-oriented IRC client class
     that dispatches events to instance methods is included.
 
@@ -56,13 +54,9 @@ Current limitations:
   * The IRC protocol shines through the abstraction a bit too much.
   * Data is not written asynchronously to the server, i.e. the write()
     may block if the TCP buffers are stuffed.
-  * There are no support for DCC connections.
+  * There are no support for DCC file transfers.
   * The author haven't even read RFC 2810, 2811, 2812 and 2813.
   * Like most projects, documentation is lacking...
-
-Since I seldom use IRC anymore, I will probably not work much on the
-library.  If you want to help or continue developing the library,
-please contact me (Joel Rosdahl <joel@rosdahl.net>).
 
 .. [IRC specifications] http://www.irchelp.org/irchelp/rfc/
 """
@@ -72,21 +66,22 @@ import re
 import select
 import socket
 import string
+import sys
 import time
 import types
 
-VERSION = 0, 3, 2
+VERSION = 0, 4, 8
 DEBUG = 0
 MESSAGE_SIZE_LIMIT = 512
 
 # TODO
 # ----
-# DCC
 # (maybe) thread safety
 # (maybe) color parser convenience functions
 # documentation (including all event types)
 # (maybe) add awareness of different types of ircds
-# send data asynchronously to the server
+# send data asynchronously to the server (and DCC connections)
+# (maybe) automatically close unused, passive DCC connections after a while
 
 # NOTES
 # -----
@@ -103,7 +98,7 @@ class IRC:
     """Class that handles one or several IRC server connections.
 
     When an IRC object has been instantiated, it can be used to create
-    Connection objects that represent the IRC connections.	The
+    Connection objects that represent the IRC connections.  The
     responsibility of the IRC object is to provide an event-driven
     framework for the connections and to keep the connections alive.
     It runs a select loop to poll each connection's TCP socket and
@@ -120,23 +115,24 @@ class IRC:
         server = irc.server()
         server.connect(\"irc.some.where\", 6667, \"my_nickname\")
         server.privmsg(\"a_nickname\", \"Hi there!\")
-        server.process_forever()
+        irc.process_forever()
 
     This will connect to the IRC server irc.some.where on port 6667
     using the nickname my_nickname and send the message \"Hi there!\"
     to the nickname a_nickname.
     """
 
-    def __init__(self, fn_to_add_timeout=None):
+    def __init__(self, fn_to_add_socket=None,
+                 fn_to_remove_socket=None,
+                 fn_to_add_timeout=None):
         """Constructor for IRC objects.
 
-        THIS DOCSTRING IS OUTDATED -- DISREGARD
         Optional arguments are fn_to_add_socket, fn_to_remove_socket
-        and fn_to_add_timeout.	The first two specify functions that
+        and fn_to_add_timeout.  The first two specify functions that
         will be called with a socket object as argument when the IRC
         object wants to be notified (or stop being notified) of data
         coming on a new socket.  When new data arrives, the method
-        process_data should be called.	Similarly, fn_to_add_timeout
+        process_data should be called.  Similarly, fn_to_add_timeout
         is called with a number of seconds (a floating point number)
         as first argument when the IRC object wants to receive a
         notification (by calling the process_timeout method).  So, if
@@ -151,6 +147,14 @@ class IRC:
         An alternative is to just call ServerConnection.process_once()
         once in a while.
         """
+
+        if fn_to_add_socket and fn_to_remove_socket:
+            self.fn_to_add_socket = fn_to_add_socket
+            self.fn_to_remove_socket = fn_to_remove_socket
+        else:
+            self.fn_to_add_socket = None
+            self.fn_to_remove_socket = None
+
         self.fn_to_add_timeout = fn_to_add_timeout
         self.connections = []
         self.handlers = {}
@@ -187,7 +191,7 @@ class IRC:
         t = time.time()
         while self.delayed_commands:
             if t >= self.delayed_commands[0][0]:
-                apply(self.delayed_commands[0][1], self.delayed_commands[0][2])
+                self.delayed_commands[0][1](*self.delayed_commands[0][2])
                 del self.delayed_commands[0]
             else:
                 break
@@ -228,7 +232,6 @@ class IRC:
     def disconnect_all(self, message=""):
         """Disconnects all connections."""
         for c in self.connections:
-            c.quit(message)
             c.disconnect(message)
 
     def add_global_handler(self, event, handler, priority=0):
@@ -252,8 +255,7 @@ class IRC:
         number is highest priority).  If a handler function returns
         \"NO MORE\", no more handlers will be called.
         """
-
-        if not self.handlers.has_key(event):
+        if not event in self.handlers:
             self.handlers[event] = []
         bisect.insort(self.handlers[event], ((priority, handler)))
 
@@ -268,7 +270,7 @@ class IRC:
 
         Returns 1 on success, otherwise 0.
         """
-        if not self.handlers.has_key(event):
+        if not event in self.handlers:
             return 0
         for h in self.handlers[event]:
             if handler == h[1]:
@@ -303,6 +305,20 @@ class IRC:
         if self.fn_to_add_timeout:
             self.fn_to_add_timeout(delay)
 
+    def dcc(self, dcctype="chat"):
+        """Creates and returns a DCCConnection object.
+
+        Arguments:
+
+            dcctype -- "chat" for DCC CHAT connections or "raw" for
+                       DCC SEND (or other DCC types). If "chat",
+                       incoming data will be split in newline-separated
+                       chunks. If "raw", incoming data is not touched.
+        """
+        c = DCCConnection(self, dcctype)
+        self.connections.append(c)
+        return c
+
     def _handle_event(self, connection, event):
         """[Internal]"""
         h = self.handlers
@@ -313,9 +329,10 @@ class IRC:
     def _remove_connection(self, connection):
         """[Internal]"""
         self.connections.remove(connection)
+        if self.fn_to_remove_socket:
+            self.fn_to_remove_socket(connection._get_socket())
 
 _rfc_1459_command_regexp = re.compile("^(:(?P<prefix>[^ ]+) +)?(?P<command>[^ ]+)( *(?P<argument> .+))?")
-
 
 class Connection:
     """Base class for IRC connections.
@@ -325,7 +342,7 @@ class Connection:
     def __init__(self, irclibobj):
         self.irclibobj = irclibobj
 
-    def _get_socket(self):
+    def _get_socket():
         raise IRCError, "Not overridden"
 
     ##############################
@@ -341,9 +358,12 @@ class Connection:
 class ServerConnectionError(IRCError):
     pass
 
+class ServerNotConnectedError(ServerConnectionError):
+    pass
+
 
 # Huh!?  Crrrrazy EFNet doesn't follow the RFC: their ircd seems to
-# use \n as message separator!	:P
+# use \n as message separator!  :P
 _linesep_regexp = re.compile("\r?\n")
 
 class ServerConnection(Connection):
@@ -355,10 +375,13 @@ class ServerConnection(Connection):
 
     def __init__(self, irclibobj):
         Connection.__init__(self, irclibobj)
-        self.connected = 0	# Not connected yet.
+        self.connected = 0  # Not connected yet.
+        self.socket = None
+        self.ssl = None
 
     def connect(self, server, port, nickname, password=None, username=None,
-                ircname=None, encoding="utf-8"):
+                ircname=None, localaddress="", localport=0, ssl=False, ipv6=False,
+                encoding="utf-8"):
         """Connect/reconnect to a server.
 
         Arguments:
@@ -373,16 +396,23 @@ class ServerConnection(Connection):
 
             username -- The username.
 
-            ircname -- The IRC name.
+            ircname -- The IRC name ("realname").
+
+            localaddress -- Bind the connection to a specific local IP address.
+
+            localport -- Bind the connection to a specific local port.
+
+            ssl -- Enable support for ssl.
+
+            ipv6 -- Enable support for ipv6.
 
         This function can be called to reconnect a closed connection.
 
         Returns the ServerConnection object.
         """
         if self.connected:
-            self.quit("Changing server")
+            self.disconnect("Changing servers")
 
-        self.socket = None
         self.previous_buffer = ""
         self.handlers = {}
         self.real_server_name = ""
@@ -392,22 +422,34 @@ class ServerConnection(Connection):
         self.nickname = nickname
         self.username = username or nickname
         self.ircname = ircname or nickname
-        self.encoding = encoding
         self.password = password
+        self.encoding = encoding
+        DebugErr(self.encoding)
+        self.localaddress = localaddress
+        self.localport = localport
         self.localhost = socket.gethostname()
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if ipv6:
+            self.socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        else:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            self.socket.bind((self.localaddress, self.localport))
             self.socket.connect((self.server, self.port))
+            if ssl:
+                self.ssl = socket.ssl(self.socket)
         except socket.error, x:
+            self.socket.close()
+            self.socket = None
             raise ServerConnectionError, "Couldn't connect to socket: %s" % x
         self.connected = 1
+        if self.irclibobj.fn_to_add_socket:
+            self.irclibobj.fn_to_add_socket(self.socket)
 
         # Log on...
         if self.password:
             self.pass_(self.password)
         self.nick(self.nickname)
-        self.user(self.username, self.localhost, self.server, self.ircname)
-
+        self.user(self.username, self.ircname)
         return self
 
     def close(self):
@@ -422,10 +464,7 @@ class ServerConnection(Connection):
 
     def _get_socket(self):
         """[Internal]"""
-        if self.connected:
-            return self.socket
-        else:
-            return None
+        return self.socket
 
     def get_server_name(self):
         """Get the (real) server name.
@@ -452,8 +491,11 @@ class ServerConnection(Connection):
         """[Internal]"""
 
         try:
-            new_data = self.socket.recv(2**14)
-        except socket.error:
+            if self.ssl:
+                new_data = self.ssl.read(2**14)
+            else:
+                new_data = self.socket.recv(2**14)
+        except socket.error, x:
             # The server hung up.
             self.disconnect("Connection reset by peer")
             return
@@ -465,8 +507,7 @@ class ServerConnection(Connection):
         lines = _linesep_regexp.split(self.previous_buffer + new_data)
 
         # Save the last, unfinished line.
-        self.previous_buffer = lines[-1]
-        lines = lines[:-1]
+        self.previous_buffer = lines.pop()
 
         for line in lines:
             rawdata = line
@@ -474,6 +515,9 @@ class ServerConnection(Connection):
 
             if DEBUG:
                 DebugErr("<< FROM SERVER:", line)
+
+            if not line:
+                continue
 
             prefix = None
             command = None
@@ -485,8 +529,6 @@ class ServerConnection(Connection):
                                      rawdata))
 
             m = _rfc_1459_command_regexp.match(line)
-
-
             if m.group("prefix"):
                 prefix = m.group("prefix")
                 if not self.real_server_name:
@@ -501,9 +543,17 @@ class ServerConnection(Connection):
                 if len(a) == 2:
                     arguments.append(a[1])
 
+            # Translate numerics into more readable strings.
+            if command in numeric_events:
+                command = numeric_events[command]
+
             if command == "nick":
                 if nm_to_n(prefix) == self.real_nickname:
                     self.real_nickname = arguments[0]
+            elif command == "welcome":
+                # Record the nickname in case the client changed nick
+                # in a nicknameinuse callback.
+                self.real_nickname = arguments[0]
 
             if command in ["privmsg", "notice"]:
                 target, message = arguments[0], arguments[1]
@@ -530,6 +580,8 @@ class ServerConnection(Connection):
                             DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
                                 command, prefix, target, m))
                         self._handle_event(Event(command, prefix, target, m, rawdata))
+                        if command == "ctcp" and m[0] == "ACTION":
+                            self._handle_event(Event("action", prefix, target, m[1:]))
                     else:
                         if DEBUG:
                             DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
@@ -550,10 +602,6 @@ class ServerConnection(Connection):
                     if not is_channel(target):
                         command = "umode"
 
-                # Translate numerics into more readable strings.
-                if numeric_events.has_key(command):
-                    command = numeric_events[command]
-
                 if DEBUG:
                     DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
                         command, prefix, target, arguments))
@@ -562,7 +610,7 @@ class ServerConnection(Connection):
     def _handle_event(self, event):
         """[Internal]"""
         self.irclibobj._handle_event(self, event)
-        if self.handlers.has_key(event.eventtype()):
+        if event.eventtype() in self.handlers:
             for fn in self.handlers[event.eventtype()]:
                 fn(self, event)
 
@@ -578,7 +626,14 @@ class ServerConnection(Connection):
 
         See documentation for IRC.add_global_handler.
         """
-        apply(self.irclibobj.add_global_handler, args)
+        self.irclibobj.add_global_handler(*args)
+
+    def remove_global_handler(self, *args):
+        """Remove global handler.
+
+        See documentation for IRC.remove_global_handler.
+        """
+        self.irclibobj.remove_global_handler(*args)
 
     def action(self, target, action):
         """Send a CTCP ACTION command."""
@@ -604,13 +659,16 @@ class ServerConnection(Connection):
 
             message -- Quit message.
         """
-        if self.connected == 0:
+        if not self.connected:
             return
 
         self.connected = 0
+
+        self.quit(message)
+
         try:
             self.socket.close()
-        except socket.error:
+        except socket.error, x:
             pass
         self.socket = None
         self._handle_event(Event("disconnect", self.server, "", [message]))
@@ -634,7 +692,7 @@ class ServerConnection(Connection):
 
             nicks -- List of nicks.
         """
-        self.send_raw("ISON " + ",".join(nicks))
+        self.send_raw("ISON " + " ".join(nicks))
 
     def join(self, channel, key=""):
         """Send a JOIN command."""
@@ -691,12 +749,12 @@ class ServerConnection(Connection):
         """Send an OPER command."""
         self.send_raw("OPER %s %s" % (nick, password))
 
-    def part(self, channels):
+    def part(self, channels, message=""):
         """Send a PART command."""
         if type(channels) == types.StringType or type(channels) == types.UnicodeType:
-            self.send_raw("PART " + channels)
+            self.send_raw("PART " + channels + (message and (" " + message)))
         else:
-            self.send_raw("PART " + ",".join(channels))
+            self.send_raw("PART " + ",".join(channels) + (message and (" " + message)))
 
     def pass_(self, password):
         """Send a PASS command."""
@@ -722,25 +780,27 @@ class ServerConnection(Connection):
 
     def quit(self, message=""):
         """Send a QUIT command."""
+        # Note that many IRC servers don't use your QUIT message
+        # unless you've been connected for at least 5 minutes!
         self.send_raw("QUIT" + (message and (" :" + message)))
-
-    def sconnect(self, target, port="", server=""):
-        """Send an SCONNECT command."""
-        self.send_raw("CONNECT %s%s%s" % (target,
-          port and (" " + port),
-          server and (" " + server)))
 
     def send_raw(self, raw_string):
         """Send raw string to the server.
 
         The string will be padded with appropriate CR LF.
         """
+        string = raw_string.encode(self.encoding, "ignore")
+        if self.socket is None:
+            raise ServerNotConnectedError, "Not connected."
         try:
-            self.socket.send(raw_string.encode(self.encoding, "ignore") + "\r\n")
+            if self.ssl:
+                self.ssl.write(string + "\r\n")
+            else:
+                self.socket.send(string + "\r\n")
             if DEBUG:
                 DebugErr(">> TO SERVER:", raw_string)
         except socket.error:
-            # Aouch!
+            # Ouch!
             self.disconnect("Connection reset by peer.")
 
     def squit(self, server, comment=""):
@@ -757,7 +817,7 @@ class ServerConnection(Connection):
 
     def topic(self, channel, new_topic=None):
         """Send a TOPIC command."""
-        if new_topic == None:
+        if new_topic is None:
             self.send_raw("TOPIC " + channel)
         else:
             self.send_raw("TOPIC %s :%s" % (channel, new_topic))
@@ -766,9 +826,9 @@ class ServerConnection(Connection):
         """Send a TRACE command."""
         self.send_raw("TRACE" + (target and (" " + target)))
 
-    def user(self, username, localhost, server, ircname):
+    def user(self, username, realname):
         """Send a USER command."""
-        self.send_raw("USER %s %s %s :%s" % (username, localhost, server, ircname))
+        self.send_raw("USER %s 0 * :%s" % (username, realname))
 
     def userhost(self, nicks):
         """Send a USERHOST command."""
@@ -794,29 +854,185 @@ class ServerConnection(Connection):
         """Send a WHOIS command."""
         self.send_raw("WHOIS " + ",".join(targets))
 
-    def whowas(self, nick, max=None, server=""):
+    def whowas(self, nick, max="", server=""):
         """Send a WHOWAS command."""
         self.send_raw("WHOWAS %s%s%s" % (nick,
                                          max and (" " + max),
                                          server and (" " + server)))
 
+class DCCConnectionError(IRCError):
+    pass
 
-#class DCCConnection(Connection):
-#	"""Unimplemented."""
-#	def __init__(self):
-#		raise IRCError, "Unimplemented."
 
+class DCCConnection(Connection):
+    """This class represents a DCC connection.
+
+    DCCConnection objects are instantiated by calling the dcc
+    method on an IRC object.
+    """
+    def __init__(self, irclibobj, dcctype):
+        Connection.__init__(self, irclibobj)
+        self.connected = 0
+        self.passive = 0
+        self.dcctype = dcctype
+        self.peeraddress = None
+        self.peerport = None
+
+    def connect(self, address, port):
+        """Connect/reconnect to a DCC peer.
+
+        Arguments:
+            address -- Host/IP address of the peer.
+
+            port -- The port number to connect to.
+
+        Returns the DCCConnection object.
+        """
+        self.peeraddress = socket.gethostbyname(address)
+        self.peerport = port
+        self.socket = None
+        self.previous_buffer = ""
+        self.handlers = {}
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.passive = 0
+        try:
+            self.socket.connect((self.peeraddress, self.peerport))
+        except socket.error, x:
+            raise DCCConnectionError, "Couldn't connect to socket: %s" % x
+        self.connected = 1
+        if self.irclibobj.fn_to_add_socket:
+            self.irclibobj.fn_to_add_socket(self.socket)
+        return self
+
+    def listen(self):
+        """Wait for a connection/reconnection from a DCC peer.
+
+        Returns the DCCConnection object.
+
+        The local IP address and port are available as
+        self.localaddress and self.localport.  After connection from a
+        peer, the peer address and port are available as
+        self.peeraddress and self.peerport.
+        """
+        self.previous_buffer = ""
+        self.handlers = {}
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.passive = 1
+        try:
+            self.socket.bind((socket.gethostbyname(socket.gethostname()), 0))
+            self.localaddress, self.localport = self.socket.getsockname()
+            self.socket.listen(10)
+        except socket.error, x:
+            raise DCCConnectionError, "Couldn't bind socket: %s" % x
+        return self
+
+    def disconnect(self, message=""):
+        """Hang up the connection and close the object.
+
+        Arguments:
+
+            message -- Quit message.
+        """
+        if not self.connected:
+            return
+
+        self.connected = 0
+        try:
+            self.socket.close()
+        except socket.error, x:
+            pass
+        self.socket = None
+        self.irclibobj._handle_event(
+            self,
+            Event("dcc_disconnect", self.peeraddress, "", [message]))
+        self.irclibobj._remove_connection(self)
+
+    def process_data(self):
+        """[Internal]"""
+
+        if self.passive and not self.connected:
+            conn, (self.peeraddress, self.peerport) = self.socket.accept()
+            self.socket.close()
+            self.socket = conn
+            self.connected = 1
+            if DEBUG:
+                print "DCC connection from %s:%d" % (
+                    self.peeraddress, self.peerport)
+            self.irclibobj._handle_event(
+                self,
+                Event("dcc_connect", self.peeraddress, None, None))
+            return
+
+        try:
+            new_data = self.socket.recv(2**14)
+        except socket.error, x:
+            # The server hung up.
+            self.disconnect("Connection reset by peer")
+            return
+        if not new_data:
+            # Read nothing: connection must be down.
+            self.disconnect("Connection reset by peer")
+            return
+
+        if self.dcctype == "chat":
+            # The specification says lines are terminated with LF, but
+            # it seems safer to handle CR LF terminations too.
+            chunks = _linesep_regexp.split(self.previous_buffer + new_data)
+
+            # Save the last, unfinished line.
+            self.previous_buffer = chunks[-1]
+            if len(self.previous_buffer) > 2**14:
+                # Bad peer! Naughty peer!
+                self.disconnect()
+                return
+            chunks = chunks[:-1]
+        else:
+            chunks = [new_data]
+
+        command = "dccmsg"
+        prefix = self.peeraddress
+        target = None
+        for chunk in chunks:
+            if DEBUG:
+                print "FROM PEER:", chunk
+            arguments = [chunk]
+            if DEBUG:
+                print "command: %s, source: %s, target: %s, arguments: %s" % (
+                    command, prefix, target, arguments)
+            self.irclibobj._handle_event(
+                self,
+                Event(command, prefix, target, arguments))
+
+    def _get_socket(self):
+        """[Internal]"""
+        return self.socket
+
+    def privmsg(self, string):
+        """Send data to DCC peer.
+
+        The string will be padded with appropriate LF if it's a DCC
+        CHAT session.
+        """
+        try:
+            self.socket.send(string)
+            if self.dcctype == "chat":
+                self.socket.send("\n")
+            if DEBUG:
+                print "TO PEER: %s\n" % string
+        except socket.error, x:
+            # Ouch!
+            self.disconnect("Connection reset by peer.")
 
 class SimpleIRCClient:
     """A simple single-server IRC client class.
 
     This is an example of an object-oriented wrapper of the IRC
-    framework.	A real IRC client can be made by subclassing this
+    framework.  A real IRC client can be made by subclassing this
     class and adding appropriate methods.
 
     The method on_join will be called when a "join" event is created
     (which is done when the server sends a JOIN messsage/command),
-    on_privmsg will be called for "privmsg" events, and so on.	The
+    on_privmsg will be called for "privmsg" events, and so on.  The
     handler methods get two arguments: the connection object (same as
     self.connection) and the event object.
 
@@ -825,11 +1041,15 @@ class SimpleIRCClient:
         ircobj -- The IRC instance.
 
         connection -- The ServerConnection instance.
+
+        dcc_connections -- A list of DCCConnection instances.
     """
     def __init__(self):
         self.ircobj = IRC()
         self.connection = self.ircobj.server()
+        self.dcc_connections = []
         self.ircobj.add_global_handler("all_events", self._dispatcher, -10)
+        self.ircobj.add_global_handler("dcc_disconnect", self._dcc_disconnect, -10)
 
     def _dispatcher(self, c, e):
         """[Internal]"""
@@ -839,8 +1059,12 @@ class SimpleIRCClient:
         elif hasattr(self, "on_other"):
             getattr(self, "on_other")(c, e)
 
+    def _dcc_disconnect(self, c, e):
+        self.dcc_connections.remove(c)
+
     def connect(self, server, port, nickname, password=None, username=None,
-                ircname=None, encoding="utf-8"):
+                ircname=None, localaddress="", localport=0, ssl=False, ipv6=False,
+                encoding="utf-8"):
         """Connect/reconnect to a server.
 
         Arguments:
@@ -857,10 +1081,46 @@ class SimpleIRCClient:
 
             ircname -- The IRC name.
 
+            localaddress -- Bind the connection to a specific local IP address.
+
+            localport -- Bind the connection to a specific local port.
+
+            ssl -- Enable support for ssl.
+
+            ipv6 -- Enable support for ipv6.
+
         This function can be called to reconnect a closed connection.
         """
         self.connection.connect(server, port, nickname,
-                                password, username, ircname, encoding)
+                                password, username, ircname,
+                                localaddress, localport, ssl, ipv6,
+                                encoding)
+
+    def dcc_connect(self, address, port, dcctype="chat"):
+        """Connect to a DCC peer.
+
+        Arguments:
+
+            address -- IP address of the peer.
+
+            port -- Port to connect to.
+
+        Returns a DCCConnection instance.
+        """
+        dcc = self.ircobj.dcc(dcctype)
+        self.dcc_connections.append(dcc)
+        dcc.connect(address, port)
+        return dcc
+
+    def dcc_listen(self, dcctype="chat"):
+        """Listen for connections from a DCC peer.
+
+        Returns a DCCConnection instance.
+        """
+        dcc = self.ircobj.dcc(dcctype)
+        self.dcc_connections.append(dcc)
+        dcc.listen()
+        return dcc
 
     def start(self):
         """Start the IRC client."""
@@ -914,9 +1174,9 @@ class Event:
 
             eventtype -- A string describing the event.
 
-            source -- The originator of the event (a nick mask or a server). XXX Correct?
+            source -- The originator of the event (a nick mask or a server).
 
-            target -- The target of the event (a nick or a channel). XXX Correct?
+            target -- The target of the event (a nick or a channel).
 
             arguments -- Any event specific arguments.
         """
@@ -971,18 +1231,17 @@ def mask_matches(nick, mask):
     mask = irc_lower(mask)
     mask = mask.replace("\\", "\\\\")
     for ch in ".$|[](){}+":
-        mask = ch.replace("\\" + ch)
+        mask = mask.replace(ch, "\\" + ch)
     mask = mask.replace("?", ".")
-    mask = mask.replace,("*", ".*")
+    mask = mask.replace("*", ".*")
     r = re.compile(mask, re.IGNORECASE)
     return r.match(nick)
 
 ### TODO fix for unicode
-_alpha = "abcdefghijklmnopqrstuvwxyz"
 _special = "-[]\\`^{}"
-nick_characters = _alpha + _alpha.upper() + string.digits + _special
-_ircstring_translation = string.maketrans(_alpha.upper() + "[]\\^",
-                                          _alpha + "{}|~")
+nick_characters = string.ascii_letters + string.digits + _special
+_ircstring_translation = string.maketrans(string.ascii_uppercase + "[]\\^",
+                                          string.ascii_lowercase + "{}|~")
 
 def irc_lower(s):
     """Returns a lowercased string.
@@ -990,14 +1249,15 @@ def irc_lower(s):
     The definition of lowercased comes from the IRC specification (RFC
     1459).
     """
-    return s.lower() # return string.translate(s, _ircstring_translation)
+    # return s.translate(_ircstring_translation)
+    return s.lower()
 
 def _ctcp_dequote(message):
     """[Internal] Dequote a message according to CTCP specifications.
 
     The function returns a list where each element can be either a
     string (normal message) or a tuple of one or two strings (tagged
-    messages).	If a tuple has only one element (ie is a singleton),
+    messages).  If a tuple has only one element (ie is a singleton),
     that element is the tag; otherwise the tuple has two elements: the
     tag and the data.
 
@@ -1020,7 +1280,7 @@ def _ctcp_dequote(message):
     if _CTCP_DELIMITER not in message:
         return [message]
     else:
-        # Split it into parts.	(Does any IRC client actually *use*
+        # Split it into parts.  (Does any IRC client actually *use*
         # CTCP stacking like this?)
         chunks = message.split(_CTCP_DELIMITER)
 
@@ -1032,7 +1292,7 @@ def _ctcp_dequote(message):
                 messages.append(chunks[i])
 
             if i < len(chunks)-2:
-                # Aye!	CTCP tagged data ahead!
+                # Aye!  CTCP tagged data ahead!
                 messages.append(tuple(chunks[i+1].split(" ", 1)))
 
             i = i + 2
@@ -1052,6 +1312,25 @@ def is_channel(string):
     Returns true if the argument is a channel name, otherwise false.
     """
     return string and string[0] in "#&+!"
+
+def ip_numstr_to_quad(num):
+    """Convert an IP number as an integer given in ASCII
+    representation (e.g. '3232235521') to an IP address string
+    (e.g. '192.168.0.1')."""
+    n = long(num)
+    p = map(str, map(int, [n >> 24 & 0xFF, n >> 16 & 0xFF,
+                           n >> 8 & 0xFF, n & 0xFF]))
+    return ".".join(p)
+
+def ip_quad_to_numstr(quad):
+    """Convert an IP address string (e.g. '192.168.0.1') to an IP
+    number as an integer given in ASCII representation
+    (e.g. '3232235521')."""
+    p = map(long, quad.split("."))
+    s = str((p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3])
+    if s[-1] == "L":
+        s = s[:-1]
+    return s
 
 def nm_to_n(s):
     """Get the nick part of a nickmask.
@@ -1086,7 +1365,7 @@ def parse_nick_modes(mode_string):
     """Parse a nick mode string.
 
     The function returns a list of lists with three members: sign,
-    mode and argument.	The sign is \"+\" or \"-\".  The argument is
+    mode and argument.  The sign is \"+\" or \"-\".  The argument is
     always None.
 
     Example:
@@ -1101,7 +1380,7 @@ def parse_channel_modes(mode_string):
     """Parse a channel mode string.
 
     The function returns a list of lists with three members: sign,
-    mode and argument.	The sign is \"+\" or \"-\".  The argument is
+    mode and argument.  The sign is \"+\" or \"-\".  The argument is
     None if mode isn't one of \"b\", \"k\", \"l\", \"v\" or \"o\".
 
     Example:
@@ -1132,7 +1411,7 @@ def _parse_modes(mode_string, unary_modes=""):
         if ch in "+-":
             sign = ch
         elif ch == " ":
-            collecting_arguments = 1	# ??? -djd
+            collecting_arguments = 1
         elif ch in unary_modes:
             if len(args) >= arg_count + 1:
                 modes.append([sign, ch, args[arg_count]])
@@ -1186,8 +1465,10 @@ numeric_events = {
     "204": "traceoperator",
     "205": "traceuser",
     "206": "traceserver",
+    "207": "traceservice",
     "208": "tracenewtype",
     "209": "traceclass",
+    "210": "tracereconnect",
     "211": "statslinkinfo",
     "212": "statscommands",
     "213": "statscline",
@@ -1219,6 +1500,7 @@ numeric_events = {
     "259": "adminemail",
     "261": "tracelog",
     "262": "endoftrace",
+    "263": "tryagain",
     "265": "n_local",
     "266": "n_global",
     "300": "none",
@@ -1242,10 +1524,14 @@ numeric_events = {
     "324": "channelmodeis",
     "329": "channelcreate",
     "331": "notopic",
-    "332": "topic",
+    "332": "currenttopic",
     "333": "topicinfo",
     "341": "inviting",
     "342": "summoning",
+    "346": "invitelist",
+    "347": "endofinvitelist",
+    "348": "exceptlist",
+    "349": "endofexceptlist",
     "351": "version",
     "352": "whoreply",
     "353": "namreply",
@@ -1264,7 +1550,7 @@ numeric_events = {
     "374": "endofinfo",
     "375": "motdstart",
     "376": "endofmotd",
-    "377": "motd2",		   # 1997-10-16 -- tkil
+    "377": "motd2",        # 1997-10-16 -- tkil
     "381": "youreoper",
     "382": "rehashing",
     "384": "myportis",
@@ -1293,6 +1579,7 @@ numeric_events = {
     "432": "erroneusnickname", # Thiss iz how its speld in thee RFC.
     "433": "nicknameinuse",
     "436": "nickcollision",
+    "437": "unavailresource",  # "Nick temporally unavailable"
     "441": "usernotinchannel",
     "442": "notonchannel",
     "443": "useronchannel",
@@ -1313,9 +1600,13 @@ numeric_events = {
     "474": "bannedfromchan",
     "475": "badchannelkey",
     "476": "badchanmask",
+    "477": "nochanmodes",  # "Channel doesn't support modes"
+    "478": "banlistfull",
     "481": "noprivileges",
     "482": "chanoprivsneeded",
     "483": "cantkillserver",
+    "484": "restricted",   # Connection is restricted
+    "485": "uniqopprivsneeded",
     "491": "nooperhost",
     "492": "noservicehost",
     "501": "umodeunknownflag",
@@ -1324,9 +1615,12 @@ numeric_events = {
 
 generated_events = [
     # Generated events
+    "dcc_connect",
+    "dcc_disconnect",
+    "dccmsg",
     "disconnect",
     "ctcp",
-    "ctcpreply"
+    "ctcpreply",
 ]
 
 protocol_events = [
@@ -1341,7 +1635,9 @@ protocol_events = [
     "privnotice",
     "pubmsg",
     "pubnotice",
-    "quit"
+    "quit",
+    "invite",
+    "pong",
 ]
 
 all_events = generated_events + protocol_events + numeric_events.values()
