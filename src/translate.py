@@ -70,7 +70,7 @@ class encodeDecode(MooBotModule):
                     msg = msg.encode(encoding)
                 else:
                     if encoding == "hex":
-                        msg = msg.replace("\\x", "").replace("\\X", "").replace(" ", "").replace("&", "").replace("#", "").replace(";", "")
+                        msg = msg.replace("\\x", "").replace("\\X", "").replace(" ", "").replace("&#x", "").replace("&#X", "").replace(";", "")
                     msg = str(msg).decode(encoding)
 
             if type(msg) != unicode:
