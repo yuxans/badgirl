@@ -23,8 +23,8 @@ import re, httplib, urllib, urllib2, HTMLParser, weather
 from moobot_module import MooBotModule
 from irclib import Event, IrcStringIO
 
-handler_list = ["weathercn", "google", "kernelStatus", "dict", "acronym",
-		"babelfish", "debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
+handler_list = ["translate", "weathercn", "google", "kernelStatus", "Dict", "acronym",
+		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
 		"geekquote", "lunarCal", "ohloh"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
@@ -315,7 +315,7 @@ class kernelStatus(MooBotModule):
 		return Event("privmsg", "", target, [ result ])
 
 
-class dict(MooBotModule):
+class Dict(MooBotModule):
 	cache = {}
 	cache_old = {}
 	def __init__(self):
@@ -472,128 +472,402 @@ class dict(MooBotModule):
 					ibody += 1
 			return str
 
+class Translator:
+	commonHeader = {
+		"Content-type": "application/x-www-form-urlencoded",
+		"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
+		"Accept-Encoding": ""
+	}
 
+	langMap = {}
 
-class babelfish(MooBotModule):
-	"Does a search on babelfish.altavista.com and returns the translation"
-	# the languages babelfish can do
-	languages = {"english" : "en", "chinese" : "zh",
-		     "french" : "fr", "german" : "de",
-		     "italian" : "it", "japanese" : "ja",
-		     "korean" : "ko", "portuguese" : "pt",
-		     "russian" : "ru", "spanish" : "es"}
-	# the combinations (from_to) that babelfish can translate
-	translations =["en_zh", "en_fr", "en_de" , "en_it", "en_ja", "en_ko",
-		       "en_pt", "en_es" , "zh_en", "fr_en" , "fr_de", "de_en",
-		       "de_fr" , "it_en", "ja_en", "ko_en", "pt_en", "ru_en",
-		       "es_en"]
+	def mapLanguage(self, lang):
+		if lang in self.langMap:
+			return self.langMap[lang]
+		else:
+			return lang
+
+	def translate(self, text, fromLang, toLang, fromLanguage, toLanguage):
+		pass
+
+class TranslatorExcite(Translator):
+	name = "Excite"
+	command = "excite"
+
+	langMap = {
+		'zh': 'ch',
+		'zt': 'ch',
+		}
+
+	supportedTranslations = {
+		'jaen': '/world/english/',
+		'enja': '/world/english/',
+
+		'jach': '/world/chinese/',
+		'chja': '/world/chinese/',
+
+		'koen': '/world/korean/',
+		'enko': '/world/korean/',
+
+		'frja': '/world/french/',
+		'jafr': '/world/french/',
+		'fren': '/world/french/',
+		'enfr': '/world/french/',
+
+		'deja': '/world/german/',
+		'jade': '/world/german/',
+		'deen': '/world/german/',
+		'ende': '/world/german/',
+
+		'itja': '/world/italian/',
+		'jait': '/world/italian/',
+		'iten': '/world/italian/',
+		'enit': '/world/italian/',
+
+		'esja': '/world/spanish/',
+		'jaes': '/world/spanish/',
+		'esen': '/world/spanish/',
+		'enes': '/world/spanish/',
+
+		'ptja': '/world/portugupte/',
+		'japt': '/world/portugupte/',
+		'pten': '/world/portugupte/',
+		'enpt': '/world/portugupte/',
+	}
+
+	rResult = re.compile('<textarea[^>]+id="after"[^>]+>(.*?)</textarea>')
+
+	def translate(self, text, fromLang, toLang, fromLanguage, toLanguage):
+		if fromLanguage == 'cht' or toLanguage == 'cht':
+			big5 = 'yes'
+		else:
+			big5 = 'no'
+		translation = fromLang + toLang
+		if translation not in self.supportedTranslations:
+			return
+		# create the POST body
+		params = {
+			'before': text.encode("UTF-8"),
+			'wb_lp':  translation.upper(),
+			'start':  '',
+			'big5':   big5,
+		}
+		# connect, make the reauest
+		url = self.supportedTranslations[translation]
+		connect = httplib.HTTPConnection('www.excite.co.jp', 80)
+		connect.request("POST", url, urllib.urlencode(params), self.commonHeader)
+		response = connect.getresponse()
+		if response.status != 200: # check for errors
+			return
+
+		html = response.read().decode("UTF-8", "ignore")
+		html = html.replace('\n', '') # get rid of newlines
+		match = self.rResult.search(html)
+		if match:
+			return match.group(1)
+
+class TranslatorGoogle(Translator):
+	name = "google"
+	command = "google"
+
+	langMap = {
+		'zh': 'zh-CN',
+		'zt': 'zh-TW',
+		}
+
+	supportedTranslations = [
+		"sq",
+		"ar",
+		"bg",
+		"ca",
+		"zh-CN",
+		"zh-TW",
+		"hr",
+		"cs",
+		"da",
+		"nl",
+		"en",
+		"et",
+		"tl",
+		"fi",
+		"fr",
+		"gl",
+		"de",
+		"el",
+		"iw",
+		"hi",
+		"hu",
+		"id",
+		"it",
+		"ja",
+		"ko",
+		"lv",
+		"lt",
+		"mt",
+		"no",
+		"pl",
+		"pt",
+		"ro",
+		"ru",
+		"sr",
+		"sk",
+		"sl",
+		"es",
+		"sv",
+		"th",
+		"tr",
+		"uk",
+		"vi",
+		]
+
+	def translate(self, text, fromLang, toLang, fromLanguage, toLanguage):
+		if fromLang not in self.supportedTranslations or toLang not in self.supportedTranslations:
+			return
+
+		# create the POST body
+		params = {
+			'client': 't',
+			"text":   text.encode("UTF-8"),
+			"sl":     fromLang,
+			"tl":     toLang,
+		}
+		print urllib.urlencode(params)
+		# connect, make the reauest
+		connect = httplib.HTTPConnection('translate.google.com', 80)
+		connect.request("GET", '/translate_a/t?' + urllib.urlencode(params), {}, self.commonHeader)
+		response = connect.getresponse()
+		if response.status != 200: # check for errors
+			return
+
+		translated = response.read().decode("UTF-8", "ignore")
+		if translated[0] == '"':
+			return translated[1:-1]
+		elif translated[0] == '[':
+			return translated[1:-1].replace(',', ' ').replace('"', '').replace('[', '(').replace(']', ')')
+		else:
+			return translated
+
+class TranslatorBabelFish(Translator):
+	name = "babelfish"
+	command = "babelfish"
+
+	supportedTranslations = [
+		"zh_en",
+		"zh_zt",
+
+		"zt_en",
+		"zt_zh",
+		"en_zh",
+		"en_zt",
+		"en_nl",
+		"en_fr",
+		"en_de",
+		"en_el",
+		"en_it",
+
+		"en_ja",
+		"en_ko",
+		"en_pt",
+		"en_ru",
+		"en_es",
+		"nl_en",
+		"nl_fr",
+		"fr_nl",
+		"fr_en",
+
+		"fr_de",
+		"fr_el",
+		"fr_it",
+		"fr_pt",
+		"fr_es",
+		"de_en",
+		"de_fr",
+		"el_en",
+		"el_fr",
+
+		"it_en",
+		"it_fr",
+		"ja_en",
+		"ko_en",
+		"pt_en",
+		"pt_fr",
+		"ru_en",
+		"es_en",
+		"es_fr"
+		]
+
+	rResult = re.compile('<div id="result"><div style="padding:0.6em;">(.*?)</div></div>')
+
+	def translate(self, text, fromLang, toLang, fromLanguage, toLanguage):
+		translateMode = "%s_%s" % (fromLang, toLang)
+		if translateMode not in self.supportedTranslations:
+			return
+
+		text = text.replace("'", u"¡¯");
+
+		# create the POST body
+		params = {"ei": "UTF-8", "doit": "done", "fr": "bf-res", "intl": "1", "tt": "urltext", "trtext": text.encode("UTF-8"), "lp": translateMode}
+		# connect, make the reauest
+		connect = httplib.HTTPConnection('babelfish.yahoo.com', 80)
+		connect.request("POST", "/translate_txt", urllib.urlencode(params), self.commonHeader)
+		response = connect.getresponse()
+		if response.status != 200: # check for errors
+			return
+
+		html = response.read().decode("UTF-8", "ignore")
+		html = html.replace('\n', '') # get rid of newlines
+		match = self.rResult.search(html)
+		if match:
+			return match.group(1)
+
+class translate(MooBotModule):
+	"Does a search on web and returns the translation"
+	languages = {
+		"ar": "arabic",
+		"bg": "bulgarian",
+		"ca": "catalan",
+		"cs": "czech",
+		"da": "danish",
+		"de": "german",
+		"el": "greek",
+		"en": "english",
+		"es": "spanish",
+		"et": "estonian",
+		"fi": "finnish",
+		"fr": "french",
+		"gl": "galician",
+		"hi": "hindi",
+		"hr": "croatian",
+		"hu": "hungarian",
+		"id": "indonesian",
+		"it": "italian",
+		"iw": "hebrew",
+		"ja": "japanese",
+		"ko": "korean",
+		"lt": "lithuanian",
+		"lv": "latvian",
+		"mt": "maltese",
+		"nl": "dutch",
+		"no": "norwegian",
+		"pl": "polish",
+		"pt": "portuguese",
+		"ro": "romanian",
+		"ru": "russian",
+		"sk": "slovak",
+		"sl": "slovenian",
+		"sq": "albanian",
+		"sr": "serbian",
+		"sv": "swedish",
+		"th": "thai",
+		"tl": "filipino",
+		"tr": "turkish",
+		"uk": "ukrainian",
+		"vi": "vietnamese",
+		"zh": "chinese",
+		"zh": "chs",
+		"zt": "cht",
+	}
+
+	languagesToLang = dict([(v, k) for (k, v) in languages.iteritems()])
+
+	shortcuts = {
+		"ec": "en_zh",
+		"ce": "zh_en"
+	}
 
 	def __init__(self):
-		# the languages babelfish can do
-		self.languages = {"english" : "en",
-				  "chinese" : "zh",
-				  "schinese" : "zh",
-				  "tchinese" : "zt",
-				  "dutch": "nl",
-				  "french" : "fr",
-				  "german" : "de",
-				  "italian" : "it",
-				  "japanese" : "ja",
-				  "korean" : "ko",
-				  "portuguese" : "pt",
-				  "russian" : "ru",
-				  "spanish" : "es",
-				  "greek": "el"}
+		"""
+		>>> t = translate()
+		>>> re.compile(t.rTranslation).search("zh_en").group(1)
+		'zh'
+		>>> re.compile(t.rTranslation).search("zh_en").group(2)
+		'en'
+		>>> t.re.match("translate").group(0)
+		'translate'
+		>>> t.re.match("translate zh_en test").group(2)
+		'zh'
+		>>> t.re.match("translate chinese to english test").group(2)
+		'chinese'
+		>>> t.re.match("zh_en test").group(2)
+		'zh'
+		"""
 
-		# the combinations (from_to) that babelfish can
-		self.translations =["zh_en", "zt_en", "en_zh",
-		"en_zt", "en_nl", "en_fr", "en_de", "en_el", "en_it",
-		"en_ja", "en_ko", "en_pt", "en_ru", "en_es", "nl_en",
-		"nl_fr", "fr_en", "fr_de", "fr_el", "fr_it", "fr_pt",
-		"fr_nl", "fr_es", "de_en", "de_fr", "el_en", "el_fr",
-		"it_en", "it_fr", "ja_en", "ko_en", "pt_en", "pt_fr",
-		"ru_en", "es_en", "es_fr"]
-		self.shortcuts = {
-			"ec": "en_zh",
-			"ce": "zh_en"
-			}
+		self.translators = (TranslatorExcite(), TranslatorGoogle(), TranslatorBabelFish())
 
-		self.regex = "^((babelfish|translate) \w+ to \w+|(%s)\s+.+|babelfish$|translate$)" % ("|".join(self.translations + self.shortcuts.keys()))
-
+		rLanguage = "|".join(self.languages.keys() + self.languages.values())
+		self.rTranslators = 'translate|' + "|".join(translator.command for translator in self.translators)
+		self.rShortcuts = '|'.join(self.shortcuts.keys())
+		self.rTranslation = "(%s)(?:[-_]| +to +)(%s)|(%s)" % (rLanguage, rLanguage, self.rShortcuts)
+		self.regex = "(?i)^((?:%s) +|)(?:%s) +(.*)|^(?:%s)(?:$| +)|^languages$" % (self.rTranslators, self.rTranslation, self.rTranslators)
+		self.re = re.compile(self.regex)
+		self.reWord = re.compile('^[a-z]+$', re.I)
 
 	def help(self, args):
-		langs = " ".join(self.languages.keys())
-		trans = " ".join(self.languages.values())
 		return Event("privmsg", "", self.return_to_sender(args), [
-			"Usage: translate <FROM_LANGUAGE> to <TO_LANGUAGE> TEXT\r\nAvailable LANGUAGES are \"%s\"" % (langs)
-			+ "\r\nSynonyms: {LN_LN} TEXT\r\nWhere LNs are \"%s\"" % (trans)
+			"Usage: [%s] <from> to <to> TEXT, OR: <%s> TEXT. See also: Languages\r\n" % (self.rTranslators, self.rShortcuts)
+			])
+
+	def helpLanguages(self, args):
+		langs = []
+		i = 0
+		for (k, v) in self.languages.iteritems():
+			langs.append(v + ':' + k)
+			i = i + len(v) + len(k) + 2
+			if i > 400:
+				langs.append("\r\n")
+				i = 0
+
+		return Event("privmsg", "", self.return_to_sender(args), [
+			"Languages: %s" % " ".join(langs)
 			])
 
 	def handler(self, **args):
-		
-		tmp = args["text"].split(" ", 2)
-		translation_key = tmp[1].lower()
-		if len(tmp) != 3:
+		text = " ".join(args["text"].split(" ", 2)[1:])
+		if text == 'languages':
+			return self.helpLanguages(args)
+		# get parameter
+		match = self.re.match(text)
+		text = match.group(5)
+		if text is None:
 			return self.help(args)
-		request = tmp[2] # chop off the "moobot: babelfish"
 
-		if self.shortcuts.has_key(translation_key):
-			if request.find(' ') == -1 and re.compile('^[a-z]+$', re.I).search(request):
+		type = match.group(1).lower()
+		if match.group(2) is not None:
+			fromLang, toLang = (match.group(2).lower(), match.group(3).lower())
+		elif match.group(4):
+			fromLang, toLang = self.shortcuts[match.group(4)].lower().split("_", 2)
+
+		# language
+		if fromLang in self.languagesToLang:
+			fromLang = self.languagesToLang[fromLang]
+		if toLang in self.languagesToLang:
+			toLang = self.languagesToLang[toLang]
+		fromLanguage = self.languages[fromLang]
+		toLanguage = self.languages[toLang]
+
+		# redirect stupid query
+		if text.find(' ') == -1 and self.reWord.search(text):
+			return Event("privmsg", "", self.return_to_sender(args), 
+				[ "use: dict " + text + " or ~~" + text])
+
+		# which translator(s)?
+		translators = None
+		for translator in self.translators:
+			if translator.command == type:
+				translators = (translator, )
+		if not translators:
+			translators = self.translators
+
+		# dispatch it
+		for translator in translators:
+			result = translator.translate(text, translator.mapLanguage(fromLang), translator.mapLanguage(toLang), fromLanguage, toLanguage)
+			if result:
 				return Event("privmsg", "", self.return_to_sender(args), 
-					[ "use: dict " + request + " or ~~" + request])
-			translation_key = self.shortcuts[translation_key]
-			translation_text = request
-		elif translation_key in self.translations:
-			translation_text = request
-		else:
-			froml = request.split()[0].lower() # the source language
-							# to get something like "english to spanish foo"
-			tol = request.split()[2].lower() # the destination language
-			translation_text = " ".join(request.split()[3:]) 
-			# The string to translate, it's length wont't be ZERO
-			if re.compile("^\s*$").match(translation_text):
-				return self.help(args)
+					[ "%s translation: %s" % (translator.name.capitalize(), result) ])
 
-			# check if we know the languages they want to use
-			if froml not in self.languages.keys() :
-				return Event("privmsg", "", self.return_to_sender(args), 
-					[ "unknown language: " + froml ])
-			if tol not in self.languages.keys():
-				return Event("privmsg", "", self.return_to_sender(args), 
-					[ "unknown language: " + tol ])
-
-			# the value for the lp= field for the cgi arguments
-			translation_key = "%s_%s" % (self.languages[froml], 
-				self.languages[tol])
-
-			# make sure the translation_key is one we can use
-			if translation_key not in self.translations:
-				return Event("privmsg", "", self.return_to_sender(args), 
-					[ "Babelfish doesn't know how to do %s to %s" % 
-					(froml, tol)])
-
-		translation_text = translation_text.replace("'", u"¡¯");
-
-		# create the POST body
-		params = {"ei": "UTF-8", "doit": "done", "fr": "bf-res", "intl": "1", "tt": "urltext", "trtext": translation_text.encode("UTF-8"), "lp": translation_key}
-		headers = {"Content-type": "application/x-www-form-urlencoded",
-			   "User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)",
-			   "Accept-Encoding": ""}
-		# connect, make the reauest
-		connect = httplib.HTTPConnection('babelfish.yahoo.com', 80)
-		connect.request("POST", "/translate_txt", urllib.urlencode(params), headers)
-		response = connect.getresponse()
-		if response.status != 200: # check for errors
-			msg = response.status + ": " + response.reason
-			return Event("privmsg", "", self.return_to_sender(args), [msg])
-		else:
-			listing = response.read().decode("UTF-8", "ignore")
-			listing = listing.replace('\n', '') # get rid of newlines
-		searchRegex2 = re.compile('<div id="result"><div style="padding:0.6em;">(.*?)</div></div>')
-		match = searchRegex2.search(listing)
-		result = match.group(1)
+		# check if we know the languages they want to use
 		return Event("privmsg", "", self.return_to_sender(args), 
-			[ "Translation: " + result ])
+			[ "translating from %s to %s is not supported" % (fromLanguage, toLanguage) ])
 
 class debpackage(MooBotModule, HTMLParser.HTMLParser):
 	"""
