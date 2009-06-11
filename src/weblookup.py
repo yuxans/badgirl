@@ -786,6 +786,12 @@ class translate(MooBotModule):
 		'translate'
 		>>> t.re.match("translate zh_en test").group(2)
 		'zh'
+		>>> t.re.match("translate zh_en test").group(1)
+		'translate'
+		>>> t.re.match("google zh_en test").group(1)
+		'google'
+		>>> t.re.match("babelfish zh_en test").group(1)
+		'babelfish'
 		>>> t.re.match("translate chinese to english test").group(2)
 		'chinese'
 		>>> t.re.match("zh_en test").group(2)
@@ -800,7 +806,7 @@ class translate(MooBotModule):
 		self.rTranslators = 'translate|' + "|".join(translator.command for translator in self.translators)
 		self.rShortcuts = '|'.join(self.shortcuts.keys())
 		self.rTranslation = "(%s)(?:[-_]| +to +)(%s)|(%s)" % (rLanguage, rLanguage, self.rShortcuts)
-		self.regex = "(?i)^((?:%s) +|)(?:%s) +(.*)|^(?:(?:%s)|(?:%s))(?:$| +)|^languages$" % (self.rTranslators, self.rTranslation, self.rTranslators, self.rTranslation)
+		self.regex = "(?i)^(?:(%s) +|)(?:%s) +(.*)|^(?:(?:%s)|(?:%s))(?:$| +)|^languages$" % (self.rTranslators, self.rTranslation, self.rTranslators, self.rTranslation)
 		self.re = re.compile(self.regex)
 		self.reWord = re.compile('^[a-z]+$', re.I)
 
@@ -833,7 +839,9 @@ class translate(MooBotModule):
 		if text is None:
 			return self.help(args)
 
-		type = match.group(1).lower()
+		type = match.group(1)
+		if type:
+			type = type.lower()
 		if match.group(2) is not None:
 			fromLang, toLang = (match.group(2).lower(), match.group(3).lower())
 		elif match.group(4):
