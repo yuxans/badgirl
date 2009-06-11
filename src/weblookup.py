@@ -722,53 +722,53 @@ class TranslatorBabelFish(Translator):
 
 class translate(MooBotModule):
 	"Does a search on web and returns the translation"
-	languages = {
-		"ar": "arabic",
-		"bg": "bulgarian",
-		"ca": "catalan",
-		"cs": "czech",
-		"da": "danish",
-		"de": "german",
-		"el": "greek",
-		"en": "english",
-		"es": "spanish",
-		"et": "estonian",
-		"fi": "finnish",
-		"fr": "french",
-		"gl": "galician",
-		"hi": "hindi",
-		"hr": "croatian",
-		"hu": "hungarian",
-		"id": "indonesian",
-		"it": "italian",
-		"iw": "hebrew",
-		"ja": "japanese",
-		"ko": "korean",
-		"lt": "lithuanian",
-		"lv": "latvian",
-		"mt": "maltese",
-		"nl": "dutch",
-		"no": "norwegian",
-		"pl": "polish",
-		"pt": "portuguese",
-		"ro": "romanian",
-		"ru": "russian",
-		"sk": "slovak",
-		"sl": "slovenian",
-		"sq": "albanian",
-		"sr": "serbian",
-		"sv": "swedish",
-		"th": "thai",
-		"tl": "filipino",
-		"tr": "turkish",
-		"uk": "ukrainian",
-		"vi": "vietnamese",
-		"zh": "chinese",
-		"zh": "chs",
-		"zt": "cht",
+	languageToLangs = {
+		"arabic":    "ar",
+		"bulgarian": "bg",
+		"catalan":   "ca",
+		"czech":     "cs",
+		"danish":    "da",
+		"german":    "de",
+		"greek":     "el",
+		"english":   "en",
+		"spanish":   "es",
+		"estonian":  "et",
+		"finnish":   "fi",
+		"french":    "fr",
+		"galician":  "gl",
+		"hindi":     "hi",
+		"croatian":  "hr",
+		"hungarian": "hu",
+		"indonesian":"id",
+		"italian":   "it",
+		"hebrew":    "iw",
+		"japanese":  "ja",
+		"korean":    "ko",
+		"lithuanian":"lt",
+		"latvian":   "lv",
+		"maltese":   "mt",
+		"dutch":     "nl",
+		"norwegian": "no",
+		"polish":    "pl",
+		"portuguese":"pt",
+		"romanian":  "ro",
+		"russian":   "ru",
+		"slovak":    "sk",
+		"slovenian": "sl",
+		"albanian":  "sq",
+		"serbian":   "sr",
+		"swedish":   "sv",
+		"thai":      "th",
+		"filipino":  "tl",
+		"turkish":   "tr",
+		"ukrainian": "uk",
+		"vietnamese":"vi",
+		"chinese":   "zh",
+		"chs":       "zh",
+		"cht":       "zt",
 	}
 
-	languagesToLang = dict([(v, k) for (k, v) in languages.iteritems()])
+	langToLanguages = dict([(v, k) for (k, v) in languageToLangs.iteritems()])
 
 	shortcuts = {
 		"ec": "en_zh",
@@ -790,15 +790,17 @@ class translate(MooBotModule):
 		'chinese'
 		>>> t.re.match("zh_en test").group(2)
 		'zh'
+		>>> t.re.match("zh_en").group(0)
+		'zh_en'
 		"""
 
 		self.translators = (TranslatorExcite(), TranslatorGoogle(), TranslatorBabelFish())
 
-		rLanguage = "|".join(self.languages.keys() + self.languages.values())
+		rLanguage = "|".join(self.languageToLangs.keys() + self.languageToLangs.values())
 		self.rTranslators = 'translate|' + "|".join(translator.command for translator in self.translators)
 		self.rShortcuts = '|'.join(self.shortcuts.keys())
 		self.rTranslation = "(%s)(?:[-_]| +to +)(%s)|(%s)" % (rLanguage, rLanguage, self.rShortcuts)
-		self.regex = "(?i)^((?:%s) +|)(?:%s) +(.*)|^(?:%s)(?:$| +)|^languages$" % (self.rTranslators, self.rTranslation, self.rTranslators)
+		self.regex = "(?i)^((?:%s) +|)(?:%s) +(.*)|^(?:(?:%s)|(?:%s))(?:$| +)|^languages$" % (self.rTranslators, self.rTranslation, self.rTranslators, self.rTranslation)
 		self.re = re.compile(self.regex)
 		self.reWord = re.compile('^[a-z]+$', re.I)
 
@@ -810,8 +812,8 @@ class translate(MooBotModule):
 	def helpLanguages(self, args):
 		langs = []
 		i = 0
-		for (k, v) in self.languages.iteritems():
-			langs.append(v + ':' + k)
+		for (language, lang) in self.languageToLangs.iteritems():
+			langs.append(language + ':' + lang)
 			i = i + len(v) + len(k) + 2
 			if i > 400:
 				langs.append("\r\n")
@@ -838,12 +840,12 @@ class translate(MooBotModule):
 			fromLang, toLang = self.shortcuts[match.group(4)].lower().split("_", 2)
 
 		# language
-		if fromLang in self.languagesToLang:
-			fromLang = self.languagesToLang[fromLang]
-		if toLang in self.languagesToLang:
-			toLang = self.languagesToLang[toLang]
-		fromLanguage = self.languages[fromLang]
-		toLanguage = self.languages[toLang]
+		if fromLang in self.languageToLangs:
+			fromLang = self.languageToLangs[fromLang]
+		if toLang in self.languageToLangs:
+			toLang = self.languageToLangs[toLang]
+		fromLanguage = self.langToLanguages[fromLang]
+		toLanguage = self.langToLanguages[toLang]
 
 		# redirect stupid query
 		if text.find(' ') == -1 and self.reWord.search(text):
