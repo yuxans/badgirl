@@ -23,9 +23,9 @@ import re, httplib, urllib, urllib2, HTMLParser, weather
 from moobot_module import MooBotModule
 from irclib import Event, IrcStringIO
 
-handler_list = ["translate", "weathercn", "google", "kernelStatus", "Dict", "acronym",
+handler_list = ["weathercn", "google", "kernelStatus", "Dict", "acronym",
 		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
-		"geekquote", "lunarCal", "ohloh"]
+		"translate", "geekquote", "lunarCal", "ohloh"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
