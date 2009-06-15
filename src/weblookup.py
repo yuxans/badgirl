@@ -820,7 +820,7 @@ class translate(MooBotModule):
 		i = 0
 		for (language, lang) in self.languageToLangs.iteritems():
 			langs.append(language + ':' + lang)
-			i = i + len(v) + len(k) + 2
+			i = i + len(language) + len(lang) + 2
 			if i > 400:
 				langs.append("\r\n")
 				i = 0
