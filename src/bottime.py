@@ -129,34 +129,34 @@ class date(MooBotModule):
         """
         assert input[0] == "date"
 
-        tz_offset1 = None
         tz_offset = None
+        tz_is_valid = False
         qnick = None
 
         if len(input) == 1:
             # No Parameter, we assume the user want to know his local time
-            qnick = self.nick_validate(request_nick)
-
+            qnick = request_nick
         elif len(input) == 2:
-            tz_offset, tz_is_valid = self.tz_validate(input[1])
             if input[1] == "help":
                 return self.help_message_date
             # if input[1] is not a valid tz_offset string, we assume it is 
             # a nick
-            elif not tz_is_valid:
-                qnick = self.nick_validate(input[1])
+            tz_offset, tz_is_valid = self.tz_validate(input[1])
+            if not tz_is_valid:
+                qnick = input[1]
         else:
             return self.help_message_date
 
         if qnick:
-            tz_offset1 = database.doSQL("select tz_offset from bottime "\
-                                            "where nick = '%s'" % qnick)
-        if tz_offset1:
-            self.Debug(tz_offset1)
-            tz_offset = tz_offset1[0][0]
-        elif not tz_is_valid:
-            return "You have no timezone setting, "\
-                "current server time is: %s" % time.asctime()
+            tz_offset = database.doSQL("select tz_offset from bottime "\
+                                            "where nick = '%s'" % self.sqlEscape(qnick))
+            if tz_offset:
+                tz_offset = tz_offset[0][0]
+                tz_is_valid = True
+
+        if not tz_is_valid:
+            return "%s have no timezone setting, "\
+                "current server time is: %s" % (qnick, time.asctime())
         
         return "%s (GMT %d)" % (time.asctime(
                 time.gmtime(
@@ -180,7 +180,8 @@ class date(MooBotModule):
         assert input[0] == "datestz"
 
         tz_offset = None
-        qnick = self.nick_validate(request_nick)
+        tz_is_valid = False
+        qnick = request_nick
         show_offset = False
         input_len = len(input)
 
@@ -189,12 +190,12 @@ class date(MooBotModule):
         elif input_len == 2:
             tz_offset, tz_is_valid = self.tz_validate(input[1])
             if not tz_is_valid:
-                qnick = self.nick_validate(input[1])
+                qnick = input[1]
                 if not qnick == "help":
                     show_offset = True
         elif input_len == 3:
             tz_offset, tz_is_valid = self.tz_validate(input[2])
-            qnick = self.nick_validate(input[1])
+            qnick = input[1]
     
         if not tz_is_valid:
             if not show_offset:
@@ -203,15 +204,15 @@ class date(MooBotModule):
                 return self.show_tz(qnick)
         else:
             tmp_data = database.doSQL("select nick, tz_offset from bottime "\
-                                          "where nick = '%s'" % qnick)
+                                          "where nick = '%s'" % self.sqlEscape(qnick))
 
             if tmp_data:
                 sql_string = "update bottime "\
                     "set tz_offset  = %s "\
-                    "where nick = '%s'" % (tz_offset, qnick)
+                    "where nick = '%s'" % (tz_offset, self.sqlEscape(qnick))
             else:
                 sql_string = "insert into bottime (nick, tz_offset) "\
-                    "values ('%s', %s)" % (qnick, tz_offset)
+                    "values ('%s', %s)" % (self.sqlEscape(qnick), tz_offset)
 
             database.doSQL(sql_string)
 
@@ -261,13 +262,6 @@ class date(MooBotModule):
 
         return tz_offset, result
 
-    def nick_validate(self, nick_string):
-        """validate nick_string to prevent being SQL injected
-
-        XXX this is a dummy function.
-        """
-        return nick_string
-            
 def _test():
     import doctest
     doctest.testmod()
