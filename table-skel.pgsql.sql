@@ -146,16 +146,20 @@ CREATE TABLE "seentype" (
 --
 -- TOC Entry ID 10 (OID 48376)
 --
--- Name: seen Type: TABLE Owner: bradmont
+-- Name: seen Type: TABLE Owner: moo
 --
 
+CREATE SEQUENCE "nick_sequence" start 1 increment 1 maxvalue 99999999 minvalue 1  cache 1 ;
+
 CREATE TABLE "seen" (
+	"nickid" integer DEFAULT nextval('nick_sequence'::text) NOT NULL,
 	"nick" character varying(31) NOT NULL,
 	"hostmask" character varying(150),
 	"time" numeric(11,0),
 	"message" text,
 	"type" character varying(20) NOT NULL,
-	Constraint "seen_pkey" Primary Key ("nick")
+	Constraint "seen_pkey" Primary Key ("nickid"),
+	Constraint "seen_ukey" Unique Key ("nickid")
 );
 
 --
@@ -207,11 +211,15 @@ CREATE UNIQUE INDEX aliasregex_regex_key ON aliasregex USING btree (regex);
 -- Name: urls Type: TABLE Owner: bradmont
 --
 
+CREATE SEQUENCE "url_sequence" start 1 increment 1 maxvalue 99999999 minvalue 1  cache 1 ;
+
 CREATE TABLE "url" (
+	"url_id" integer DEFAULT nextval('url_sequence'::text) NOT NULL,
 	"nick" character varying(64) NOT NULL,
 	"time" timestamp NOT NULL,
 	"string" text NOT NULL,
-	"url_id" serial
+	"hostid" integer NOT NULL,
+	"nickid" integer NOT NULL
 );
 
 --

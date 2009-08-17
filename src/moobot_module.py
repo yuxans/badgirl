@@ -19,6 +19,7 @@
 #
 
 from moobot import MooBot, Debug, DebugErr, Handler
+import database
 
 class MooBotModule:
 	"""Base class for all MooBot modules"""
@@ -109,7 +110,16 @@ Event.  Should be overridden for every module."""
 		text = text.replace('"', '\\"')
 		text = text.replace("'", "\\'")
 		return text
-			
+
+	def addNick(self, nick):
+		database.doSQL("INSERT IGNORE seen(nick) VALUES('%s')" % (self.sqlEscape(nick)))
+		return self.getNickId(nick)
+
+	def getNickId(self, nick):
+		ret = database.doSQL("SELECT nickid FROM seen WHERE nick='%s'" % (self.sqlEscape(nick)))
+		if ret and ret[0]:
+			return ret[0][0]
+
 	def Debug(self, *args):
 		apply(DebugErr, args)
 

@@ -107,10 +107,12 @@ CREATE TABLE webstats (
 
 
 CREATE TABLE url (
+  url_id INTEGER PRIMARY KEY,
   nick TEXT NOT NULL,
   time TEXT NOT NULL,
   string TEXT NOT NULL,
-  url_id INTEGER PRIMARY KEY
+  hostid INTEGER,
+  nickid INTEGER
 ) ;
 
 CREATE TABLE ability (

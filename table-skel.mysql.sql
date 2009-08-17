@@ -114,12 +114,14 @@ CREATE TABLE poll_votes (
 --
 
 CREATE TABLE seen (
+  nickid int(10) unsigned NOT NULL auto_increment,
   nick varchar(31) NOT NULL default '',
   hostmask varchar(150) default NULL,
   time decimal(11,0) default NULL,
   message text,
   type varchar(20) NOT NULL default '',
-  PRIMARY KEY  (nick)
+  PRIMARY KEY  (nickid)
+  UNIQUE KEY nick (nick)
 ) TYPE=MyISAM;
 
 --
@@ -150,13 +152,28 @@ CREATE TABLE webstats (
 -- Table structure for table 'urls'
 --
 
-CREATE TABLE url (
-  nick varchar(64) NOT NULL,
-  time timestamp NOT NULL,
-  string text NOT NULL,
-  url_id integer AUTO_INCREMENT,
-  PRIMARY KEY(url_id)
-) TYPE=MyISAM;
+CREATE TABLE IF NOT EXISTS `url` (
+  `nick` varchar(64) NOT NULL,
+  `time` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
+  `string` text NOT NULL,
+  `url_id` int(11) NOT NULL auto_increment,
+  `url` varchar(256) NOT NULL default '',
+  `url_hash` varbinary(32) NOT NULL default '',
+  `title` varchar(256) NOT NULL default '',
+  `hostid` int(10) unsigned NOT NULL,
+  `nickid` int(10) unsigned NOT NULL,
+  PRIMARY KEY  (`url_id`),
+  KEY `url_hash` (`url_hash`(4))
+) ENGINE=MyISAM;
+
+CREATE TABLE IF NOT EXISTS `urlhost` (
+  `hostid` int(10) unsigned NOT NULL auto_increment,
+  `host` varchar(64) NOT NULL,
+  `scheme` enum('http','https') NOT NULL,
+  `port` smallint(5) unsigned NOT NULL,
+  PRIMARY KEY  (`hostid`),
+  UNIQUE KEY `host` (`host`,`scheme`,`port`)
+) ENGINE=MyISAM;
 
 CREATE TABLE IF NOT EXISTS `ability` (
   `abilityid` smallint(5) unsigned NOT NULL auto_increment,
