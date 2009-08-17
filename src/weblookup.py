@@ -536,6 +536,10 @@ class TranslatorExcite(Translator):
 		'pten': '/world/portugupte/',
 		'enpt': '/world/portugupte/',
 	}
+	encodings = {
+		'jaen': 'Shift_JIS',
+		'enja': 'Shift_JIS'
+	}
 
 	rResult = re.compile('<textarea[^>]+id="after"[^>]+>(.*?)</textarea>')
 
@@ -547,9 +551,13 @@ class TranslatorExcite(Translator):
 		translation = fromLang + toLang
 		if translation not in self.supportedTranslations:
 			return
+		if translation in self.encodings:
+			encoding = self.encodings[translation]
+		else:
+			encoding = "UTF-8"
 		# create the POST body
 		params = {
-			'before': text.encode("UTF-8"),
+			'before': text.encode(encoding, 'ignore'),
 			'wb_lp':  translation.upper(),
 			'start':  '',
 			'big5':   big5,
@@ -562,7 +570,7 @@ class TranslatorExcite(Translator):
 		if response.status != 200: # check for errors
 			return
 
-		html = response.read().decode("UTF-8", "ignore")
+		html = response.read().decode(encoding, "ignore")
 		html = html.replace('\n', '') # get rid of newlines
 		match = self.rResult.search(html)
 		if match:
@@ -633,7 +641,6 @@ class TranslatorGoogle(Translator):
 			"sl":     fromLang,
 			"tl":     toLang,
 		}
-		print urllib.urlencode(params)
 		# connect, make the reauest
 		connect = httplib.HTTPConnection('translate.google.com', 80)
 		connect.request("GET", '/translate_a/t?' + urllib.urlencode(params), {}, self.commonHeader)
