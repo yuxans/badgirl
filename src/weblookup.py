@@ -23,7 +23,7 @@ import re, httplib, urllib, urllib2, HTMLParser, weather
 from moobot_module import MooBotModule
 from irclib import Event, IrcStringIO
 
-handler_list = ["weathercn", "google", "kernelStatus", "Dict", "acronym",
+handler_list = ["weathercn", "google", "kernelStatus", "Dict",
 		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
 		"translate", "geekquote", "lunarCal", "ohloh"]
 
@@ -36,6 +36,8 @@ class IEURLopener(urllib.FancyURLopener):
 	version = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
 
 urllib._urlopener = IEURLopener()
+urllib2._opener = urllib2.build_opener()
+urllib2._opener.addheaders = [('User-agent', IEURLopener.version)]
 
 class weathercn(MooBotModule):
 	"""weather module to get weather forecast infomation
@@ -1246,49 +1248,13 @@ class genpackage(MooBotModule):
 		result = ", ".join(results[0:10])
 		return Event("privmsg", "", target, [result])
 
-class acronym(MooBotModule):
-	""" Does a search on www.acronymfinder.com and returns all definitions
-
-	TODO. According to http://www.acronymfinder.com/terms.htm , we
-	must switch to other sites. like:
-
-	http://silmaril.ie/cgi-bin/uncgi/acronyms
-	http://acronyms.thefreedictionary.com/
-	TODO. http://www.gaarde.org/acronyms/?lookup=ASAP
-	TODO. http://www.urbandictionary.com/define.php?term=ASAP
-	TODO. Parser
-	"""
-	def __init__(self):
-		self.regex = "^explain [a-zA-Z]+"
-
-	def handler(self, **args):
-		target = self.return_to_sender(args)
-
-		search_term = args["text"].split(" ")[2].upper()
-		search_parms = urllib.urlencode({'Acronym': search_term,
-				 'Find': 'find',
-				 'string':'exact'})
-		response = urllib.urlopen('http://www.acronymfinder.com/af-query.asp?%s' % search_parms)
-		listing = response.read().decode("UTF-8")
-
-		search = re.compile("<td[^>]*>[^<>\n\r]*%s[^<>\n\r]*</td>\s*<td[^>]*>([A-Za-z][^<\n\r]+)\s*</td>" % search_term)
-		definitions = search.findall(listing)
-		if len(definitions) == 0:
-			line = "Could not find a definition for " + search_term
-		elif len(definitions) == 1:
-			line = search_term + " is " + definitions[0]
-		else:
-			line = search_term + " is one of the following: \"" + '", "'.join(definitions) + "\""
-		line = line.replace("&nbsp;", " ")
-		return Event("privmsg", "", self.return_to_sender(args), [ line ])
-
-
 class foldoc(MooBotModule):
 	"""
 	Free On-line Dicitionary Of Computing
 	"""
 	def __init__(self):
-		self.regex = "^foldoc .+"
+		self.regex = "^explain .+"
+		self.rDescr = re.compile("<P>(.*?)<font ", re.I | re.S)
 
 	# Returns the position of the nth element in lst.
 	def index(self, lst, element, n=1):
@@ -1300,22 +1266,35 @@ class foldoc(MooBotModule):
 					return i
 
 	def handler(self, **args):
+		result = None
 		target = self.return_to_sender(args)
 
+		word = args["text"].split()[2]
+		url = "http://foldoc.org/" + urllib.urlencode({'': word})[1:]
 		try:
-			url = "http://foldoc.doc.ic.ac.uk/foldoc/foldoc.cgi?query=" + args["text"].split()[2]
-		except urllib2.URLError:
-			return "error connecting to foldoc"
-		fd = urllib2.urlopen(url).readlines()
-		start = self.index(fd, "<P>\n", 1)
-		stop = self.index(fd, "<P>\n", 2)
-		descr = " ".join(fd[start:stop])   # Get the base description
-		descr = re.sub("\n", "", descr)	# Remove newlines
-		descr = re.sub("<.*?>", "", descr) # Remove HTML tags
-		descr = re.sub("&.*;", "", descr)  #   "	 "	"
-		descr = descr.lstrip() # Remove leading white spaces
+			html = urllib.urlopen(url).read()
+		except IOError, e:
+			result = "error connecting to foldoc"
 
-		return Event("privmsg", "", target, [descr])
+		if not result:
+			match = self.rDescr.search(html)
+			if not match:
+				result = "error parsing foldoc"
+			elif match.find("Missing definition") == -1:
+				result = "not found"
+			else:
+				descr = match.group(1) # Get the base description
+				descr = descr.split("Try this search on", 1)[0]
+				descr = re.sub("[\r\n]", " ", descr) # Remove newlines
+				descr = re.sub("<[^>]*>", "", descr) # Remove HTML tags
+				descr = descr.replace("&lt;", "<")
+				descr = descr.replace("&gt;", ">")
+				descr = re.sub("&.*?;", "", descr)
+				descr = re.sub(" {2,}", " ", descr)
+				descr = descr.strip()
+				result = word + ": " + descr
+
+		return Event("privmsg", "", target, [result])
 
 class pgpkey(MooBotModule):
 	""" Does a key search on pgp.mit.edu and returns the first 5 hits
