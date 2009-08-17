@@ -19,45 +19,39 @@
 
 
 from moobot_module import MooBotModule
+import re
 handler_list=["version"]
 
 class version(MooBotModule):
 	def __init__(self):
 		self.regex="^version .+"
+		self.rTitle = re.compile(".*?<title>.*?</title>.*?<title>(.*?)</title>", re.I | re.S)
 
 	def handler(self, **args):
 		"""
 		This will go on freshmeat to look for a software version
 		"""
-		import urllib2, re
+		import httpfetcher
 
 		# Get the name of the software and put the name in all lowercase
-		name	= " ".join(args["text"].split()[2:])
-		name	= name.lower()
-		name	= name.replace(" ", "+")
+		name = self.getText(args, 1).lower().replace(" ", "+")
 
-		# The URL
-		url	 = "http://freshmeat.net/projects-xml/" + name
+		url = "http://freshmeat.net/projects/%s/releases.atom" % name
+		error = None
+		match = None
+		try:
+			fetcher = httpfetcher.urlopen(url, httpfetcher.RegexChecker(self.rTitle))
+			match = fetcher.fetch()
+		except socket.timeout:
+			error = "timeout"
 
-		# In the document, we are looking for latest_version to tell us the version
-		regex	= re.compile("^\s*<latest_release_version>.*</latest_release_version>$", re.IGNORECASE)
-		xml_doc	= urllib2.urlopen(url).readlines()
-		version	= None
-
-		for line in xml_doc:
-			if regex.match(line):
-				version = line
-
-		if version == None:
-			output	= "Can't find %s on [fm]" % name
+		if error:
+			output	= "failed to check version for %s: %s" % (name, error)
 		else:
-			version = version.strip() # Remove spaces and '\n'
-			version = version.replace("<latest_release_version>", "")
-			version = version.replace("</latest_release_version>", "")
-			output	= "Latest version of %s according to [fm]: %s" % (name, version)
+			if not match:
+				output	= "Can't find %s on [fm]" % name
+			else:
+				version = match.group(1)
+				output	= "Latest version of %s according to [fm]: %s" % (name, version)
 
-		target = self.return_to_sender(args)
-
-		from irclib import Event
-		return(Event("privmsg", "", target, [output]))
-
+		return self.msg_sender(args, output)
