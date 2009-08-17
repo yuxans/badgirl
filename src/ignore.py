@@ -30,7 +30,7 @@ class ignorePublicPattern(MooBotModule):
 	priority = -20
 
 	def handler(self, **args):
-		print "ignored " + args['text']
+		self.Debug("ignored " + args['text'])
 		return self.Event("do nothing", "", "" , [])
 
 class ignore(MooBotModule):
