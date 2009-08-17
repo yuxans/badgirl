@@ -1287,7 +1287,7 @@ class foldoc(MooBotModule):
 			match = self.rDescr.search(html)
 			if not match:
 				result = "error parsing foldoc"
-			elif match.find("Missing definition") == -1:
+			elif match.group(1).find("Missing definition") != -1:
 				result = "not found"
 			else:
 				descr = match.group(1) # Get the base description
