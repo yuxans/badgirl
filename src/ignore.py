@@ -18,10 +18,20 @@
 #
 
 """ignore.py - handles ignoring abusive users """
-handler_list=["ignorePublic", "ignorePrivate"]
+handler_list=["ignorePublicPattern", "ignorePublic", "ignorePrivate"]
 
 from moobot_module import MooBotModule
 from moobot import Handler
+
+class ignorePublicPattern(MooBotModule):
+	type = Handler.GLOBAL
+	regex = r"^(\[Request\] )"
+	stripColor = True
+	priority = -20
+
+	def handler(self, **args):
+		print "ignored " + args['text']
+		return self.Event("do nothing", "", "" , [])
 
 class ignore(MooBotModule):
 	def __init__(self):
