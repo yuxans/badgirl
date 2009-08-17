@@ -1,4 +1,5 @@
-#!/usr/bin/env python -*- coding:utf-8 -*-
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
 
 # Copyright (c) 2002 Daniel DiPaolo, et. al.
 # Copyright (c) 2006, 2007 FKtPp
@@ -22,36 +23,48 @@ import random
 from irclib import Event
 from irclib import Event
 from moobot_module import MooBotModule
-import url_codec
-handler_list = ["reverse", "encodeDecode", "coding", "leet", "russian_style"]
-
-class reverse(MooBotModule):
-    def __init__(self):
-        self.regex = "^reverse .+"
-
-    def handler(self, **args):
-        """gnirts a sesreveR"""
-
-        orig_string = " ".join(args["text"].split(" ")[2:])
-        newstring = ""
-        for i in range(1, len(orig_string)+1):
-            newstring += orig_string[-i]
-        return Event("privmsg", "", self.return_to_sender(args), [newstring])
+import url_codec, mars_codec, reverse_codec, leet_codec, pinyin_codec, split_codec
+handler_list = ["encodeDecode", "russian_style"]
 
 class encodeDecode(MooBotModule):
     def __init__(self):
-        self.regex = "^(encode|decode|codec) .+?$"
+        self.codecs = "(un|\\+|-)?(rot13|hex|base64|url\\+|url|mars|reverse|1337|py|split)"
+        self.regex = "^(encode|decode|codec|%s)( .+?)?$" % self.codecs
+
+    def usage(self, args):
+        return self.msg_sender(args, "Usage: encode|decode|codec $encodings $string OR %s $string, $encodings is separated by | prefixed by optional + or -" % self.codecs)
 
     def handler(self, **args):
+        txts = self.getArgs(args)
 
-        txts = args["text"].split(" ", 3)[1:]
-        if len(txts) != 3:
-            return Event("privmsg", "",
-                         self.return_to_sender(args), [ "Usage: encode|decode|codec $encodings $string, $encodings is separated by | prefixed by optional + or -" ])
-
-        cmd, encoding, msg = txts
-        if cmd != "decode":
-            cmd = "encode"
+        cmd = txts[0]
+        txts = txts[1:]
+        if cmd == "encode" or cmd == "decode":
+            if len(txts) < 2:
+                return self.usage(args)
+            encoding = txts[0]
+            msg = ' '.join(txts[1:])
+        elif cmd == "codec":
+            if len(txts) < 2:
+                return self.usage(args)
+            encoding = txts[0]
+            msg = ' '.join(txts[1:])
+            cmd = "decode"
+        else:
+            if len(txts) < 1:
+                return self.usage(args)
+            msg = ' '.join(txts)
+            encoding = cmd
+            if encoding.lower().startswith("un"):
+                encoding = encoding[2:]
+                cmd = "decode"
+            elif encoding.startswith('-'):
+                encoding = encoding[1:]
+                cmd = "decode"
+            else:
+                if encoding.startswith('+'):
+                    encoding = encoding[1:]
+                cmd = "encode"
 
         import re
         separator = re.compile("[|/,]")
@@ -67,108 +80,34 @@ class encodeDecode(MooBotModule):
                         encoding = encoding[1:]
 
                 if cmd == "encode":
-                    msg = msg.encode(encoding)
+                    try:
+                        msg = msg.encode(encoding)
+                    except:
+                        msg = msg.encode("utf8").encode(encoding)
                 else:
                     if encoding == "hex":
                         msg = msg.replace("\\x", "").replace("\\X", "").replace(" ", "").replace("&#x", "").replace("&#X", "").replace(";", "")
-                    msg = str(msg).decode(encoding)
+                    try:
+                        msg = str(msg)
+                    except UnicodeEncodeError:
+                        pass
+                    msg = msg.decode(encoding)
 
             if type(msg) != unicode:
                 cmd = "decode"
+                print msg
                 try:
                     encoding = "utf8"
                     msg = msg.decode(encoding)
-                except:
+                except UnicodeDecodeError:
                     encoding = "gb18030"
                     msg = msg.decode(encoding)
+                print msg
         except Exception, e:
             msg = "Error \"%s\" when %s with '%s' encoding" % (e, cmd, encoding)
 
         return Event("privmsg", "", 
                      self.return_to_sender(args), [ msg ])
-
-class coding(MooBotModule):
-    def __init__(self):
-        self.regex = "^(rot13|(un)?(hex|base64|url\\+|url)) .+"
-
-    def handler(self, **args):
-
-        cmd, msg = args["text"].split(" ", 2)[1:]
-
-        if cmd.startswith("un"):
-            cmd = cmd[2:]
-            try:
-                msg = str(msg).decode(cmd).decode('utf8')
-            except:
-                msg = str(msg).decode(cmd).decode('gb18030')
-        else:
-            msg = msg.encode("utf8").encode(cmd)
-
-        return Event("privmsg", "", 
-                     self.return_to_sender(args), [ msg ])
-
-class leet(MooBotModule):
-    leetCharMap={"A":"/_\\", "B":"b", "C":"(", "D":"|)", "E":"e",
-                 "F":"F", "G":"6", "H":"|-|", "I":"eye", "J":"j",
-                 "K":"|{", "L":"L", "M":"|\\/|", "N":"|\\|",
-                 "O":"()", "P":"P", "Q":"q", "R":"R", "S":"$",
-                 "T":"7", "U":"|_|", "V":"\\/", "W":"\\/\\/",
-                 "X":"><", "Y":"y", "Z":"z", "a":"4", "b":"8",
-                 "c":"(", "d":"d", "e":"3", "f":"f", "g":"6",
-                 "h":"h", "i":"1", "j":"j", "k":"k", "l":"|",
-                 "m":"m", "n":"N", "o":"0", "p":"p", "q":"q",
-                 "r":"r", "s":"5", "t":"7", "u":"U", "v":"V",
-                 "w":"w", "x":"X", "y":"y", "z":"Z", " ":" "}
-    leetWordMap={"you":"j00", "the":"teh", "your":"j00r",
-                 "ever":"evar", "sucks":"soxz", "rocks":"roxz"}
-
-    def __init__(self):
-        self.regex = "^u?1337 .+"
-
-    def handler(self, **args):
-
-        cmd, msg = args["text"].split(" ", 2)[1:]
-
-        if cmd.startswith("u"):
-            msg = "LEET decode wasn't implemented yet"
-        else:
-            msg = self.leet_msg(msg)
-
-        return Event("privmsg", "", self.return_to_sender(args), [ msg ])
-
-    def leet_msg(self, msg):
-        """Translate whole sentence to leet speaking
-
-        Return the translated sentence.
-        """
-        word_list = []
-        for word in msg.split(" "):
-            tmp_word = self.leet_word(word)
-            if not tmp_word:
-                tmp_word = self.leet_char(word)
-            word_list.append(tmp_word)
-        return " ".join(word_list)
-
-    def leet_word(self, word):
-        """Translate a word to leet speaking by word
-
-        return the leet word if successed, or return None"""
-        if self.leetWordMap.has_key(word):
-            return self.leetWordMap[word]
-        else:
-            return None
-
-    def leet_char(self, word):
-        """Translate a word to leet speaking by char
-
-        return the leet word"""
-        char_list = []
-        for char in word:
-            if self.leetCharMap.has_key(char):
-                char_list.append(self.leetCharMap[char])
-            else:
-                char_list.append(char)
-        return "".join(char_list)
 
 class russian_style (MooBotModule):
     """Graphic designers sometimes employ faux Cyrillic typography to
