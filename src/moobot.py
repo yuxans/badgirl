@@ -262,12 +262,14 @@ class MooBot(SingleServerIRCBot):
 					     	"ref": weakref.ref(self)}
 					instance.handler(**arguments)
 	
+		strippedMsg = self.stripColor(msg)
 		if type in self.handlers.keys():
 			for handler in self.handlers[type]:
 				if eventlist[-1].eventtype() != "continue":
 					break
 				if (type <> Handler.GLOBAL and type <> Handler.LOCAL) or \
-				   (handler.regex.search(msg)):
+				   (handler.stripColor and handler.regex.search(strippedMsg)) or \
+				   ((not handler.stripColor) and handler.regex.search(msg)):
 					for key in ["text", "type", "source",
 						    "channel", "event"]:
 						if not args.has_key(key):
@@ -446,6 +448,11 @@ class MooBot(SingleServerIRCBot):
 		return self.regex.pattern
 	def func_name(self):
 		return self.className
+
+	import re
+	reStripColor = re.compile('\003\d{1,2},\d{1,2}|\003\d{0,2}|[\002\017\026\037]+')
+	def stripColor(self, str):
+		return self.reStripColor.sub('', str)
 
 def main():
 	bot = MooBot()

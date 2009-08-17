@@ -28,6 +28,7 @@ class MooBotModule:
 	regex = "foo"
 	type = Handler.LOCAL
 	priority = 5 
+	stripColor = False
 	# the lower this number, the higher the module's priority
 	# most modules won't need to change this.
 
@@ -83,6 +84,24 @@ Event.  Should be overridden for every module."""
 			target = args["channel"]
 		return target.lower()
 	
+	def msg_sender(self, args, text, select='auto'):
+		target = self.return_to_sender(args)
+		return self.Event("privmsg", "", target, [text])
+
+	def privmsg_sender(self, args, text, select='auto'):
+		target = self.return_to_sender(args, "nick")
+		return self.Event("privmsg", "", target, [text])
+
+	def notice_sender(self, args, text, select='auto'):
+		target = self.return_to_sender(args, "nick")
+		return self.Event("notice", "", target, [text])
+
+	def getArgs(self, args, skip = 0):
+		return args["text"].split()[skip + 1:]
+
+	def getText(self, args, skip = 0):
+		return args["text"].split(None, skip + 1)[skip + 1]
+
 	def sqlEscape(self, text):
 		""" escapes \ and 's in strings for SQL """
 

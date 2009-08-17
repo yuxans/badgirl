@@ -33,6 +33,7 @@ class Handler:
 		self.instance = getattr(module, className)()
 		self.module = module
 		self.className = className
+		self.stripColor = self.instance.stripColor
 		try:
 			self.regex = compile(self.instance.regex)
 		except Exception, e:
