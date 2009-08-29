@@ -80,6 +80,8 @@ class urlGrabber(MooBotModule):
 				port = 443
 
 		host = urlInfo.hostname
+		if not host:
+			return
 
 		hostId = self.addHost(scheme, host, port)
 
