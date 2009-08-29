@@ -33,7 +33,7 @@ class decodeUtf8(MooBotModule):
 			return Event("continue", "", "")
 		(skipmatch, regex, fromencoding) = self.translations[encoding];
 
-		rawmsg = args['event'].rawdata().split(' ', 3)[3][1:]
+		rawmsg = args['event'].rawdata()
 		if len(rawmsg) > 100:
 			return Event("continue", "", "")
 		if not regex.search(rawmsg):
