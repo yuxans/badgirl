@@ -35,7 +35,7 @@ class encodeDecode(MooBotModule):
         return self.msg_sender(args, "Usage: encode|decode|codec $encodings $string OR %s $string, $encodings is separated by | prefixed by optional + or -" % self.codecs)
 
     def handler(self, **args):
-        txts = self.getArgs(args)
+        txts = self.getRawArgs(args)
 
         cmd = txts[0]
         txts = txts[1:]
@@ -95,14 +95,12 @@ class encodeDecode(MooBotModule):
 
             if type(msg) != unicode:
                 cmd = "decode"
-                print msg
                 try:
                     encoding = "utf8"
                     msg = msg.decode(encoding)
                 except UnicodeDecodeError:
                     encoding = "gb18030"
                     msg = msg.decode(encoding)
-                print msg
         except Exception, e:
             msg = "Error \"%s\" when %s with '%s' encoding" % (e, cmd, encoding)
 

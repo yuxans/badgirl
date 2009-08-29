@@ -521,6 +521,7 @@ class ServerConnection(Connection):
             prefix = None
             command = None
             arguments = None
+            rawarguments = None
             self._handle_event(Event("all_raw_messages",
                                      self.get_server_name(),
                                      None,
@@ -528,6 +529,7 @@ class ServerConnection(Connection):
                                      rawdata))
 
             m = _rfc_1459_command_regexp.match(line)
+            rawm = _rfc_1459_command_regexp.match(rawdata)
             if m.group("prefix"):
                 prefix = m.group("prefix")
                 if not self.real_server_name:
@@ -541,6 +543,10 @@ class ServerConnection(Connection):
                 arguments = a[0].split()
                 if len(a) == 2:
                     arguments.append(a[1])
+                a = rawm.group("argument").split(" :", 1)
+                rawarguments = a[0].split()
+                if len(a) == 2:
+                    rawarguments.append(a[1])
 
             # Translate numerics into more readable strings.
             if command in numeric_events:
@@ -556,7 +562,9 @@ class ServerConnection(Connection):
 
             if command in ["privmsg", "notice"]:
                 target, message = arguments[0], arguments[1]
+                rawtarget, rawmessage = rawarguments[0], rawarguments[1]
                 messages = _ctcp_dequote(message)
+                rawmessages = _ctcp_dequote(rawmessage)
 
                 if command == "privmsg":
                     if is_channel(target):
@@ -578,24 +586,26 @@ class ServerConnection(Connection):
                         if DEBUG:
                             DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
                                 command, prefix, target, m))
-                        self._handle_event(Event(command, prefix, target, m, rawdata))
+                        self._handle_event(Event(command, prefix, target, m, rawmessages[0]))
                         if command == "ctcp" and m[0] == "ACTION":
                             self._handle_event(Event("action", prefix, target, m[1:]))
                     else:
                         if DEBUG:
                             DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
                                 command, prefix, target, [m]))
-                        self._handle_event(Event(command, prefix, target, [m], rawdata))
+                        self._handle_event(Event(command, prefix, target, [m], rawmessages[0]))
             else:
                 target = None
 
                 if command == "quit":
                     arguments = [arguments[0]]
+                    rawarguments = [rawarguments[0]]
                 elif command == "ping":
                     target = arguments[0]
                 else:
                     target = arguments[0]
                     arguments = arguments[1:]
+                    rawarguments = rawarguments[1:]
 
                 if command == "mode":
                     if not is_channel(target):
@@ -604,7 +614,7 @@ class ServerConnection(Connection):
                 if DEBUG:
                     DebugErr("command: %s, source: %s, target: %s, arguments: %s" % (
                         command, prefix, target, arguments))
-                self._handle_event(Event(command, prefix, target, arguments))
+                self._handle_event(Event(command, prefix, target, arguments, rawarguments))
 
     def _handle_event(self, event):
         """[Internal]"""

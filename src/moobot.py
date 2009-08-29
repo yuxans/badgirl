@@ -189,6 +189,10 @@ class MooBot(SingleServerIRCBot):
 		if shortregex.search(msg):
 			msg = msg.replace(self.configs["botconfig"]["shorthand"], replace_str, 1)
 			args["text"] = msg
+		rawmsg = args['event'].rawdata()
+		if shortregex.search(rawmsg):
+			rawmsg = rawmsg.replace(self.configs["botconfig"]["shorthand"].encode("utf8"), replace_str.encode("utf8"), 1)
+			args["event"]._rawdata = rawmsg
 		# Now, check and see if we are being spoken too
 		ourname = "^" + self.connection.get_nickname()
 		regex = compile(ourname)

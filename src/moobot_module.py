@@ -100,8 +100,14 @@ Event.  Should be overridden for every module."""
 	def getArgs(self, args, skip = 0):
 		return args["text"].split()[skip + 1:]
 
+	def getRawArgs(self, args, skip = 0):
+		return args["event"].rawdata().split()[skip + 1:]
+
 	def getText(self, args, skip = 0):
 		return args["text"].split(None, skip + 1)[skip + 1]
+
+	def getRawText(self, args, skip = 0):
+		return args["event"].rawdata().split(None, skip + 1)[skip + 1]
 
 	def sqlEscape(self, text):
 		""" escapes \ and 's in strings for SQL """
