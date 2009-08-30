@@ -80,6 +80,16 @@ class encodeDecode(MooBotModule):
                         encoding = encoding[1:]
 
                 if cmd == "encode":
+                    if type(msg) != unicode:
+                        try:
+                            msg = msg.decode("utf8")
+                        except UnicodeDecodeError:
+                            try:
+                                msg = msg.decode("gb18030")
+                            except Exception, e:
+                                encoding = "gb18030"
+                                raise e
+
                     try:
                         msg = msg.encode(encoding)
                     except:
