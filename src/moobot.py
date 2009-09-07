@@ -126,6 +126,7 @@ class MooBot(SingleServerIRCBot):
 		# build the args dict for the handlers
 		args={}
 		args["text"] = self.connection.get_nickname() + ": " + msg
+		e._rawdata = self.connection.get_nickname().encode(self.connection.encoding) + ": " + e.rawdata()
 		args["type"] = e.eventtype()
 		args["source"] = e.source()
 		args["channel"] = e.target()
