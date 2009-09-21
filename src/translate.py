@@ -49,7 +49,7 @@ class encodeDecode(MooBotModule):
                 return self.usage(args)
             encoding = txts[0]
             msg = ' '.join(txts[1:])
-            cmd = "decode"
+            cmd = "encode"
         else:
             if len(txts) < 1:
                 return self.usage(args)
