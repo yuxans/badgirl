@@ -2930,7 +2930,7 @@ def url_decode(input):
 	if not _mapFromMars:
 		_mapFromMars = dict([(v, k) for (k, v) in _mapToMars.iteritems()])
 	s = StringIO()
-	for i in input:
+	for i in input.decode("UTF-8"):
 		s.write(i in _mapFromMars and _mapFromMars[i] or i)
 	return (s.getvalue(), len(input))
 
