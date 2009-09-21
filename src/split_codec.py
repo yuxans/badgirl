@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 
+import re
+
 _mapToSplit = {
 	u"卧": u"臣卜",
 	u"项": u"工页",
@@ -1686,7 +1688,8 @@ _mapToSplit = {
 	u"嗖": u"口叟",
 }
 
-_mapFromMars = None
+_mapFromSplit = None
+_regexFromSplit = None
 
 import codecs
 from StringIO import StringIO
@@ -1700,7 +1703,13 @@ def url_encode(input):
 	return (s.getvalue(), len(input))
 
 def url_decode(input):
-	return "decoding split is not implemented"
+	global _mapFromSplit
+	global _regexFromSplit
+	if not _mapFromSplit:
+		_mapFromSplit = dict([(v, k) for (k, v) in _mapToSplit.iteritems()])
+		_regexFromSplit = re.compile("|".join(sorted(_mapFromSplit.keys(), key=len, reverse=True)))
+	output = _regexFromSplit.sub(lambda mo: _mapFromSplit[mo.string[mo.start():mo.end()]], input.decode("UTF-8"))
+	return (output, len(output))
 
 class Codec(codecs.Codec):
 	def encode(self, input, errors='strict'):
