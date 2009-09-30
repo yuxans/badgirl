@@ -23,12 +23,12 @@ import random
 from irclib import Event
 from irclib import Event
 from moobot_module import MooBotModule
-import url_codec, cht_codec, mars_codec, reverse_codec, leet_codec, pinyin_codec, split_codec
+import url_codec, cht_codec, mars_codec, reverse_codec, leet_codec, pinyin_codec, wubi_codec, split_codec
 handler_list = ["encodeDecode", "russian_style"]
 
 class encodeDecode(MooBotModule):
     def __init__(self):
-        self.codecs = "(un|\\+|-)?(rot13|hex|base64|url\\+|url|cht|mars|reverse|1337|py|split)"
+        self.codecs = "(un|\\+|-)?(rot13|hex|base64|url\\+|url|cht|mars|reverse|1337|pinyin|py|5b|wb|wubi|split)"
         self.regex = "^(encode|decode|codec|%s)( .+?)?$" % self.codecs
 
     def usage(self, args):
