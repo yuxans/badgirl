@@ -23,10 +23,10 @@ handler_list=["url", "outgoingurl"]
 
 from moobot_module import MooBotModule
 from moobot import Handler
-from irclib import Event, nm_to_n
+from irclib import Event, nm_to_n, is_channel
 import re, database
 import titlefetcher
-import md5
+import hashlib
 import urlparse
 
 # Don't ask.  I might tell you.  ;)
@@ -49,24 +49,35 @@ class urlGrabber(MooBotModule):
 		if ret and ret[0]:
 			return ret[0][0]
 
+	def addChan(self, name):
+		sql = "INSERT IGNORE chan(name) VALUES('%s')" % self.sqlEscape(name)
+		database.doSQL(sql)
+		return self.getChanId(name)
+
+	def getChanId(self, name):
+		sql = "SELECT chanid FROM chan WHERE name='%s'" % self.sqlEscape(name)
+		ret = database.doSQL(sql)
+		if ret and ret[0]:
+			return ret[0][0]
+
 	def urlHash(self, url):
-		return md5.new(url.encode("utf8", "ignore")).hexdigest()
+		return hashlib.md5(url.encode("utf8", "ignore")).hexdigest()
 
 	def getUrl(self, url, hash):
-		sql = "SELECT url_id,title FROM url WHERE url='%s' AND url_hash='%s'" % (self.sqlEscape(url), self.sqlEscape(hash))
+		sql = "SELECT urlid,title FROM url WHERE url='%s' AND hash='%s'" % (self.sqlEscape(url), self.sqlEscape(hash))
 		ret = database.doSQL(sql)
 		if ret and ret[0]:
 			return ret[0]
 		else:
 			return (None, None)
 
-	def addUrl(self, url, hash, source, str):
+	def addUrl(self, url, hash, source, target, str):
 		id, title = self.getUrl(url, hash)
 		if id:
 			if not title:
 				title = self.fetchTitle(url)
 				if title:
-					database.doSQL("UPDATE url SET title='%s' WHERE url='%s' AND url_hash='%s'" % (self.sqlEscape(title), self.sqlEscape(url), self.sqlEscape(hash)))
+					database.doSQL("UPDATE url SET title='%s' WHERE url='%s' AND hash='%s'" % (self.sqlEscape(title), self.sqlEscape(url), self.sqlEscape(hash)))
 
 			return title
 
@@ -84,6 +95,9 @@ class urlGrabber(MooBotModule):
 			return
 
 		hostId = self.addHost(scheme, host, port)
+		chanId = 0
+		if is_channel(target):
+			chanId = self.addChan(target[1:])
 
 		# Strip mIRC color codes
 		str = re.sub('\003\d{1,2},\d{1,2}', '', str)
@@ -96,8 +110,10 @@ class urlGrabber(MooBotModule):
 		values["nickid"]   = "%d"   % int(self.addNick(nm_to_n(source)))
 		values["string"]   = "'%s'" % self.sqlEscape(str)
 		values["url"]      = "'%s'" % self.sqlEscape(url)
-		values["url_hash"] = "'%s'" % self.sqlEscape(hash)
+		values["hash"]     = "'%s'" % self.sqlEscape(hash)
 		values["hostid"]   = "%d"   % int(hostId)
+		values["chanid"]   = "%d"   % int(chanId)
+		values["time"]     = "CURRENT_TIMESTAMP()"
 
 		if database.type == "mysql":
 			pass
@@ -142,20 +158,34 @@ class url(urlGrabber):
 
 		ret = []
 		url = self.matchUrl(args["text"])
+		bot = args["ref"]()
+		try:
+			showTitle = int(bot.configs["urlgrab"]["showtitle"])
+		except KeyError:
+			showTitle = True
+		except ValueError:
+			showTitle = False
+
 		if url:
 			title = None
 			hash = self.urlHash(url)
 
-			rows = database.doSQL("SELECT seen.nick,url.time,url.title FROM url LEFT JOIN seen ON seen.nickid=url.nickid WHERE url='%s' AND url_hash='%s' AND length(title) > 0" % (url, hash))
+			rows = database.doSQL(
+				"""SELECT seen.nick,chan.name,url.time,url.title
+				FROM url
+				LEFT JOIN seen ON seen.nickid=url.nickid
+				LEFT JOIN chan ON chan.chanid=url.nickid
+				WHERE url='%s' AND hash='%s' AND length(title) > 0""" % (url, hash))
 			if rows and rows[0]:
-				nick, timestamp, title = rows[0]
+				nick, chan, timestamp, title = rows[0]
 				if len(nick) > 2:
 					nick = nick[0] + "/" + nick[1:]
-				msg = u'[%s] Posted by %s already: %s' % (timestamp, nick, title)
-				ret.append(self.msg_sender(args, msg))
+				msg = u'[%s] Posted by %s@%s already: %s' % (timestamp, nick, chan, title)
+				if showTitle:
+					ret.append(self.msg_sender(args, msg))
 			else:
-				title = self.addUrl(url, hash, args["source"], args["text"])
-				if title:
+				title = self.addUrl(url, hash, args["source"], args["channel"], args["text"])
+				if title and showTitle:
 					ret.append(self.msg_sender(args, title))
 
 		ret.append(Event("continue", "", "", [ ]))
@@ -178,6 +208,6 @@ class outgoingurl(urlGrabber):
 		url = self.matchUrl(str)
 		if url:
 			if event.target().startswith("#"):
-				self.addUrl(url, self.urlHash(url), event.source(), str)
+				self.addUrl(url, self.urlHash(url), event.source(), event.target(), str)
 			
 		return Event("continue", "", "", [ ])
