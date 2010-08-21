@@ -5,7 +5,7 @@ from moobot_module import MooBotModule
 from irclib import Event
 handler_list = ["quake"]
 # TODO? move into config file
-ip = 3546805303
+ip = 3673675805
 firstport = 3800
 
 class quake(MooBotModule):

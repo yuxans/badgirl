@@ -20,12 +20,14 @@
 #
 
 import re, httplib, urllib, urllib2, HTMLParser, weather
+import htmlentitydefs
 from moobot_module import MooBotModule
 from irclib import Event, IrcStringIO
+import json
 
 handler_list = ["weathercn", "google", "kernelStatus", "Dict",
 		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
-		"translate", "geekquote", "lunarCal", "ohloh"]
+		"translate", "geekquote", "lunarCal", "ohloh", "radioOnline"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
@@ -38,6 +40,27 @@ class IEURLopener(urllib.FancyURLopener):
 urllib._urlopener = IEURLopener()
 urllib2._opener = urllib2.build_opener()
 urllib2._opener.addheaders = [('User-agent', IEURLopener.version)]
+
+def unescape(text):
+	def fixup(m):
+		text = m.group(0)
+		if text[:2] == "&#":
+			# character reference
+			try:
+				if text[:3] == "&#x":
+					return unichr(int(text[3:-1], 16))
+				else:
+					return unichr(int(text[2:-1]))
+			except ValueError:
+				pass
+		else:
+			# named entity
+			try:
+				text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+			except KeyError:
+				pass
+		return text # leave as is
+	return re.sub("&#?\w+;", fixup, text)
 
 class weathercn(MooBotModule):
 	"""weather module to get weather forecast infomation
@@ -248,39 +271,44 @@ class google(MooBotModule):
 	def handler(self, **args):
 		self.return_to_sender(args)
 
-		search_terms = args["text"].split(" ")[3:]
-		search_request = "/ie?hl=zh-CN&oe=UTF-8&ie=UTF-8&q="
-		# the resulting output so much nicer
-		search_request += '+'.join(search_terms).encode("UTF-8", 'replace')
-		connect = httplib.HTTPConnection('www.google.com', 80)
-		headers = {"User-Agent": "Mozilla/4.0 (compatible; MSIE 6.0)"}
-		connect.request("GET", search_request, None, headers)
+		keyword = " ".join(args["text"].split(" ")[3:])
 
+		target = self.return_to_sender(args)
 		try:
-			response = connect.getresponse()
+			response = self.search(keyword)
 		except:
 			msg = "error"
-			return Event("privmsg", "", target, [msg])
+			return Event("privmsg", "", target, [ msg ])
+		return Event("privmsg", "", target, [ response ])
 
-		if response.status != 200:
-			msg = str(response.status) + ": " + response.reason
-			self.debug(msg)
-			return Event("privmsg", "", target, [msg])
-		else:
-			listing = response.read().decode("UTF-8", 'replace')
-		urls=[]
-		for i in listing.split():
-			if i.find("href=http://") >= 0:
-				url = i[:i.find(">")]
-				url = url[5:]
-				urls.append(url)
-		line = "Google says \"" + ' '.join(search_terms) + "\" is at: "
-		count=0
-		for url in urls:
-			count += 1
-			if count <= 5:
-				line += url + " "
-		return Event("privmsg", "", self.return_to_sender(args), [ line ])
+	rResult = re.compile('<h3 class="?r(?: [^>"]*)?"?>(.*?)</h3>', re.S)
+	rA = re.compile('<a href="?([^ "]*)"?[^>]*>(.*?)</a>', re.S)
+	rCalc = re.compile('<img[^>]*src=/images/calc[^>]*>(.*?)</h2>', re.S)
+	rB = re.compile('<b>(.*?)</b>', re.S)
+	def search(self, keyword):
+		url = "http://www.google.com/search?hl=en&btnG=Search&aq=f&aqi=&aql=&oq=&gs_rfai=&"
+		url += urllib.urlencode({"q" : keyword.encode("UTF-8", 'replace')})
+		result = urllib.urlopen(url).read().decode("UTF-8", 'replace')
+		results = []
+		m = self.rCalc.search(result)
+		if m:
+			m = self.rB.search(m.group(1))
+			if m:
+				results.append(unescape(m.group(1)))
+		for i in self.rResult.findall(result.split('<ol>', 2)[1].split('</ol>', 2)[0]):
+			m = self.rA.search(i)
+			if not m:
+				continue
+			url = m.group(1)
+			if url.startswith("/"):
+				continue
+
+			results.append(unescape(url))
+			if len(results) >= 5:
+				break
+
+		line = "Google says \"" + keyword + "\" is: " + " ".join(results)
+		return line
 
 class kernelStatus(MooBotModule):
 	def __init__(self):
@@ -1577,6 +1605,25 @@ class ohloh(MooBotModule):
 			break
 
 		return Event("privmsg", "", target, msg)
+
+class radioStatus(MooBotModule):
+	url = "http://www.ladio.me/statusjson.php"
+	def status(self):
+		response = urllib.urlopen(self.url)
+		return json.loads(response.read())
+
+class radioOnline(radioStatus):
+	def __init__(self):
+		self.regex = "^radioonline"
+	
+	def handler(self, **args):
+		status = self.status()
+		users = []
+		for server in status:
+			for user in server['users']:
+				users.append(user['nick'])
+
+		return Event("privmsg", "", self.return_to_sender(args), [" ".join(users)])
 
 def _test():
 	import doctest
