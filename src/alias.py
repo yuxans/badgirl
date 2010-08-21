@@ -19,19 +19,19 @@
 
 """alias.py - Function to keep track of nick aliases."""
 
-handler_list=["whois_cmd", "alias_nickchange"]
+handler_list=["who_cmd", "alias_nickchange"]
 from moobot_module import MooBotModule
 
 
-class whois_cmd(MooBotModule):
+class who_cmd(MooBotModule):
 	def __init__(self):
-		self.regex="^whois ."
+		self.regex="^who ."
 
 	def handler(self, **args):
 		from irclib import Event
 
 		nick = args["text"].split(" ")[2]
-		realnick = whois(nick)
+		realnick = who(nick)
 		return Event("privmsg", "", self.return_to_sender(args),
 			     [nick + " is " + realnick])
 
@@ -48,8 +48,8 @@ class alias_nickchange(MooBotModule):
 
 		oldnick = args["event"].source().lower()
 		newnick = args["event"].target().lower()
-		oldrealnick = whois(oldnick)
-		newrealnick = whois(newnick)
+		oldrealnick = who(oldnick)
+		newrealnick = who(newnick)
 
 		if (oldrealnick != newrealnick):
 			oldrealtype = database.doSQL("SELECT type FROM alias "+\
@@ -85,7 +85,7 @@ class alias_nickchange(MooBotModule):
 		return Event("continue", "", "", [  ])
 
 
-def whois(fullnick):
+def who(fullnick):
 	import database
 
 	fullnick = fullnick.lower()
@@ -97,7 +97,7 @@ def whois(fullnick):
 		if (line[0][0] == nick):
 			return line[0][0]
 		else:
-			return whois(line[0][0])
+			return who(line[0][0])
 
 	line = database.doSQL("SELECT regex, realnick FROM aliasregex")
 	import re
