@@ -19,39 +19,11 @@
 #
 
 
-import re, urllib
+import re, httplib
 from irclib import Event
 from moobot_module import MooBotModule
-from sgmllib import SGMLParser
-
 
 handler_list = ['chunzhen',]
-
-class IEURLopener(urllib.FancyURLopener):
-	version = "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)"
-
-urllib._urlopener = IEURLopener()
-
-class Parse(SGMLParser):
-	def reset(self):
-		self.found_td = 0
-		SGMLParser.reset(self)
-    
-	def unknown_starttag(self, tag, attrs):
-		self.tag = tag
-		if tag == "li":
-			self.found_td = 1 
-        
-	def unknown_endtag(self, tag):
-		self.tag = tag
-		if tag == "li":
-			self.found_td=0
-
-	def handle_data(self, text):
-		if self.found_td:
-			global info
-			info = text
-			return info
 
 class chunzhen(MooBotModule):
 	"""Get geographic location infomation of specific IP address from web.
@@ -119,22 +91,35 @@ class chunzhen(MooBotModule):
 	def handler(self, **args):
 		query_str = args["text"].split()
 		query_str = query_str[2].strip()
-		ip = self.fixipv4(query_str)
-		parms = "ip=" + ip + "&action=2"
-		f = urllib.urlopen('http://www.ip138.com/ips8.asp', parms)
-    
-		p = Parse()
-		p.feed(f.read())
-        
-		geoinfo = info.decode("gbk")
-		geoinfo = geoinfo.split(u"：", 1)[1]
-
-		f.close()
-
 		target = self.return_to_sender(args)
-		result = Event('privmsg', '', target, [ ''.join((query_str, ': ', geoinfo))])
+		result = Event('privmsg', '', target, [ ''.join((query_str, ': ', self.query(query_str)))])
 
 		return result
+
+	rAddr = re.compile('id="InputIPAddrMessage">(.*?)</span')
+	rTags = re.compile("<[^>]*>")
+	def query(self, ip):
+		ip = self.fixipv4(ip)
+		getParams = "ip=" + ip
+
+		headers = {
+			'User-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
+			'Referer': 'http://www.cz88.net/'
+		}
+		request = httplib.HTTPConnection('www.cz88.net', 80)
+		request.timeout = 5.1
+		request.request("GET", "/ip/default.aspx?ip=%s" % ip, '', headers)
+		response = request.getresponse()
+		if response.status != 200:
+			return "error %s" % response.status
+
+		response = response.read().decode("gbk")
+
+		match = self.rAddr.search(response)
+		if not match:
+			return "not found"
+		address = match.group(1)
+		return self.rTags.sub("", address).strip()
 
 	def fixipv4(self, ipv4string):
 		"""fill the 3, 4 part of a particalarly typed ip address.
