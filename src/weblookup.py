@@ -676,13 +676,9 @@ class TranslatorGoogle(Translator):
 		if response.status != 200: # check for errors
 			return
 
-		translated = response.read().decode("UTF-8", "ignore")
-		if translated[0] == '"':
-			return translated[1:-1]
-		elif translated[0] == '[':
-			return translated[1:-1].replace(',', ' ').replace('"', '').replace('[', '(').replace(']', ')')
-		else:
-			return translated
+		translated = json.loads(response.read().decode("UTF-8", "ignore").replace(']],,"', ']],[],"'))
+		result = translated[0][0]
+		return result[0] + ' ' + result[2]
 
 class TranslatorBabelFish(Translator):
 	name = "babelfish"
