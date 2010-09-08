@@ -174,7 +174,7 @@ class url(urlGrabber):
 				"""SELECT seen.nick,chan.name,url.time,url.title
 				FROM url
 				LEFT JOIN seen ON seen.nickid=url.nickid
-				LEFT JOIN chan ON chan.chanid=url.nickid
+				LEFT JOIN chan ON chan.chanid=url.chanid
 				WHERE url='%s' AND hash='%s' AND length(title) > 0""" % (url, hash))
 			if rows and rows[0]:
 				nick, chan, timestamp, title = rows[0]
