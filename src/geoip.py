@@ -102,24 +102,26 @@ class chunzhen(MooBotModule):
 		ip = self.fixipv4(ip)
 		getParams = "ip=" + ip
 
-		headers = {
-			'User-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
-			'Referer': 'http://www.cz88.net/'
-		}
-		request = httplib.HTTPConnection('www.cz88.net', 80)
-		request.timeout = 5.1
-		request.request("GET", "/ip/default.aspx?ip=%s" % ip, '', headers)
-		response = request.getresponse()
-		if response.status != 200:
-			return "error %s" % response.status
+		trys = ("", "default.aspx")
+		for requestParam in trys:
+			headers = {
+				'User-agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
+				'Referer': 'http://www.cz88.net/'
+			}
+			request = httplib.HTTPConnection('www.cz88.net', 80)
+			request.timeout = 5.1
+			request.request("GET", "/ip/%s?ip=%s" % (requestParam, ip), '', headers)
+			response = request.getresponse()
+			if response.status != 200:
+				return "error %s" % response.status
 
-		response = response.read().decode("gbk")
+			response = response.read().decode("gbk")
 
-		match = self.rAddr.search(response)
-		if not match:
-			return "not found"
-		address = match.group(1)
-		return self.rTags.sub("", address).strip()
+			match = self.rAddr.search(response)
+			if match:
+				address = match.group(1)
+				return self.rTags.sub("", address).strip()
+		return "not found"
 
 	def fixipv4(self, ipv4string):
 		"""fill the 3, 4 part of a particalarly typed ip address.
