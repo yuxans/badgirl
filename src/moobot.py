@@ -228,6 +228,7 @@ class MooBot(SingleServerIRCBot):
 			args = {}
 			args["event"] = e
 			args["type"] = e.eventtype()
+			moolog.logevent(e)
 			temp = threading.Thread(target=self.process_other, \
 				args=(args, ""), name="other subthread")
 			temp.setDaemon(1)
@@ -314,7 +315,6 @@ class MooBot(SingleServerIRCBot):
 
 	def do_event(self, event):
 		"""Does an appropriate action based on event"""
-		moolog.logevent(event)
 		self.get_handler(event.eventtype(), "", args={"event": event})
 
 	def get_configs(self, filelist=[]):
