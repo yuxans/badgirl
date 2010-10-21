@@ -357,14 +357,6 @@ class Dict(MooBotModule):
 		self.rGif = re.compile("/gif/([\\w_]+)\\.gif", re.I)
 		self.rBody = re.compile("^<!-- BODY", re.I)
 		self.ymap = {"slash": "/", "quote": "'", "_e_": "2", "_a": "a:", "int": "S"}
-		self.cmap = {"\\\\": "\\", "5": "'", "E": "2"}
-		self.rNx = re.compile(u"找不到和您查询的")
-		self.rCtoE = re.compile(u"简明汉英词典")
-		self.rRwWord = re.compile('rwWord\("([^"]+)"\)')
-
-		self.rEtoC = re.compile(u"简明英汉词典")
-		self.rExplain = re.compile('explain_item">(.*?)</div>', re.S)
-		self.rSpell = re.compile("str2img\('([^']+)", re.I)
 		self.ciba_failed = 1
 		self.rSearch = re.compile(u'^[^*?_%]{2,}[*?_%]')
 
@@ -384,7 +376,6 @@ class Dict(MooBotModule):
 
 		if self.rSearch.match(word):
 			words = dict.search(word)
-			self.Debug(words)
 			if not words:
 				result = False
 			elif len(words) == 1:
@@ -408,15 +399,15 @@ class Dict(MooBotModule):
 			self.cache[word] = self.cache_old[word]
 			result = self.cache[word]
 		else:
-			#if self.ciba_failed <= 0:
-			#	result = self.lookup_ciba(word)
-			#	if result == "error":
-			#		self.ciba_failed = 5
-			#		result = self.lookup_yahoo(word)
-			#else:
-			#	result = self.lookup_yahoo(word)
-			#	self.ciba_failed = self.ciba_failed - 1
-			result = self.lookup_ciba(word)
+			if self.ciba_failed <= 0:
+				result = self.lookup_ciba(word)
+				if result == "error":
+					self.ciba_failed = 5
+					result = self.lookup_yahoo(word)
+			else:
+				result = self.lookup_yahoo(word)
+				self.ciba_failed = self.ciba_failed - 1
+			# result = self.lookup_ciba(word)
 			result = result.replace("&lt;","<").replace("&gt;",">")
 			if len(result) == 0:
 				result = "Could not find definition for " + word
@@ -427,46 +418,51 @@ class Dict(MooBotModule):
 
 		return Event("privmsg", "", target, [ result ])
 
+	iciba_cmap = {"\\\\": "\\", "5": "'", "E": "2"}
+	iciba_rNx = re.compile(u"添加这个词条")
+	iciba_rCtoE = re.compile(u"词典释义")
+	iciba_rRwWord = re.compile('rwWord\("([^"]+)"\)')
+
+	iciba_rEtoC = re.compile(u'<div id="sentence_close')
+	iciba_rExplain = re.compile('explain_item">(.*?)</div>', re.S)
+	iciba_rSpell = re.compile("str2img\('([^']+)", re.I)
 	def lookup_ciba(self, word):
-		connect = httplib.HTTPConnection('www.iciba.com', 80)
-		connect.request("GET", "/search?s=%s&t=word&lang=utf-8" % (word.encode("UTF-8"), ))
-		response = connect.getresponse()
-		if response.status != 200:
-			msg = "%d:%s" % (response.status, response.reason)
-			loc = response.getheader("location")
-			self.Debug("dict word(%s) err(%s) loc(%s)" % (word, msg, loc))
+		try:
+			response = urllib.urlopen("http://www.iciba.com/%s/" % urllib.quote(word.encode("UTF-8")))
+		except Exception, e:
+			self.DebugErr(e)
 			return "error"
 		else:
 			# Do the parsing here
 			html = response.read().decode("UTF-8", "ignore")
-			if self.rNx.search(html):
+			if self.iciba_rNx.search(html):
 				return ""
 	
-			m = self.rCtoE.search(html)
+			m = self.iciba_rCtoE.search(html)
 			if m:
-				m = self.rRwWord.findall(html)
+				m = self.iciba_rRwWord.findall(html)
 				if m:
 					result = word + ':'
 					for i in m:
 						result += ' ' + i
 					return result
 
-			m = self.rEtoC.search(html)
+			m = self.iciba_rEtoC.search(html)
 			if m:
 				result = word + ":"
 
-				m = self.rSpell.search(html)
+				m = self.iciba_rSpell.search(html)
 				if m:
 					spell = m.group(1)
-					for k in self.cmap:
-						spell = spell.replace(k, self.cmap[k])
+					for k in self.iciba_cmap:
+						spell = spell.replace(k, self.iciba_cmap[k])
 					result += " /" + spell + "/"
 
-				m = self.rExplain.search(html)
+				m = self.iciba_rExplain.search(html)
 				if m:
 					result += ' ' + m.group(1).strip()
 				return result
-				
+
 			return ""
 
 	def lookup_yahoo(self, word):
@@ -478,7 +474,7 @@ class Dict(MooBotModule):
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
 
-			self.Debug(loc)
+			self.DebugErr(loc)
 			if loc and re.compile("/error").match(loc):
 				return ""
 			else:
@@ -976,7 +972,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		try:
 			response = urllib.urlopen(form_action % form_inputs)
 		except Exception, e:
-			self.Debug(e)
+			self.DebugErr(e)
 		else:
 			self.reset()
 			self.feed(response.read())
@@ -1093,7 +1089,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		try:
 			result = urllib.urlopen(form_action % form_inputs)
 		except Exception, e:
-			self.Debug(e)
+			self.DebugErr(e)
 		else:
 			self.reset()
 			self.feed(result.read())
@@ -1589,7 +1585,6 @@ class ohloh(MooBotModule):
 				name1 = account1["name"]
 				name2 = account2["name"]
 				result = pos1 - pos2
-				self.Debug(result)
 				if result == 0:
 					msg = [ u"both %s and %s are just newbie on ohloh" % (name1, name2) ]
 				elif result < 0:
