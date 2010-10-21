@@ -469,5 +469,11 @@ def main():
 # config_files is needed by database
 
 if __name__ == '__main__':
+	import codecs
+	import os
+	if not sys.stdout.encoding:
+		sys.stdout = codecs.getwriter(locale.getpreferredencoding())(os.fdopen(sys.stdout.fileno(), 'w', 0))
+	if not sys.stderr.encoding:
+		sys.stderr = codecs.getwriter(locale.getpreferredencoding())(sys.stderr)
 	main()
 
