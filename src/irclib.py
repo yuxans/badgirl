@@ -1439,9 +1439,7 @@ def DebugErr(*args):
     import sys
     for text in args:
         t = type(text)
-        if t is unicode:
-            sys.stderr.write(text.encode("gbk", "ignore"))
-        elif t is str:
+        if t is unicode or t is str:
             sys.stderr.write(text)
         else:
             sys.stderr.write(str(text))
@@ -1452,9 +1450,7 @@ def DebugErr(*args):
 def Debug(*args):
     for text in args:
         t = type(text)
-        if t is unicode:
-            print text.encode("gbk", "ignore"), ' ',
-        elif t is str:
+        if t is unicode or t is str:
             print text, ' ',
         else:
             print str(text), ' ',

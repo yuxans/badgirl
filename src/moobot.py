@@ -40,6 +40,7 @@ from ircbot import SingleServerIRCBot, IRCDict, Channel
 from irclib import irc_lower, Debug, DebugErr
 from handler import Handler
 import thread, threading
+import moolog
 
 class MooBot(SingleServerIRCBot):
 	class MooBotException(Exception): pass
@@ -135,9 +136,10 @@ class MooBot(SingleServerIRCBot):
 		msg = msg.strip()
 		from irclib import nm_to_n
 		# Debug(what was said to the stdout with a bit of colour.)
-		Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" + \
-			BLUE + args["channel"] + ">" + NORMAL + \
-			RED + "(" + args["type"] + ")" + NORMAL, args["text"])
+		# Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" + \
+		# 	BLUE + args["channel"] + ">" + NORMAL + \
+		# 	RED + "(" + args["type"] + ")" + NORMAL, args["text"])
+		moolog.logevent(e)
 		temp = threading.Thread(target=self.process_privmsg, \
 			args=(msg, args), name="privmsg subthread")
 		temp.setDaemon(1)
@@ -164,9 +166,10 @@ class MooBot(SingleServerIRCBot):
 		# Then check with all the global handlers, see if any match
 		from irclib import nm_to_n
 		# Debug(what was said to the stdout with a bit of colour.)
-		Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" +\
-			BLUE + args["channel"] + ">" + NORMAL +\
-			RED + "(" + args["type"] + ")" + NORMAL, args["text"])
+		# Debug(YELLOW + "<" + nm_to_n(args["source"]) + NORMAL + "/" +\
+		# 	BLUE + args["channel"] + ">" + NORMAL +\
+		# 	RED + "(" + args["type"] + ")" + NORMAL, args["text"])
+		moolog.logevent(e)
 		temp = threading.Thread(target=self.process_pubmsg, \
 			args=(msg, args), name="pubmsg subthread")
 		temp.setDaemon(1)
@@ -311,6 +314,7 @@ class MooBot(SingleServerIRCBot):
 
 	def do_event(self, event):
 		"""Does an appropriate action based on event"""
+		moolog.logevent(event)
 		self.get_handler(event.eventtype(), "", args={"event": event})
 
 	def get_configs(self, filelist=[]):
@@ -470,9 +474,12 @@ def main():
 
 if __name__ == '__main__':
 	import codecs
+	import locale
 	import os
 	if not sys.stdout.encoding:
 		sys.stdout = codecs.getwriter(locale.getpreferredencoding())(os.fdopen(sys.stdout.fileno(), 'w', 0))
+	else:
+		os.fdopen(sys.stdout.fileno(), 'w', 0)
 	if not sys.stderr.encoding:
 		sys.stderr = codecs.getwriter(locale.getpreferredencoding())(sys.stderr)
 	main()
