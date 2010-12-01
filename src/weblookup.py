@@ -565,7 +565,7 @@ class TranslatorExcite(Translator):
 		'enja': 'Shift_JIS'
 	}
 
-	rResult = re.compile('<textarea[^>]+id="after"[^>]+>(.*?)</textarea>')
+	rResult = re.compile('<textarea[^>]+id="after"[^>]*>(.*?)</textarea>')
 
 	def translate(self, text, fromLang, toLang, fromLanguage, toLanguage):
 		if fromLanguage == 'cht' or toLanguage == 'cht':
@@ -573,7 +573,9 @@ class TranslatorExcite(Translator):
 		else:
 			big5 = 'no'
 		translation = fromLang + toLang
+		import irclib
 		if translation not in self.supportedTranslations:
+			irclib.DebugErr(translation)
 			return
 		if translation in self.encodings:
 			encoding = self.encodings[translation]
@@ -592,6 +594,7 @@ class TranslatorExcite(Translator):
 		connect.request("POST", url, urllib.urlencode(params), self.commonHeader)
 		response = connect.getresponse()
 		if response.status != 200: # check for errors
+			irclib.DebugErr(response)
 			return
 
 		html = response.read().decode(encoding, "ignore")
@@ -1588,9 +1591,9 @@ class ohloh(MooBotModule):
 				if result == 0:
 					msg = [ u"both %s and %s are just newbie on ohloh" % (name1, name2) ]
 				elif result < 0:
-					msg = [ u"%s#%d ROCKS and %s#%d sucks" % (name1, pos1, name2, pos2)  ]
+					msg = [ u"%s#%d ROCKS and %s#%d is catching up" % (name1, pos1, name2, pos2)  ]
 				else:
-					msg = [ u"%s#%d sucks and %s#%d ROCKS" % (name1, pos1, name2, pos2)  ]
+					msg = [ u"%s#%d is catching up and %s#%d ROCKS" % (name1, pos1, name2, pos2)  ]
 			else:
 				msg = [ u"Usage: ohloh OR ohloh help OR ohloh $nick OR ohlohpk $nick1 $nick2, see http://www.ohloh.net/" ]
 			break
