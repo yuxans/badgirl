@@ -1,23 +1,27 @@
 import urllib, codecs
 
-def encode(input):
-	return (urllib.quote(input), len(input))
+def url_encode(input):
+	output = urllib.quote(input)
+	return (output, len(output))
 
-def decode(input):
-	return (urllib.unquote(input), len(input))
+def url_decode(input):
+	output = urllib.unquote(input)
+	return (output, len(output))
 
 def encode_plus(input):
-	return (urllib.quote_plus(input), len(input))
+	output = urllib.quote_plus(input)
+	return (output, len(output))
 
 def decode_plus(input):
-	return (urllib.unquote_plus(input), len(input))
+	output = urllib.unquote_plus(input)
+	return (output, len(output))
 
 class Codec(codecs.Codec):
 	def encode(self, input, errors='strict'):
-		return encode(input, errors)
+		return url_encode(input, errors)
 
 	def decode(self, input, errors='strict'):
-		return decode(input, errors)
+		return url_decode(input, errors)
 
 class StreamWriter(Codec, codecs.StreamWriter):
 	pass
@@ -40,7 +44,7 @@ class StreamReader_plus(Codec_plus, codecs.StreamReader):
 
 def search_function(encoding):
 	if encoding == "url":
-		return (encode, decode, StreamReader, StreamWriter)
+		return (url_encode, url_decode, StreamReader, StreamWriter)
 
 	if encoding == "url+":
 		return (encode_plus, decode_plus, StreamReader_plus, StreamWriter_plus)
