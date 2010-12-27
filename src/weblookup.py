@@ -25,7 +25,7 @@ from moobot_module import MooBotModule
 from irclib import Event, IrcStringIO
 import json
 
-handler_list = ["weathercn", "google", "kernelStatus", "Dict",
+handler_list = ["google", "kernelStatus", "Dict",
 		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
 		"translate", "geekquote", "lunarCal", "ohloh", "radioOnline"]
 
@@ -430,7 +430,7 @@ class Dict(MooBotModule):
 		try:
 			response = urllib.urlopen("http://www.iciba.com/%s/" % urllib.quote(word.encode("UTF-8")))
 		except Exception, e:
-			self.DebugErr(e)
+			self.Debug(e)
 			return "error"
 		else:
 			# Do the parsing here
@@ -474,7 +474,7 @@ class Dict(MooBotModule):
 			msg = "%d:%s" % (response.status, response.reason)
 			loc = response.getheader("location")
 
-			self.DebugErr(loc)
+			self.Debug(loc)
 			if loc and re.compile("/error").match(loc):
 				return ""
 			else:
@@ -598,7 +598,8 @@ class TranslatorExcite(Translator):
 			return
 
 		html = response.read().decode(encoding, "ignore")
-		html = html.replace('\n', '') # get rid of newlines
+		import HTMLParser
+		html = HTMLParser.HTMLParser().unescape(html).replace('\n', '') # get rid of newlines
 		match = self.rResult.search(html)
 		if match:
 			return match.group(1)
@@ -675,9 +676,15 @@ class TranslatorGoogle(Translator):
 		if response.status != 200: # check for errors
 			return
 
-		translated = json.loads(response.read().decode("UTF-8", "ignore").replace(']],,"', ']],[],"'))
+		result = response.read().decode("UTF-8", "ignore")
+		result = result.replace('[,', '[[],').replace(',]', ',[]]')
+		while ',,' in result:
+			result = result.replace(',,', ',[],')
+		import irclib
+		irclib.DebugErr(result)
+		translated = json.loads(result)
 		result = translated[0][0]
-		return result[0] + ' ' + result[2]
+		return result[0].replace(',[],', ',,') + ' ' + result[2].replace(',[],', ',,')
 
 class TranslatorBabelFish(Translator):
 	name = "babelfish"
@@ -975,7 +982,7 @@ class debpackage(MooBotModule, HTMLParser.HTMLParser):
 		try:
 			response = urllib.urlopen(form_action % form_inputs)
 		except Exception, e:
-			self.DebugErr(e)
+			self.Debug(e)
 		else:
 			self.reset()
 			self.feed(response.read())
@@ -1092,7 +1099,7 @@ class debfile(MooBotModule, HTMLParser.HTMLParser):
 		try:
 			result = urllib.urlopen(form_action % form_inputs)
 		except Exception, e:
-			self.DebugErr(e)
+			self.Debug(e)
 		else:
 			self.reset()
 			self.feed(result.read())
