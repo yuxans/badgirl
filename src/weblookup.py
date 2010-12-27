@@ -680,8 +680,6 @@ class TranslatorGoogle(Translator):
 		result = result.replace('[,', '[[],').replace(',]', ',[]]')
 		while ',,' in result:
 			result = result.replace(',,', ',[],')
-		import irclib
-		irclib.DebugErr(result)
 		translated = json.loads(result)
 		result = translated[0][0]
 		return result[0].replace(',[],', ',,') + ' ' + result[2].replace(',[],', ',,')
