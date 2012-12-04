@@ -1,14 +1,14 @@
-* web paste ģ���������
-  1. ģ��ִ���� web ��������
-   * ģ��Ӧ��ͨ�� soap Э���� !BadGirl ͨѶ
-  2. ģ��ӵ���Լ������ݺ�̨���ճ����������
-   * ����Ӧ�ÿ����ڶ������ݿ��̨֮�������л�
-   * ģ�鹦�ܲ������е�ճ������
-  3. ģ��Ӧ���ܹ���������ʵ���� !BadGirl ���ֳ�ʱ�����ӻ��߰��轨�����Ӵ���ճ����Ϣ
-   * ģ���� !BadGirl ֮�佨������ʱ��У�鷽ʽ pki, shared passwd, ip/host
-  4. ��������ģ��
-   * ����Ա���� BadGirl ���� pastebot ��վ�г�/ɾ����ʷճ�����ݡ�������һ
-     ��Ҫͨ�� soap Э��ʵ�֣��򵥵ķ�������ֱ�����ñ�׼ web ������
+* web paste 模块初步设想
+  1. 模块执行在 web 服务器端
+   * 模块应该通过 soap 协议于 !BadGirl 通讯
+  2. 模块拥有自己的数据后台存放粘贴过的数据
+   * 数据应该可以在多种数据库后台之间随意切换
+   * 模块功能参照已有的粘贴工具
+  3. 模块应该能够按照设置实现与 !BadGirl 保持长时间连接或者按需建立连接传输粘贴信息
+   * 模块与 !BadGirl 之间建立连接时的校验方式 pki, shared passwd, ip/host
+  4. 管理控制模块
+   * 管理员控制 BadGirl 连接 pastebot 网站列出/删除历史粘帖数据……（不一
+     定要通过 soap 协议实现，简单的方法还是直接利用标准 web 操作）
 
 * setup.py
 
