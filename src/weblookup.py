@@ -62,6 +62,43 @@ def unescape(text):
 		return text # leave as is
 	return re.sub("&#?\w+;", fixup, text)
 
+class weather(MooBotModule):
+    def __init__(self):
+        self.regex="^weather .+$"
+
+    def handler(self, **args):
+        """A dummy handler we used for testing -- this is the first handler
+        we wrote"""
+        result = None
+        target = self.return_to_sender(args)
+        city_name = args["text"].split()[2]
+        
+        
+        import subprocess
+        """ Here require the city4weather.txt for city id"""
+        p = subprocess.Popen("""grep %s /path/to/city4weather.txt | awk '{print $2}' """ %\
+                                             city_name , shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        city_id = '101020500'
+        for city_id in p.stdout.readlines():
+            if city_id[-1] == '\n':
+                city_id = city_id[0:-1]
+
+        weather_info = ""
+        p = subprocess.Popen('curl http://m.weather.com.cn/data/%s.html' % city_id, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for line in p.stdout.readlines():
+            weather_info = line
+
+        import json
+        s=json.loads(weather_info)
+        ss = s["weatherinfo"]["city"] +',' + s["weatherinfo"]["date_y"] +',' + s["weatherinfo"]["week"] +',' + s["weatherinfo"]["temp1"] +',' + s["weatherinfo"]["weather1"] +',' + s["weatherinfo"]["wind1"] +',' +s["weatherinfo"]["index_d"]
+        result = ss.encode("UTF-8")
+
+        from irclib import Event
+        return Event("privmsg", "", target, [result])
+
+
+
+
 class weathercn(MooBotModule):
 	"""weather module to get weather forecast infomation
 	
