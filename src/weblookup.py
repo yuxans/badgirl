@@ -27,7 +27,7 @@ import json
 
 handler_list = ["google", "kernelStatus", "Dict",
 		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
-		"translate", "geekquote", "lunarCal", "ohloh", "radioOnline"]
+		"translate", "geekquote", "lunarCal", "ohloh", "radioOnline", "weather"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
@@ -67,8 +67,7 @@ class weather(MooBotModule):
         self.regex="^weather .+$"
 
     def handler(self, **args):
-        """A dummy handler we used for testing -- this is the first handler
-        we wrote"""
+        """Add city4weather.txt,modify weblookup.py for weather query from http://weather.com.cn/ ."""
         result = None
         target = self.return_to_sender(args)
         city_name = args["text"].split()[2]
