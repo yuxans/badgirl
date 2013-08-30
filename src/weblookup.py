@@ -707,7 +707,7 @@ class TranslatorGoogle(Translator):
 		}
 		# connect, make the reauest
 		connect = httplib.HTTPConnection('translate.google.com', 80)
-		connect.request("GET", '/translate_a/t?' + urllib.urlencode(params), {}, self.commonHeader)
+		connect.request("GET", '/translate_a/t?' + urllib.urlencode(params), '', self.commonHeader)
 		response = connect.getresponse()
 		if response.status != 200: # check for errors
 			return
@@ -1242,7 +1242,7 @@ class genpackage(MooBotModule):
 	Does a package or file search on http://www.portagefilelist.de/index.php/Special:PFLQuery2 and returns top 10 result
 	"""
 	re_tag = re.compile("<[^>]+>")
-	re_td = re.compile("<td[^>]*>(.*?)</td>", re.S)
+	re_td = re.compile("<td[^>]*>,? *(.*?) *,?</td>", re.S)
 	def __init__(self):
 		self.regex="^(genpackage|genfile)( .+)?$"
 
@@ -1258,10 +1258,11 @@ class genpackage(MooBotModule):
 			all = True
 			cmd, dummy, param = request
 		else:
-			msg = "Usage: genpackage [all] [$dir/]$packagename, OR genfile [all] $path"
+			msg = "Usage: <genpackage|genfile> [all] [$dir/]$packagename, OR genfile [all] $path"
 			return Event("privmsg", "", target, [msg])
-		form_action = "http://www.portagefilelist.de/index.php/Special:PFLQuery2"
+		form_action = "http://www.portagefilelist.de/site/query"
 		if cmd == 'genpackage':
+			form_action += "listPackageFiles?do"
 			package = param
 			if package.find('/') != -1:
 				dir, package = package.split('/', 1)
@@ -1274,28 +1275,29 @@ class genpackage(MooBotModule):
 				"searchpackage": "lookup",
 				"lookup": "package"}
 			if not all:
-				params["group_pkgs"] = "on"
+				params["unique_packages"] = "on"
 		else:
+			form_action += "/file/?do"
 			file = param
 
 			params = {
-				"file": file,
-				"searchfile": "lookup",
-				"lookup": "file"}
+				"file": file.replace('*', '%'),
+				}
 			if not all:
-				params["group_file"] = "on"
+				params["unique_packages"] = "on"
 
 		form_inputs = urllib.urlencode(params)
 		# build the request
 		try:
-			response = urllib.urlopen(form_action + '?' + form_inputs)
+			response = urllib.urlopen(form_action, form_inputs)
 		except Exception, e:
 			return Event("privmsg", "", target, [str(e)])
 		msg_notfound = Event("privmsg", "", target, ["not found"])
 		html = response.read().decode("UTF-8")
-		if html.find("query execution time") == -1:
+		self.Debug(html)
+		if html.find("search result") == -1:
 			return msg_notfound
-		dummy, html = html.split("query execution time", 1)
+		dummy, html = html.split("search result", 1)
 		if html.find("</table") == -1:
 			return msg_notfound
 		html, dummy = html.split("</table", 1)
@@ -1310,9 +1312,9 @@ class genpackage(MooBotModule):
 				results.append(self.re_tag.sub("", "%s/%s-%s" % (tds[0], tds[1], tds[2])))
 			# genfile
 			elif len(tds) == 5:
-				results.append(self.re_tag.sub("", "%s/%s in %s/%s" % (tds[2], tds[3], tds[0], tds[1])))
+				results.append(self.re_tag.sub("", "%s %s @%s - %s USE %s" % (tds[2], tds[1], tds[0], tds[3], tds[4])))
 			elif len(tds) == 6:
-				results.append(self.re_tag.sub("", "%s/%s in %s/%s-%s" % (tds[2], tds[3], tds[0], tds[1], tds[5])))
+				results.append(self.re_tag.sub("", "%s/%s @%s/%s-%s" % (tds[2], tds[3], tds[0], tds[1], tds[5])))
 			#else:
 			#	return msg_notfound
 		results.sort(lambda x,y: cmp(y.lower(), x.lower()))
