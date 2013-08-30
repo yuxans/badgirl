@@ -17,33 +17,50 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
+import socket
 
+def isValidateIp(ip):
+	try:
+		socket.inet_pton(socket.AF_INET, ip)
+		return True
+	except socket.error:
+		pass
+	
+	try:
+		socket.inet_pton(socket.AF_INET6, ip)
+		return True
+	except socket.error:
+		pass
+	
+	return False
 
 from moobot_module import MooBotModule
-""" nslookup.py - resolves a host name """
+""" nslookup.py - resolves a host name or ip """
 handler_list = ["nslookup"]
 
 class nslookup(MooBotModule):
 	def __init__(self):
-		self.regex="^d?nslookup .+"
+		self.regex="^(?:d?nslookup|dns) .+"
 
 	def handler(self, **args):
 		"""Does domain name lookups or reverse lookups on IPs"""
 		import socket, re
 
-		host = args["text"].split()
-		host = host[2]
+		query = args["text"].split()[2]
 
-		if re.compile("\d{1,3}[.]\d{1,3}[.]\d{1,3}[.]\d{1,3}").match(host):
-			hostname = socket.getfqdn(host)
-			if hostname == host:
-				hostname = "Host not found"
+		if isValidateIp(query):
+			result = socket.getfqdn(query)
+			if result == query:
+				result = "FQDN not found"
 		else:
 			try:
-				host = socket.gethostbyname_ex(host)
-				hostname = host[0] + ": " + " / ".join(host[1]) + " " + " / ".join(host[2])
-			except:
-				hostname = "Host not found"
+				result = ""
+				for addressInfo in socket.getaddrinfo(query, 0, 0, 0, socket.SOL_TCP):
+					result = result + " " + addressInfo[4][0]
+				result = result.strip()
+			except Exception, e:
+				result = "Host lookup error: " + str(e)
+
 
 		target = self.return_to_sender(args)
 #		target = args["channel"]
@@ -53,5 +70,5 @@ class nslookup(MooBotModule):
 
 
 		from irclib import Event
-		result = Event("privmsg", "", target, [ hostname ])
+		result = Event("privmsg", "", target, [ query + ": " + result ])
 		return result
