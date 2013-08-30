@@ -2919,27 +2919,27 @@ from StringIO import StringIO
 
 __all__ = ['encode', 'decode']
 
-def url_encode(input):
+def mars_encode(input):
 	s = StringIO()
-	for i in input:
+	for i in (input is unicode and input or input.decode("UTF-8")):
 		s.write(i in _mapToMars and _mapToMars[i] or i)
 	return (s.getvalue(), len(input))
 
-def url_decode(input):
+def mars_decode(input):
 	global _mapFromMars
 	if not _mapFromMars:
 		_mapFromMars = dict([(v, k) for (k, v) in _mapToMars.iteritems()])
 	s = StringIO()
-	for i in input.decode("UTF-8"):
+	for i in (input is unicode and input or input.decode("UTF-8")):
 		s.write(i in _mapFromMars and _mapFromMars[i] or i)
 	return (s.getvalue(), len(input))
 
 class Codec(codecs.Codec):
 	def encode(self, input, errors='strict'):
-		return url_encode(input, errors)
+		return mars_encode(input, errors)
 
 	def decode(self, input, errors='strict'):
-		return url_decode(input, errors)
+		return mars_decode(input, errors)
 
 class StreamWriter(Codec, codecs.StreamWriter):
 	pass
@@ -2949,7 +2949,7 @@ class StreamReader(Codec, codecs.StreamReader):
 
 def search_function(encoding):
 	if encoding == "mars":
-		return (url_encode, url_decode, StreamReader, StreamWriter)
+		return (mars_encode, mars_decode, StreamReader, StreamWriter)
 
 	return None
 

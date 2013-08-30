@@ -27921,23 +27921,23 @@ from StringIO import StringIO
 
 __all__ = ['encode', 'decode']
 
-def url_encode(input):
+def wubi_encode(input):
 	output = []
-	for i in input:
+	for i in (input is unicode and input or input.decode("UTF-8")):
 		output.append(i in _mapToWuBi and _mapToWuBi[i] or i)
 	output = ' '.join(output)
 	return (output, len(output))
 
-def url_decode(input):
+def wubi_decode(input):
 	output = 'decoding wubi is not implemented'
 	return (output, len(output))
 
 class Codec(codecs.Codec):
 	def encode(self, input, errors='strict'):
-		return url_encode(input, errors)
+		return wubi_encode(input, errors)
 
 	def decode(self, input, errors='strict'):
-		return url_decode(input, errors)
+		return wubi_decode(input, errors)
 
 class StreamWriter(Codec, codecs.StreamWriter):
 	pass
@@ -27947,7 +27947,7 @@ class StreamReader(Codec, codecs.StreamReader):
 
 def search_function(encoding):
 	if encoding == "wubi" or encoding == "wb" or encoding == "5b":
-		return (url_encode, url_decode, StreamReader, StreamWriter)
+		return (wubi_encode, wubi_decode, StreamReader, StreamWriter)
 
 	return None
 

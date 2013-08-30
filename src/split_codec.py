@@ -1696,27 +1696,29 @@ from StringIO import StringIO
 
 __all__ = ['encode', 'decode']
 
-def url_encode(input):
+def split_encode(input):
 	s = StringIO()
-	for i in input:
+	for i in (input is unicode and input or input.decode("UTF-8")):
 		s.write(i in _mapToSplit and _mapToSplit[i] or i)
 	return (s.getvalue(), len(input))
 
-def url_decode(input):
+def split_decode(input):
 	global _mapFromSplit
 	global _regexFromSplit
 	if not _mapFromSplit:
 		_mapFromSplit = dict([(v, k) for (k, v) in _mapToSplit.iteritems()])
 		_regexFromSplit = re.compile("|".join(sorted(_mapFromSplit.keys(), key=len, reverse=True)))
-	output = _regexFromSplit.sub(lambda mo: _mapFromSplit[mo.string[mo.start():mo.end()]], input.decode("UTF-8"))
+	if input is not unicode:
+		input = input.decode("UTF-8")
+	output = _regexFromSplit.sub(lambda mo: _mapFromSplit[mo.string[mo.start():mo.end()]], input)
 	return (output, len(output))
 
 class Codec(codecs.Codec):
 	def encode(self, input, errors='strict'):
-		return url_encode(input, errors)
+		return split_encode(input, errors)
 
 	def decode(self, input, errors='strict'):
-		return url_decode(input, errors)
+		return split_decode(input, errors)
 
 class StreamWriter(Codec, codecs.StreamWriter):
 	pass
@@ -1726,7 +1728,7 @@ class StreamReader(Codec, codecs.StreamReader):
 
 def search_function(encoding):
 	if encoding == "split":
-		return (url_encode, url_decode, StreamReader, StreamWriter)
+		return (split_encode, split_decode, StreamReader, StreamWriter)
 
 	return None
 

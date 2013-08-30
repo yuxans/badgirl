@@ -4801,27 +4801,27 @@ from StringIO import StringIO
 
 __all__ = ['encode', 'decode']
 
-def url_encode(input):
+def cht_encode(input):
 	s = StringIO()
-	for i in input:
+	for i in (input is unicode and input or input.decode("UTF-8")):
 		s.write(i in _mapToCht and _mapToCht[i] or i)
 	return (s.getvalue(), len(input))
 
-def url_decode(input):
+def cht_decode(input):
 	global _mapFromCht
 	if not _mapFromCht:
 		_mapFromCht = dict([(v, k) for (k, v) in _mapToCht.iteritems()])
 	s = StringIO()
-	for i in input.decode("UTF-8"):
+	for i in (input is unicode and input or input.decode("UTF-8")):
 		s.write(i in _mapFromCht and _mapFromCht[i] or i)
 	return (s.getvalue(), len(input))
 
 class Codec(codecs.Codec):
 	def encode(self, input, errors='strict'):
-		return url_encode(input, errors)
+		return cht_encode(input, errors)
 
 	def decode(self, input, errors='strict'):
-		return url_decode(input, errors)
+		return cht_decode(input, errors)
 
 class StreamWriter(Codec, codecs.StreamWriter):
 	pass
@@ -4831,7 +4831,7 @@ class StreamReader(Codec, codecs.StreamReader):
 
 def search_function(encoding):
 	if encoding == "cht":
-		return (url_encode, url_decode, StreamReader, StreamWriter)
+		return (cht_encode, cht_decode, StreamReader, StreamWriter)
 
 	return None
 

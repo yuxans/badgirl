@@ -22,6 +22,7 @@
 import random
 from irclib import Event
 from irclib import Event
+import moolog
 from moobot_module import MooBotModule
 import url_codec, cht_codec, mars_codec, reverse_codec, leet_codec, pinyin_codec, wubi_codec, split_codec, hashlib_codec
 handler_list = ["encodeDecode", "russian_style"]
@@ -42,34 +43,44 @@ class encodeDecode(MooBotModule):
         if cmd == "encode" or cmd == "decode":
             if len(txts) < 2:
                 return self.usage(args)
-            encoding = txts[0]
+            encodings = txts[0]
             msg = ' '.join(txts[1:])
         elif cmd == "codec":
             if len(txts) < 2:
                 return self.usage(args)
-            encoding = txts[0]
+            encodings = txts[0]
             msg = ' '.join(txts[1:])
             cmd = "encode"
         else:
             if len(txts) < 1:
                 return self.usage(args)
             msg = ' '.join(txts)
-            encoding = cmd
-            if encoding.lower().startswith("un"):
-                encoding = encoding[2:]
+            encodings = cmd
+            if encodings.lower().startswith("un"):
+                encodings = encodings[2:]
                 cmd = "decode"
-            elif encoding.startswith('-'):
-                encoding = encoding[1:]
+            elif encodings.startswith('-'):
+                encodings = encodings[1:]
                 cmd = "decode"
             else:
-                if encoding.startswith('+'):
-                    encoding = encoding[1:]
+                if encodings.startswith('+'):
+                    encodings = encodings[1:]
                 cmd = "encode"
 
+        return Event("privmsg", "", 
+                     self.return_to_sender(args), [ self.doEncodeDecode(cmd, encodings, msg) ])
+
+    def doEncodeDecode(self, cmd, encodings, msg):
+        """
+        >>> from translate import *
+        >>> encoder = encodeDecode()
+        >>> encoder.doEncodeDecode("encode", "gb2312|hex", u"\u6D4B\u8BD5")
+        u'(8) b2e2cad4'
+        """
         import re
         separator = re.compile("[|/,]")
         try:
-            encodings = separator.split(encoding)
+            encodings = separator.split(encodings)
             for encoding in encodings:
                 if encoding:
                     if encoding[0] == '+':
@@ -80,29 +91,20 @@ class encodeDecode(MooBotModule):
                         encoding = encoding[1:]
 
                 if cmd == "encode":
-                    if type(msg) != unicode:
-                        try:
-                            msg = msg.decode("utf8")
-                        except UnicodeDecodeError:
-                            try:
-                                msg = msg.decode("gb18030")
-                            except Exception, e:
-                                encoding = "gb18030"
-                                raise e
-
                     try:
                         msg = msg.encode(encoding)
-                    except:
-                        msg = msg.encode("utf8").encode(encoding)
-                else:
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        msg = self.toggleStringType(msg).encode(encoding)
+                else: # decode
                     if encoding == "hex":
                         msg = msg.replace("\\x", "").replace("\\X", "").replace(" ", "").replace("&#x", "").replace("&#X", "").replace(";", "")
-                    try:
-                        msg = str(msg)
-                    except UnicodeEncodeError:
-                        pass
-                    msg = msg.decode(encoding)
 
+                    try:
+                        msg = msg.decode(encoding)
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        msg = self.toggleStringType(msg).decode(encoding)
+
+            stringLen = len(msg)
             if type(msg) != unicode:
                 cmd = "decode"
                 try:
@@ -110,12 +112,25 @@ class encodeDecode(MooBotModule):
                     msg = msg.decode(encoding)
                 except UnicodeDecodeError:
                     encoding = "gb18030"
-                    msg = msg.decode(encoding)
-        except Exception, e:
-            msg = "Error \"%s\" when %s with '%s' encoding" % (e, cmd, encoding)
+                    msg = repr(msg)
+                    #msg = msg.decode(encoding)
 
-        return Event("privmsg", "", 
-                     self.return_to_sender(args), [ msg ])
+            return u"(%d) %s" % (stringLen, msg)
+
+        except Exception, e:
+            return "Error \"%s\" when %s with '%s' encoding" % (e, cmd, encoding)
+
+    def toggleStringType(self, msg):
+        if msg is unicode:
+            return msg.encode("utf8")
+        else:
+            try:
+                return msg.decode("utf8")
+            except UnicodeDecodeError:
+                try:
+                    return msg.decode("gb18030")
+                except Exception, e:
+                    raise e
 
 class russian_style (MooBotModule):
     """Graphic designers sometimes employ faux Cyrillic typography to
