@@ -27,7 +27,7 @@ import json
 
 handler_list = ["google", "kernelStatus", "Dict",
 		"debpackage", "debfile", "genpackage", "foldoc", "pgpkey",
-		"translate", "geekquote", "lunarCal", "ohloh", "radioOnline", "weather"]
+		"translate", "geekquote", "lunarCal", "ohloh", "radioOnline"]
 
 # Without this, the HTMLParser won't accept Chinese attribute values
 HTMLParser.attrfind=re.compile(
@@ -67,14 +67,14 @@ class weather(MooBotModule):
         self.regex="^weather .+$"
 
     def handler(self, **args):
-        """Add city4weather.txt,modify weblookup.py for weather query from http://weather.com.cn/ ."""
+        """weather query from http://weather.com.cn/ ."""
         result = None
         target = self.return_to_sender(args)
         city_name = args["text"].split()[2]
         
         
         import subprocess
-        """ Here require the city4weather.txt for city id"""
+        """ query city4weather.txt for city id"""
         p = subprocess.Popen("""grep %s /path/to/city4weather.txt | awk '{print $2}' """ %\
                                              city_name , shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         city_id = '101020500'
@@ -94,9 +94,6 @@ class weather(MooBotModule):
 
         from irclib import Event
         return Event("privmsg", "", target, [result])
-
-
-
 
 class weathercn(MooBotModule):
 	"""weather module to get weather forecast infomation
