@@ -35,7 +35,9 @@ urlregex = '[a-z][a-z0-9+-]*://(((([-a-z0-9_.!~*\'();:&=+$\,]|%[0-9a-f][0-9a-f])
 class urlGrabber(MooBotModule):
 	rUrl = re.compile(urlregex, re.I)
 	rWhiteSpaces = re.compile("\\s+", re.S)
-	mediaExts = 'gif|tif|tiff|jpe|jpg|jpeg|png|bmp|dib|z|tgz|gz|zip|rar|7z|arj|wav|midi|mid|mka|mpa|mp2|m1a|m2a|mp3|wma|rm|rmvb|avi|xvid|div|dss|dsa|dsv|dsm|ac3|dts|ifo|vob|mka|mkv|mpg|mpeg|mpe|m1v|m2v|mpv2|mp2v|ts|tp|mp4|m4v|m4b|hdmov|3gp|3gpp|mpc|ogm|ogg|asx|m3u|pls|wvx|wax|wmx|mpcpl|mov|qt|amr|3g2|3gp2|ram|wmv|wmp|asf|bin|hex|qx|ar'
+	imageExts = 'gif|tif|tiff|jpe|jpg|jpeg|png|bmp'
+	rImageUrl = re.compile("^[^?]+\.(%s)$" % imageExts, re.I)
+	mediaExts = imageExts + 'dib|z|tgz|gz|zip|rar|7z|arj|wav|midi|mid|mka|mpa|mp2|m1a|m2a|mp3|wma|rm|rmvb|avi|xvid|div|dss|dsa|dsv|dsm|ac3|dts|ifo|vob|mka|mkv|mpg|mpeg|mpe|m1v|m2v|mpv2|mp2v|ts|tp|mp4|m4v|m4b|hdmov|3gp|3gpp|mpc|ogm|ogg|asx|m3u|pls|wvx|wax|wmx|mpcpl|mov|qt|amr|3g2|3gp2|ram|wmv|wmp|asf|bin|hex|qx|ar'
 	rMediaUrl = re.compile("^[^?]+\.(%s)$" % mediaExts, re.I)
 
 	def addHost(self, scheme, host, port):
@@ -114,6 +116,7 @@ class urlGrabber(MooBotModule):
 		values["hostid"]   = "%d"   % int(hostId)
 		values["chanid"]   = "%d"   % int(chanId)
 		values["time"]     = "CURRENT_TIMESTAMP()"
+		values["type"]     = "'%s'" % self.sqlEscape(self.rImageUrl.search(url) and "image" or "html")
 
 		if database.type == "mysql":
 			pass
