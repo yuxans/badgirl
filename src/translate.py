@@ -24,7 +24,7 @@ from irclib import Event
 from irclib import Event
 import moolog
 from moobot_module import MooBotModule
-import url_codec, cht_codec, mars_codec, reverse_codec, leet_codec, pinyin_codec, wubi_codec, split_codec, hashlib_codec
+import xhex_codec, url_codec, cht_codec, mars_codec, reverse_codec, leet_codec, pinyin_codec, wubi_codec, split_codec, hashlib_codec
 handler_list = ["encodeDecode", "russian_style"]
 
 class encodeDecode(MooBotModule):
@@ -97,7 +97,10 @@ class encodeDecode(MooBotModule):
                         msg = self.toggleStringType(msg).encode(encoding)
                 else: # decode
                     if encoding == "hex":
-                        msg = msg.replace("\\x", "").replace("\\X", "").replace(" ", "").replace("&#x", "").replace("&#X", "").replace(";", "")
+                        try:
+                            msg.decode("hex")
+                        except TypeError:
+                            encoding = "xhex"
 
                     try:
                         msg = msg.decode(encoding)
